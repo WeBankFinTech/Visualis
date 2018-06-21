@@ -17,7 +17,9 @@ module.exports = function addDevMiddlewares(app, webpackConfig) {
   const compiler = webpack(webpackConfig);
   const middleware = createWebpackMiddleware(compiler, webpackConfig.output.publicPath);
 
-  app.use(['/api'], proxy({target: 'http://localhost:8080/', changeOrigin: true}))
+  // FIXME
+  app.use(['/api/v1'], proxy({target: 'http://127.0.0.1:9080', changeOrigin: true}))
+  app.use(['/api/v3'], proxy({target: 'http://127.0.0.1:8080/', changeOrigin: true}))
   app.use(middleware);
   app.use(webpackHotMiddleware(compiler));
 
