@@ -31,8 +31,8 @@ export default {
     shareHost: 'http://127.0.0.1:8080/api/v3'
   },
   production: {
-    host: '/api/v1',
-  //  host: '/api/v3',
+  //  host: '/api/v1',
+    host: '/api/v3',
     shareHost: '/share'
   }
 }
