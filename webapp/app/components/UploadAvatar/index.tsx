@@ -76,7 +76,7 @@ export class UploadAvatar extends React.PureComponent<IUploadAvatarProps, IUploa
     const avatar = currentPath
                               ? currentPath.indexOf('data:') >= 0
                                   ? currentPath
-                                  : `http://127.0.0.1:8080${currentPath}`
+                                  : `${currentPath}`
                               : ''
     let action = ''
     if (type === 'profile') {
