@@ -453,7 +453,7 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
 
     return (
       <Modal
-        title="表头样式与分组"
+        title="表头设置"
         width={1000}
         maskClosable={false}
         footer={this.modalFooter}

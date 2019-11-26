@@ -44,6 +44,17 @@ export function* getDisplays (action: DisplayActionType) {
   }
 }
 
+export function* getDisplayPicUrl (action) {
+  const { projectId, viewId } = action.payload
+  try {
+    // const asyncData = yield call(request, `${api.display}?projectId=${projectId}`)
+    // const displays = readListAdapter(asyncData)
+    // yield put(displaysLoaded(displays))
+  } catch (err) {
+    // yield put(loadDisplaysFail(err))
+  }
+}
+
 export function* addDisplay (action: DisplayActionType) {
   if (action.type !== ActionTypes.ADD_DISPLAY) { return }
 
@@ -407,6 +418,7 @@ export default function* rootDisplaySaga () {
     takeLatest(ActionTypes.LOAD_DISPLAY_SHARE_LINK, getDisplayShareLink),
     takeEvery(ActionTypes.UNDO_OPERATION, undoOperation),
     takeEvery(ActionTypes.REDO_OPERATION, redoOperation),
+    takeEvery(ActionTypes.LOAD_DISPLAY_PREVIEW_PICTURE, getDisplayPicUrl),
     takeEvery(ActionTypes.LOAD_CURRENT_PROJECT, loadProjectDetail)
   ])
 }

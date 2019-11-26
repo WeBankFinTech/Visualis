@@ -78,7 +78,7 @@ import { ViewActions } from '../View/actions'
 const { loadViewDataFromVizItem, loadViewsDetail } = ViewActions // @TODO global filter in Display
 import { makeSelectWidgets } from '../Widget/selectors'
 import { makeSelectFormedViews } from '../View/selectors'
-import { GRID_ITEM_MARGIN, DEFAULT_BASELINE_COLOR, DEFAULT_SPLITER } from 'app/globalConstants'
+import { GRID_ITEM_MARGIN, DEFAULT_BASELINE_COLOR, DEFAULT_SPLITER, MAX_LAYER_COUNT } from 'app/globalConstants'
 // import { LayerContextMenu } from './components/LayerContextMenu'
 
 import { ISlideParams } from './types'
@@ -208,7 +208,7 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
     const { currentSlide, currentLayers } = nextProps
 
     let { slideParams, currentLocalLayers } = this.state
-    if (currentSlide !== this.props.currentSlide) {
+    if (currentSlide && currentSlide !== this.props.currentSlide) {
       slideParams = JSON.parse(currentSlide.config).slideParams
     }
     if (currentLayers !== this.props.currentLayers) {
@@ -632,6 +632,7 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
   }
 
   private pasteLayers = () => {
+    if (this.state.currentLocalLayers && this.state.currentLocalLayers.length >= MAX_LAYER_COUNT) return message.warning(`当前最多只支持添加${MAX_LAYER_COUNT}个图层`, 5);
     const { currentDisplay, currentSlide, clipboardLayers, onPasteSlideLayers } = this.props
     if (!clipboardLayers.length) { return }
     onPasteSlideLayers(currentDisplay.id, currentSlide.id, clipboardLayers)
@@ -857,6 +858,7 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
 
     let settingContent = null
     if (currentSelectedLayers.length > 1) {
+      // 如果当前同时选择了两个layer，则显示 LayerAlign，进行图层间的对齐设置
       settingContent = (
         <LayerAlign
           layers={currentSelectedLayers}
@@ -865,10 +867,13 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
         />
       )
     } else if (settingInfo.id) {
+      // 如果当前只选择了一个layer，或者一个都没选时，则显示下面的内容
       settingContent = (
+        // 最右侧的 设置栏
         <SettingForm
           key={settingInfo.key}
           id={settingInfo.id}
+          // 设置项
           settingInfo={settingInfo.setting}
           settingParams={settingInfo.param}
           onDisplaySizeChange={this.displaySizeChange}
@@ -876,6 +881,7 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
           onCollapseChange={this.collapseChange}
         >
           {currentSelectedLayers.length === 0 ? (
+            // 最右下角的 封面 部分
             <DisplaySetting
               key="displaySetting"
               display={currentDisplay}
@@ -890,7 +896,9 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
     return (
       <div className={`${styles.preview} ${styles.edit}`}>
         <Helmet title={currentDisplay.name} />
+        {/* 顶栏 */}
         <DisplayHeader
+          layers={currentLocalLayers}
           display={currentDisplay}
           widgets={widgets}
           params={params}
@@ -905,6 +913,7 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
           canRedo={canRedo}
         />
         <DisplayBody>
+          {/* 左侧的大容器 */}
           <DisplayContainer
             key="editor"
             slideParams={slideParams}
@@ -917,6 +926,7 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
           >
             {[...baselines, ...layerItems]}
           </DisplayContainer>
+          {/* 左侧底部的 */}
           <DisplayBottom
             scale={scale}
             sliderValue={sliderValue}
@@ -924,7 +934,9 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
             onZoomOut={this.zoomOut}
             onSliderChange={this.sliderChange}
           />
+          {/* 右侧的两栏 */}
           <DisplaySidebar>
+            {/* 图层列表 */}
             <LayerList
               layers={currentLocalLayers}
               layersStatus={currentLayersOperationInfo}
@@ -933,6 +945,7 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
               onEditDisplayLayers={this.onEditLayers}
               onCollapseChange={this.collapseChange}
             />
+            {/* 最右侧的设置栏 */}
             {settingContent}
           </DisplaySidebar>
         </DisplayBody>

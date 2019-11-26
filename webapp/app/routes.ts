@@ -50,6 +50,7 @@ import Organization from 'containers/Organizations/Organization'
 import UserProfile from 'containers/Profile/UserProfile'
 import {replace} from 'react-router-redux'
 import NoAuthorization from 'containers/NoAuthorization'
+import RoutePage from 'containers/RoutePage'
 
 const errorLoading = (err) => {
   console.error('Dynamic page loading failed', err) // eslint-disable-line no-console
@@ -70,27 +71,27 @@ export default function createRoutes (store): IExtendedRouteProps[] {
     {
       component: Background,
       childRoutes: [
-        {
-          path: '/login',
-          component: Login
-        },
-        {
-          path: '/register',
-          name: 'register',
-          component: Register
-        },
-        {
-          path: '/joinOrganization',
-          name: 'joinOrganization',
-          component: JoinOrganization
-        }
+        // {
+        //   path: '/login',
+        //   component: Login
+        // },
+        // {
+        //   path: '/register',
+        //   name: 'register',
+        //   component: Register
+        // },
+        // {
+        //   path: '/joinOrganization',
+        //   name: 'joinOrganization',
+        //   component: JoinOrganization
+        // }
       ]
     },
-    {
-      path: '/activate',
-      name: 'activate',
-      component: Activate
-    },
+    // {
+    //   path: '/activate',
+    //   name: 'activate',
+    //   component: Activate
+    // },
     {
       component: Main,
       childRoutes: [
@@ -207,6 +208,11 @@ export default function createRoutes (store): IExtendedRouteProps[] {
           component: Preview
         },
         {
+          path: '/project/:pid/dashboard/preview/:dashboardId',
+          name: 'dashboardPreview',
+          component: Preview
+        },
+        {
           path: '/project/:pid/widget/:wid',
           name: 'workbench',
           component: Workbench
@@ -217,6 +223,11 @@ export default function createRoutes (store): IExtendedRouteProps[] {
       path: '/noAuthorization',
       name: 'noAuthorization',
       component: NoAuthorization
+    },
+    {
+      path: '/proxy',
+      name: 'routePage',
+      component: RoutePage
     },
     {
       path: '*',

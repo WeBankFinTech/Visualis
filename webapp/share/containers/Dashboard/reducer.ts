@@ -150,7 +150,8 @@ function shareReducer (state = initialState, { type, payload }) {
           obj[item.id] = {
             status: DashboardItemStatus.Initial,
             datasource: { resultList: [] },
-            loading: false,
+            // 初始设为true，这样后面才能通过loading变为false来判断数据已经加载好了
+            loading: true,
             queryConditions: {
               tempFilters: [],
               linkageFilters: [],

@@ -202,12 +202,11 @@ export class ColumnStyleConfig extends React.PureComponent<IColumnStyleConfigPro
       return (<div />)
     }
 
-    const { style, visualType, sort, conditionStyles } = localConfig.find((c) => c.columnName === selectedColumnName)
+    const { style, visualType, sort, conditionStyles, showAsPercent } = localConfig.find((c) => c.columnName === selectedColumnName)
     const { fontSize, fontFamily, fontWeight, fontColor, fontStyle, backgroundColor, justifyContent } = style
-
     return (
       <Modal
-        title="数据列设置"
+        title="表格数据设置"
         wrapClassName="ant-modal-large"
         maskClosable={false}
         footer={this.modalFooter}
@@ -235,8 +234,18 @@ export class ColumnStyleConfig extends React.PureComponent<IColumnStyleConfigPro
                   </Col>
                 </Row>
               </div>
-              <div className={styles.title}><h2>基础样式</h2></div>
+              <div className={styles.title}><h2>基础</h2></div>
               <div className={stylesConfig.rows}>
+                {
+                  visualType !== 'number' ? null :
+                  (
+                    <Row gutter={8} type="flex" align="middle" className={stylesConfig.rowBlock}>
+                      <Col span={12}>
+                        <Checkbox checked={showAsPercent} onChange={this.propChange('showAsPercent')}>数值以百分数的形式显示</Checkbox>
+                      </Col>
+                    </Row>
+                  )
+                }
                 <Row gutter={8} type="flex" align="middle" className={stylesConfig.rowBlock}>
                   <Col span={4}>背景色</Col>
                   <Col span={2}>

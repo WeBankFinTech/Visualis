@@ -147,6 +147,12 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     description: '请输入描述…'
   }
 
+  private getParams() {
+    const search = window.location.hash.split('?')[1] || '';
+    const params = search.split('&');
+    return params;
+  }
+
   public componentWillMount () {
     const { params, onLoadViews, onLoadWidgetDetail } = this.props
     onLoadViews(Number(params.pid), () => {
@@ -154,6 +160,11 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
         onLoadWidgetDetail(Number(params.wid))
       }
     })
+    const routeParams = this.getParams();
+    const viewId = routeParams[0] ? routeParams[0].split('=')[1] : '';
+    if (viewId) {
+      sessionStorage.setItem('viewId', viewId);
+    }
   }
 
   public componentDidMount () {
@@ -161,7 +172,13 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
   }
 
   public componentWillReceiveProps (nextProps: IWorkbenchProps) {
-    const { currentWidget } = nextProps
+    const { views, currentWidget } = nextProps
+    const viewId = sessionStorage.getItem('viewId');
+    // 说明此时是直接在url里加上了?viewId=${viewId}，要自动选中该view，只有第一次进入的时候要，所以this.state.selectedViewId当时应该为null
+    if(views && views.length && viewId && !this.state.selectedViewId) {
+      this.setState({ selectedViewId: Number(viewId) }, () => this.viewSelect(Number(viewId)))
+    }
+
     if (currentWidget && (currentWidget !== this.props.currentWidget)) {
       const { controls, cache, expired, computed, autoLoadData, cols, rows, ...rest } = JSON.parse(currentWidget.config)
       const updatedCols = cols.map((col) => widgetDimensionMigrationRecorder(col))
@@ -187,6 +204,8 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
 
   public componentWillUnmount () {
     this.props.onClearCurrentWidget()
+    // 离开页面时清除viewId的数据，因为只有第一次进入页面时需要，如果url里有?viewId=${viewId}进行自动选择view
+    sessionStorage.setItem('viewId', '');
   }
 
   private initSettings = (): IWorkbenchSettings => {
@@ -196,7 +215,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     }
     try {
       const loginUser = JSON.parse(localStorage.getItem('loginUser'))
-      const currentUserWorkbenchSetting = JSON.parse(localStorage.getItem(`${loginUser.id}_workbench_settings`))
+      const currentUserWorkbenchSetting = loginUser ? JSON.parse(localStorage.getItem(`${loginUser.id}_workbench_settings`)) : null
       if (currentUserWorkbenchSetting) {
         workbenchSettings = currentUserWorkbenchSetting
       }
@@ -476,7 +495,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
   private saveSettingForm = (values: IWorkbenchSettings) => {
     try {
       const loginUser = JSON.parse(localStorage.getItem('loginUser'))
-      localStorage.setItem(`${loginUser.id}_workbench_settings`, JSON.stringify(values))
+      if (loginUser) localStorage.setItem(`${loginUser.id}_workbench_settings`, JSON.stringify(values))
       this.setState({
         settings: values
       })

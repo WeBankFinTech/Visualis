@@ -32,8 +32,9 @@ import injectSaga from 'utils/injectSaga'
 // import reducer from '../App/reducer'
 // import saga from '../App/sagas'
 
-import { login, logged } from '../App/actions'
+import { login, logged, setLoginUser } from '../App/actions'
 import { makeSelectLoginLoading } from '../App/selectors'
+import { promiseDispatcher } from '../../utils/reduxPromisation'
 import checkLogin from 'utils/checkLogin'
 import { setToken } from 'utils/request'
 import { statistic } from 'utils/statistic/statistic.dv'
@@ -45,6 +46,7 @@ interface ILoginProps {
   loginLoading: boolean
   onLogin: (username: string, password: string, resolve: () => any) => any
   onLogged: (user) => void
+  onSetLoginUser: (user: object) => any
 }
 
 interface ILoginStates {
@@ -71,6 +73,7 @@ export class Login extends React.PureComponent<ILoginProps, ILoginStates> {
       const loginUser = localStorage.getItem('loginUser')
       setToken(token)
       this.props.onLogged(JSON.parse(loginUser))
+      this.props.onSetLoginUser(JSON.parse(loginUser))
       this.props.router.replace('/')
     }
   }
@@ -153,7 +156,8 @@ const mapStateToProps = createStructuredSelector({
 export function mapDispatchToProps (dispatch) {
   return {
     onLogin: (username, password, resolve) => dispatch(login(username, password, resolve)),
-    onLogged: (user) => dispatch(logged(user))
+    onLogged: () => promiseDispatcher(dispatch, logged),
+    onSetLoginUser: (user) => promiseDispatcher(dispatch, setLoginUser, user)
   }
 }
 

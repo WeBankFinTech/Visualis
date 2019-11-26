@@ -38,6 +38,7 @@ interface ILayerSelectorProps extends FormComponentProps {
   multiple: boolean
   modalLoading: boolean
   widgets: any[]
+  layers: any[]
   selectedWidgets: any[]
   onSelectDone: (widgets: any[], values: any) => void
   onCancel: () => void
@@ -91,7 +92,8 @@ export class LayerSelector extends React.Component<ILayerSelectorProps, ILayerSe
       multiple,
       modalLoading,
       form,
-      widgets
+      widgets,
+      layers
     } = this.props
 
     const { step, tempSelectedWidgets, showFrequency } = this.state
@@ -154,6 +156,7 @@ export class LayerSelector extends React.Component<ILayerSelectorProps, ILayerSe
             </Col>
           </Row>
           <WidgetSelector
+            layers={layers}
             className={selectWidgetStep}
             widgets={widgets}
             multiple={multiple}

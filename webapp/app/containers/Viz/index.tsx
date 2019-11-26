@@ -88,10 +88,6 @@ export class Viz extends React.Component<IVizProps, IVizStates> {
     this.props.router.push(path)
   }
 
-  private onCopy = (display) => {
-    console.log('onCopy: ', display)
-  }
-
   private onCollapseChange = (key: string) => () => {
     const { collapse } = this.state
     this.setState({
@@ -174,7 +170,6 @@ export class Viz extends React.Component<IVizProps, IVizStates> {
                 onDisplayClick={this.goToDisplay}
                 onAdd={onAddDisplay}
                 onEdit={onEditDisplay}
-                onCopy={this.onCopy}
                 onDelete={onDeleteDisplay}
                 onCheckName={onCheckUniqueName}
                 onExcludeRoles={this.props.onExcludeRoles}

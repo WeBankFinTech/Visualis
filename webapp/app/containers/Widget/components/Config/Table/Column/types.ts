@@ -27,6 +27,7 @@ export interface ITableColumnConfig {
   columnName: string
   alias: string
   sort?: boolean
+  showAsPercent?: boolean
   visualType: ViewModelVisualTypes
   styleType: TableCellStyleTypes
   style: ITableCellStyle

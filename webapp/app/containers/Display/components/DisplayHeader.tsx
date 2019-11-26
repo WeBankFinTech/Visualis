@@ -23,6 +23,7 @@ import * as classnames from 'classnames'
 import { connect } from 'react-redux'
 import { createStructuredSelector } from 'reselect'
 import { Link } from 'react-router'
+import { message } from 'antd';
 
 import { Icon, Tooltip, Popover, Menu, Dropdown } from 'antd'
 
@@ -37,6 +38,7 @@ import {
   makeSelectCurrentDisplaySecretInfo,
   makeSelectCurrentDisplayShareInfoLoading
 } from '../selectors'
+import { MAX_LAYER_COUNT } from 'app/globalConstants'
 
 import { uuid } from 'utils/util'
 
@@ -44,6 +46,7 @@ interface IDisplayHeaderProps {
   params: any
   display: any
   widgets: any[]
+  layers: any[]
   currentDisplayShareInfo?: string
   currentDisplaySecretInfo?: string
   currentDisplayShareInfoLoading?: boolean
@@ -77,6 +80,7 @@ export class DisplayHeader extends React.Component<IDisplayHeaderProps, IDisplay
   }
 
   private showWidgetSelector = () => {
+    if (this.props.layers && this.props.layers.length >= MAX_LAYER_COUNT) return message.warning(`当前最多只支持添加${MAX_LAYER_COUNT}个图层！`, 5);
     this.setState({
       widgetSelectorVisible: true
     })
@@ -127,6 +131,7 @@ export class DisplayHeader extends React.Component<IDisplayHeaderProps, IDisplay
   }
 
   private addSecondaryGraph = (secondaryGraphType: SecondaryGraphTypes) => () => {
+    if (this.props.layers && this.props.layers.length >= MAX_LAYER_COUNT) return message.warning(`当前最多只支持添加${MAX_LAYER_COUNT}个图层！`, 5);
     const title = (slideSettings[secondaryGraphType] as any).title
     this.props.onAddLayers([{
       name: `${title}_${uuid(5)}`,
@@ -203,6 +208,7 @@ export class DisplayHeader extends React.Component<IDisplayHeaderProps, IDisplay
     const {
       params,
       widgets,
+      layers,
       onDeleteLayers,
       onCopyLayers,
       onPasteLayers,
@@ -308,7 +314,7 @@ export class DisplayHeader extends React.Component<IDisplayHeaderProps, IDisplay
           <ul className={styles.commandGroup}>
             <li>
               <Tooltip placement="bottom" title="预览">
-                <a href={`/#/project/${pid}/display/preview/${displayId}`} target="_blank">
+                <a href={`./#/project/${pid}/display/preview/${displayId}`} target="_blank">
                   <i className="iconfont icon-preview" />
                 </a>
               </Tooltip>
@@ -319,6 +325,7 @@ export class DisplayHeader extends React.Component<IDisplayHeaderProps, IDisplay
           </ul>
         </div>
         <LayerSelector
+          layers={layers}
           visible={widgetSelectorVisible}
           multiple={true}
           modalLoading={widgetSelectorLoading}

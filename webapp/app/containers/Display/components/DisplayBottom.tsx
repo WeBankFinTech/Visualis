@@ -22,6 +22,7 @@ export const DisplayBottom: React.FunctionComponent<IDisplayBottomProps> = (prop
   } = props
 
   const percentage = scale && `${Math.floor(scale * 100)}%`
+  localStorage.setItem('sliderChange', percentage)
 
   return (
     <div className={styles.bottom}>

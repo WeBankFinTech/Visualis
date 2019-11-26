@@ -71,12 +71,12 @@ export function Navigator (props: INavigatorProps) {
           用户设置
         </Link>
       </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item key="3">
+      {/* <Menu.Divider /> */}
+      {/* <Menu.Item key="3">
         <a href="javascript:;" onClick={onLogout}>
           退出登录
         </a>
-      </Menu.Item>
+      </Menu.Item> */}
     </Menu>
   )
 
@@ -85,14 +85,14 @@ export function Navigator (props: INavigatorProps) {
       <div className={styles.logoPc}>
         <div className={styles.logo}>
           <Link to="/projects">
-            <img src={require('assets/images/logo.svg')} />
+            <img src={require('assets/images/visualis.png')} />
           </Link>
         </div>
       </div>
       <div className={styles.logoMobile}>
         <div className={styles.logo}>
           <Link to="/projects">
-            <img src={require('assets/images/logo_mobile.svg')} />
+            <img src={require('assets/images/visualis.png')} />
           </Link>
         </div>
       </div>

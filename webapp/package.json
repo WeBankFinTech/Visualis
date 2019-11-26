@@ -1,7 +1,7 @@
 {
-  "name": "davinci-webapp",
-  "version": "0.3.0",
-  "description": "Davinci Web Application",
+  "name": "Visualis",
+  "version": "0.5.0",
+  "description": "Visualis Web Application",
   "engines": {
     "npm": ">=5",
     "node": ">=8.10.0"
@@ -74,7 +74,7 @@
     "intl": "1.2.5",
     "invariant": "2.2.4",
     "ip": "1.1.5",
-    "lodash": "4.17.13",
+    "lodash": "4.17.11",
     "memoize-one": "^5.0.0",
     "minimist": "1.2.0",
     "moment": "^2.22.2",

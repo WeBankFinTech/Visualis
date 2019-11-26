@@ -188,7 +188,7 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
   private deleteHeaderConfig = () => {
     const { onChange } = this.props
     Modal.confirm({
-      title: '确认删除表头样式与分组？',
+      title: '确定恢复到初始设置？',
       onOk: () => {
         onChange('headerConfig', [])
       }
@@ -225,7 +225,7 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
   private deleteColumnConfig = () => {
     const { onChange } = this.props
     Modal.confirm({
-      title: '确认删除表格数据列设置？',
+      title: '确定恢复到初始设置？',
       onOk: () => {
         onChange('columnsConfig', [])
       }
@@ -303,15 +303,15 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
       <div>
         <div className={styles.paneBlock}>
           <h4>
-            <span>表头样式与分组</span>
-            <Icon type="delete" onClick={this.deleteHeaderConfig} />
+            <span>表头设置</span>
+            <Icon type="redo" onClick={this.deleteHeaderConfig} />
             <Icon type="edit" onClick={this.showHeaderConfig} />
           </h4>
         </div>
         <div className={styles.paneBlock}>
           <h4>
-            <span>表格数据列</span>
-            <Icon type="delete" onClick={this.deleteColumnConfig} />
+            <span>表格数据设置</span>
+            <Icon type="redo" onClick={this.deleteColumnConfig} />
             <Icon type="edit" onClick={this.showColumnConfig} />
           </h4>
         </div>
