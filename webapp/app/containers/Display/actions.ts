@@ -23,6 +23,16 @@ import { returnType } from 'utils/redux'
 import { IBaseline } from './components/LayerItem'
 
 export const DisplayActions = {
+  getDisplayPreview(projectId, viewId) {
+    return {
+      type: ActionTypes.LOAD_DISPLAY_PREVIEW_PICTURE,
+      payload: {
+        projectId,
+        viewId
+      }
+    }
+  },
+
   loadDisplays (projectId: number) {
     return {
       type: ActionTypes.LOAD_DISPLAYS,

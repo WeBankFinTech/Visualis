@@ -91,7 +91,7 @@ interface IDisplayStates {
   scale: [number, number]
   showLogin: boolean
   shareInfo: string
-  headlessBrowserRenderSign: boolean
+  phantomRenderSign: boolean
 }
 
 export class Display extends React.Component<IDisplayProps, IDisplayStates> {
@@ -105,7 +105,7 @@ export class Display extends React.Component<IDisplayProps, IDisplayStates> {
       scale: [1, 1],
       showLogin: false,
       shareInfo: '',
-      headlessBrowserRenderSign: false
+      phantomRenderSign: false
     }
   }
 
@@ -122,6 +122,30 @@ export class Display extends React.Component<IDisplayProps, IDisplayStates> {
     const { slide, layers, layersInfo } = nextProps
     const { scale } = this.state
     const [scaleWidth, scaleHeight] = scale
+    if (layersInfo && slide) {
+      if (Object.values(layersInfo)
+      .filter((info) => {
+        // !![]也是true，经过了这一步说明info.datasource不为undefined（非widget时，如标签、时间器等的datasource就为undefined）
+        return !!info.datasource
+      })
+      .every((info) => { 
+        // 这里不应该加 ‘&& !!info.datasource.length’，不然有数据为空的图表的时候，会无法生成phantomRenderSign
+        return info.loading === false
+       })) {
+        // FIXME
+        setTimeout(() => {
+          this.setState({
+            phantomRenderSign: true
+          }, () => {
+            const phantomEle = document.getElementById('phantomRenderSign')
+            const { slideParams } = JSON.parse(slide.config)
+            const { width, height } = slideParams
+            phantomEle.style.width = width + 'px';
+            // phantomEle.style.height = height + 'px';
+          })
+        }, 5000)
+      }
+    }
     if (slide && this.props.slide !== slide) {
       const { slideParams } = JSON.parse(slide.config)
       const { scaleMode, width, height } = slideParams
@@ -141,21 +165,6 @@ export class Display extends React.Component<IDisplayProps, IDisplayStates> {
       }
       if (scaleHeight !== nextScaleHeight || scaleWidth !== nextScaleWidth) {
         this.setState({ scale: [nextScaleWidth, nextScaleHeight] })
-      }
-    }
-    if (layersInfo) {
-      const widgetLayers = layers.filter((layer) => layer.type === GraphTypes.Chart)
-      const initialedItems = Object.entries(layersInfo)
-        .filter(([key, info]) => {
-          return widgetLayers.find((layer) => layer.id === Number(key))
-            && [DashboardItemStatus.Fulfilled, DashboardItemStatus.Error].includes(info.status)
-        })
-      if (initialedItems.length === widgetLayers.length) {
-        setTimeout(() => {
-          this.setState({
-            headlessBrowserRenderSign: true
-          })
-        }, 5000)
       }
     }
   }
@@ -392,10 +401,11 @@ export class Display extends React.Component<IDisplayProps, IDisplayStates> {
       scale,
       showLogin,
       shareInfo,
-      headlessBrowserRenderSign
+      phantomRenderSign
     } = this.state
 
     const loginPanel = showLogin ? <Login shareInfo={shareInfo} legitimateUser={this.handleLegitimateUser} /> : null
+    const phantomDOM = phantomRenderSign && (<div id="phantomRenderSign" />)
 
     let content = null
     let previewStyle = null
@@ -446,11 +456,8 @@ export class Display extends React.Component<IDisplayProps, IDisplayStates> {
           <Helmet title={title} />
           {content}
           {loginPanel}
+          {phantomDOM}
         </div>
-        <HeadlessBrowserIdentifier
-          renderSign={headlessBrowserRenderSign}
-          parentNode={this.displayCanvas.current}
-        />
       </div>
     )
   }

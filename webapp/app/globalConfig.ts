@@ -19,20 +19,26 @@
  */
 
 export const envName = {
+  sit: 'sit',
   production: 'production',
-  dev: 'dev'
+  development: 'dev'
 }
-
-export const env = envName.production
+export const env = envName[process.env.NODE_ENV]
 
 export default {
   dev: {
-    host: '/api/v3',
-    shareHost: '/share.html'
+    iframeUrl: 'http://localhost:5000',
+    host: 'http://yourServerIp:yourServerPort/api/rest_s/v1/visualis',
+    shareHost: '/share.html',
+  },
+  sit: {
+    iframeUrl: '/dws/visualis/#',
+    host: '/api/rest_s/v1/visualis',
+    shareHost: '/dws/visualis/share.html',
   },
   production: {
-  //  host: '/api/v1',
-    host: '/api/v3',
-    shareHost: '/share.html'
+    host: '/api/rest_s/v1/visualis',
+    shareHost: '/dws/visualis/share.html',
+    iframeUrl: '/dws/visualis/#',
   }
 }

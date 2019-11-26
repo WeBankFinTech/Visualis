@@ -864,7 +864,7 @@ export class Projects extends React.PureComponent<IProjectsProps, IProjectsState
             <label htmlFor="newtab-search-text" className={styles.searchLabel}/>
             <input
               id="newtab-search-text"
-              placeholder="Search the Davinci"
+              placeholder="Search the Visualis"
               title="Search the Web"
               autoComplete="off"
               onFocus={this.bindDocumentKeypress}

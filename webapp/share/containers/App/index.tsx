@@ -31,10 +31,10 @@ export function App (props) {
   return (
     <div>
       <Helmet
-        titleTemplate="%s - Davinci"
-        defaultTitle="Davinci Web Application"
+        titleTemplate="%s - Visualis"
+        defaultTitle="Visualis Web Application"
         meta={[
-          { name: 'description', content: 'Davinci web application built for data visualization' }
+          { name: 'description', content: 'Visualis web application built for data visualization' }
         ]}
       />
       {React.Children.toArray(props.children)}

@@ -20,6 +20,7 @@ interface IJoinOrganizationProps {
   loginLoading: boolean
   onLogin: (username: string, password: string, resolve?: () => any) => any
   onLogged: () => any
+  onSetLoginUser: (user: object) => any
 }
 
 interface IJoinOrganizationStates {

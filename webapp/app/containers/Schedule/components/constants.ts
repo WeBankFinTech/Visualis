@@ -45,7 +45,7 @@ export const DefaultSchedulePeriodExpression: {
 
 export const DefaultMailImageWidth = 1920
 
-export const DefaultEmailContent = 'This email comes from cron job on the Davinci.'
+export const DefaultEmailContent = 'This email comes from cron job on the Visualis.'
 
 export const FormItemStyle: Partial<FormItemProps> = {
   labelCol: { xl: 8, lg: 10, md: 14, sm: 8 },

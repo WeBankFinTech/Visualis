@@ -12,6 +12,7 @@ import ShareDownloadPermission from 'containers/Account/components/checkShareDow
 import SharePanel from 'components/SharePanel'
 
 const utilStyles = require('assets/less/util.less')
+const dashboardStyles = require('../Dashboard.less')
 
 interface IDashboardToolbarProps {
   currentProject: IProject
@@ -59,6 +60,7 @@ export class DashboardToolbar extends React.PureComponent<IDashboardToolbarProps
     let downloadButton
     let linkageButton
     let globalFilterButton
+    let previewButton
 
     addButton = (
       <Tooltip placement="bottom" title="新增">
@@ -132,14 +134,22 @@ export class DashboardToolbar extends React.PureComponent<IDashboardToolbarProps
         />
       </Tooltip>
     )
+    previewButton = (
+      <Button className={dashboardStyles.previewButton}  type="primary">
+        <a target="_blank" href={`./#/project/${currentProject.id}/dashboard/preview/${currentDashboard.id}`}>
+        <i className="iconfont icon-preview" />
+        </a>
+      </Button>
+    )
 
     return (
       <Col sm={12} className={utilStyles.textAlignRight}>
         {addButton}
         {shareButton}
-        {downloadButton}
+        {/* {downloadButton} */}
         {linkageButton}
         {globalFilterButton}
+        {previewButton}
       </Col>
     )
   }

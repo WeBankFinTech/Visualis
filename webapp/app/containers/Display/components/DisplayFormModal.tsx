@@ -35,7 +35,7 @@ interface IDisplayFormModalProps {
   display: IDisplay,
   visible: boolean
   loading: boolean
-  type: 'add' | 'edit'
+  type: 'add' | 'edit' | 'copy'
   onCheckName: (type, data, resolve, reject) => void
   onSave: (display, type: string) => void
   onCancel: () => void
@@ -129,7 +129,7 @@ export class DisplayFormModal extends React.PureComponent<IDisplayFormModalProps
 
     return (
       <Modal
-          title={`${type === 'add' ? '新增' : '修改'} Display`}
+          title={`${type === 'add' ? '新增' : type === 'edit' ? '修改' : '复制'} Display`}
           wrapClassName="ant-modal-small"
           visible={visible}
           footer={modalButtons}

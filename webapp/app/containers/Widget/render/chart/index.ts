@@ -36,6 +36,17 @@ import { EChartOption } from 'echarts'
 import { IChartProps } from '../../components/Chart'
 
 export default function (type, chartProps: IChartProps, drillOptions?: any): EChartOption {
+  if (chartProps) {
+    chartProps.data.forEach((d, i) => {
+      Object.keys(d).forEach((key) => {
+        const tmpKey = key.split('.')
+        if (tmpKey && tmpKey.length > 1) {
+          chartProps.data[i][tmpKey[1]] = chartProps.data[i][key]
+          delete chartProps.data[i][key]
+        }
+      })
+    })
+  }
   switch (type) {
     case 'line': return line(chartProps, drillOptions)
     case 'bar': return bar(chartProps, drillOptions)

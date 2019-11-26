@@ -20,13 +20,14 @@ export interface IDisplay {
   publish: boolean
   avatar: string
   description: string
+  isCopy: boolean
+  targetId: number
 }
 
 export interface IDisplayEvent {
   onDisplayClick: (display: IDisplay) => () => void
   onAdd: (display: IDisplay, resolve: () => void) => void
   onEdit: (display: IDisplay, resolve: () => void) => void
-  onCopy: (display: IDisplay) => void
   onDelete: (displayId: number) => void
 }
 
@@ -42,9 +43,10 @@ interface IDisplayListProps extends IDisplayEvent {
 interface IDisplayListStates {
   editingDisplay: IDisplay
   modalLoading: boolean
-  formType: 'edit' | 'add'
+  formType: 'edit' | 'add' | 'copy'
   formVisible: boolean
   exludeRoles: IExludeRoles[]
+  currentDisplayId: number
 }
 
 export class DisplayList extends React.PureComponent<IDisplayListProps, IDisplayListStates> {
@@ -56,7 +58,9 @@ export class DisplayList extends React.PureComponent<IDisplayListProps, IDisplay
       modalLoading: false,
       formType: 'add',
       formVisible: false,
-      exludeRoles: []
+      exludeRoles: [],
+      // 当前复制的display的id
+      currentDisplayId: 0
     }
   }
 
@@ -78,16 +82,30 @@ export class DisplayList extends React.PureComponent<IDisplayListProps, IDisplay
   }
 
 
-  private saveDisplay = (display: IDisplay, type: 'edit' | 'add') => {
+  private saveDisplay = (display: IDisplay, type: 'edit' | 'add' | 'copy') => {
     this.setState({ modalLoading: true })
-    const { onAdd, onEdit } = this.props
+    const { onAdd, onEdit, projectId } = this.props
+    const { currentDisplayId } = this.state
     const val = {
       ...display,
       roleIds: this.state.exludeRoles.filter((role) => !role.permission).map((p) => p.id)
     }
     if (type === 'add') {
       onAdd({
-        ...val
+        ...val,
+        projectId,
+        // 当前是否是复制操作
+        isCopy: false,
+        avatar: `${Math.ceil(Math.random() * 19)}`
+      }, () => { this.hideDisplayFormModal() })
+    } else if (type === 'copy') {
+      onAdd({
+        ...val,
+        projectId,
+        // 复制的那个display的id
+        targetId: currentDisplayId,
+        isCopy: true,
+        avatar: `${Math.ceil(Math.random() * 19)}`
       }, () => { this.hideDisplayFormModal() })
     } else {
       onEdit({
@@ -103,13 +121,22 @@ export class DisplayList extends React.PureComponent<IDisplayListProps, IDisplay
     })
   }
 
-  private showDisplayFormModal = (formType: 'edit' | 'add', display?: IDisplay) => (e: React.MouseEvent<HTMLDivElement>) => {
-    e.stopPropagation()
-    this.setState({
-      editingDisplay: display,
-      formType,
-      formVisible: true
-    })
+  private showDisplayFormModal = (formType: 'edit' | 'add' | 'copy', display?: IDisplay) => (e: React.MouseEvent<HTMLDivElement>) => {
+    if (formType === 'edit' || formType === 'add') {
+      e.stopPropagation()
+      this.setState({
+        editingDisplay: display,
+        formType,
+        formVisible: true
+      })
+    } else if (formType === 'copy') {
+      e.stopPropagation()
+      this.setState({
+        formType,
+        formVisible: true,
+        currentDisplayId: display.id
+      })
+    }
     const { onExcludeRoles, projectRoles } = this.props
     if (onExcludeRoles && display) {
       onExcludeRoles('display', display.id, (result: number[]) => {
@@ -174,9 +201,9 @@ export class DisplayList extends React.PureComponent<IDisplayListProps, IDisplay
 
   private renderDisplay (display: IDisplay) {
     const coverStyle: React.CSSProperties = {
-      backgroundImage: `url(${display.avatar})`
+      backgroundImage: `url(${require(`assets/images/bg${display.avatar}.png`)}`
     }
-    const { onDisplayClick, onCopy, onDelete, currentProject } = this.props
+    const { onDisplayClick, onDelete, currentProject } = this.props
 
     const editHint = !display.publish && '(编辑中…)'
     const displayClass = classnames({
@@ -208,7 +235,7 @@ export class DisplayList extends React.PureComponent<IDisplayListProps, IDisplay
                 <EditIcon className={styles.edit} type="setting" onClick={this.showDisplayFormModal('edit', display)} />
               </Tooltip>
               <Tooltip title="复制">
-                <AdminIcon className={styles.copy} type="copy" onClick={this.delegate(onCopy, display)} />
+                <AdminIcon className={styles.copy} type="copy" onClick={this.showDisplayFormModal('copy', display)} />
               </Tooltip>
               <Popconfirm
                 title="确定删除？"
