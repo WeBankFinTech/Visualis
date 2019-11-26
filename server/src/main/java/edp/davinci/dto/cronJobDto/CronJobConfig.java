@@ -19,9 +19,11 @@
 
 package edp.davinci.dto.cronJobDto;
 
+import com.google.common.collect.Sets;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Objects;
 
 @Data
 public class CronJobConfig {
@@ -30,8 +32,41 @@ public class CronJobConfig {
     private String bcc;
     private String subject;
     private String type;
-    private String content;
-
-    private Integer imageWidth;
     private List<CronJobContent> contentList;
+    private String time_range;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CronJobConfig that = (CronJobConfig) o;
+        return Objects.equals(to, that.to) &&
+                Objects.equals(cc, that.cc) &&
+                Objects.equals(bcc, that.bcc) &&
+                Objects.equals(subject, that.subject) &&
+                Objects.equals(type, that.type) &&
+                Sets.difference(Sets.newHashSet(contentList), Sets.newHashSet(that.contentList)).isEmpty();
+    }
+
+    public boolean sameContent(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CronJobConfig that = (CronJobConfig) o;
+        for(CronJobContent content : contentList){
+            boolean foundSame = false;
+            for(CronJobContent thatContent : that.contentList){
+                if(content.equals(thatContent)){
+                    foundSame = true;
+                }
+            }
+            if(!foundSame){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean isFixedTime(){
+        return "Day".equals(time_range) || "Week".equals(time_range) || "Month".equals(time_range);
+    }
 }

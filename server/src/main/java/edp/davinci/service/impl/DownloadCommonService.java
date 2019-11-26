@@ -152,12 +152,8 @@ public class DownloadCommonService {
                     ViewExecuteParam executeParam = null;
                     if (!CollectionUtils.isEmpty(params)) {
                         try {
-                            executeParam = params.stream()
-                                    .filter(p -> null != p.getParam() && p.getId().equals(widget.getId())).findFirst()
-                                    .get().getParam();
-                        }
-                        catch (Exception e) {
-                            // ignore
+                            executeParam = params.stream().filter(p -> null != p.getParam() && p.getId().equals(widget.getId())).findFirst().get().getParam();
+                        } catch (Exception e) {
                         }
                     }
                     widgetList.add(new WidgetContext(widget, null, null, executeParam));

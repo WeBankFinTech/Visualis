@@ -36,7 +36,7 @@ import java.util.List;
 public interface SourceService extends CheckEntityService {
 
 
-    List<Source> getSources(Long projectId, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
+    List<Source> getSources(Long projectId, User user, String ticketId) throws NotFoundException, UnAuthorizedExecption, ServerException;
 
     Source createSource(SourceCreate sourceCreate, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
 
@@ -50,15 +50,15 @@ public interface SourceService extends CheckEntityService {
 
     Boolean dataUpload(Long sourceId, SourceDataUpload sourceDataUpload, MultipartFile file, User user, String type) throws NotFoundException, UnAuthorizedExecption, ServerException;
 
-    List<String> getSourceDbs(Long id, User user) throws NotFoundException, ServerException;
+    List<String> getSourceDbs(Long id, User user, String ticketId) throws NotFoundException, ServerException;
 
-    DBTables getSourceTables(Long id, String dbName, User user) throws NotFoundException;
+    DBTables getSourceTables(Long id, String dbName, User user, String ticketId) throws NotFoundException;
 
-    TableInfo getTableInfo(Long id, String dbName, String tableName, User user) throws NotFoundException;
+    TableInfo getTableInfo(Long id, String dbName, String tableName, User user, String ticketId) throws NotFoundException;
 
     SourceDetail getSourceDetail(Long id, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
 
     List<DatasourceType> getDatasources();
 
-    boolean reconnect(Long id, DbBaseInfo dbBaseInfo, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
+    boolean reconnect(Long id, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
 }

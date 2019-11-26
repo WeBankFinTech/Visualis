@@ -47,6 +47,22 @@ public class View extends RecordInfo<View> {
 
     private String config;
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Long getSourceId() {
+        return sourceId;
+    }
+
+    public void setSourceId(Long sourceId) {
+        this.sourceId = sourceId;
+    }
+
     @Override
     public String toString() {
         return "View{" +

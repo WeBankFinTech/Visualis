@@ -4,23 +4,21 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!--<parent>-->
+        <!--<artifactId>davinci-parent_3.01</artifactId>-->
+        <!--<groupId>edp.davinci</groupId>-->
+        <!--<version>0.3.1-SNAPSHOT</version>-->
+        <!--<relativePath>../pom.xml</relativePath>-->
+    <!--</parent>-->
+
     <parent>
-        <artifactId>davinci-parent_3.01</artifactId>
-        <groupId>edp.davinci</groupId>
-        <version>0.3.1-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
+        <artifactId>visualis</artifactId>
+        <groupId>com.webank.wedatasphere.dss</groupId>
+        <version>0.5.0</version>
     </parent>
 
-    <artifactId>davinci-assembly_3.0.1</artifactId>
+    <artifactId>visualis-assembly</artifactId>
     <packaging>pom</packaging>
-
-    <licenses>
-        <license>
-            <name>Apache License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
 
     <properties>
         <skipTests>true</skipTests>
@@ -33,8 +31,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>edp.davinci</groupId>
-            <artifactId>davinci-server_3.01</artifactId>
+            <groupId>com.webank.wedatasphere.dss</groupId>
+            <artifactId>visualis-server</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
@@ -73,6 +71,15 @@
                         </configuration>
                     </execution>
                 </executions>
+                <configuration>
+                    <skipAssembly>false</skipAssembly>
+                    <finalName>visualis-server</finalName>
+                    <appendAssemblyId>false</appendAssemblyId>
+                    <attach>false</attach>
+                    <descriptors>
+                        <descriptor>src/main/assembly/distribution.xml</descriptor>
+                    </descriptors>
+                </configuration>
             </plugin>
         </plugins>
     </build>

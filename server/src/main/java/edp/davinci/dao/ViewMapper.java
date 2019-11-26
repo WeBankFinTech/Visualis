@@ -41,14 +41,11 @@ public interface ViewMapper {
     @Select({"select id from `view` where project_id = #{projectId} and `name` = #{name}"})
     Long getByNameWithProjectId(@Param("name") String name, @Param("projectId") Long projectId);
 
-
     ViewWithProjectAndSource getViewWithProjectAndSourceById(@Param("id") Long id);
 
     ViewWithProjectAndSource getViewWithProjectAndSourceByWidgetId(@Param("widgetId") Long widgetId);
 
-
-
-    @Delete({"delete from `view` where id = #{id}"})
+    @Delete({"delete from view where id = #{id}"})
     int deleteById(Long id);
 
     @Select({"select * from `view` where id = #{id}"})

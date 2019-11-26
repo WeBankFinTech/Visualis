@@ -27,6 +27,7 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -46,7 +47,7 @@ public interface RelUserOrganizationMapper {
             "SELECT ruo.id, u.id AS 'user.id', ",
             "    IF(u.`name` is NULL,u.username,u.`name`) AS 'user.username', ",
             "    u.email, u.avatar AS 'user.avatar', ruo.role AS 'user.role'",
-            "FROM `user` u",
+            "FROM `linkis_user` u",
             "LEFT JOIN rel_user_organization ruo on ruo.user_id = u.id",
             "LEFT JOIN organization o on o.id = ruo.org_id",
             "WHERE ruo.org_id = #{orgId}"
@@ -69,7 +70,6 @@ public interface RelUserOrganizationMapper {
     int updateMemberRole(RelUserOrganization relUserOrganization);
 
     int insertBatch(@Param("set") Set<RelUserOrganization> set);
-
 
     int deleteBatch(@Param("set") Set<Long> set);
 

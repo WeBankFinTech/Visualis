@@ -22,7 +22,7 @@ package edp.davinci.core.enums;
 public enum CronJobMediaType {
     IMAGE("image"),
     EXCEL("excel"),
-    IMAGEANDEXCEL("imageAndExcel");
+    IMAGEANDEXCEL("Excel&Image");
 
     private String type;
 

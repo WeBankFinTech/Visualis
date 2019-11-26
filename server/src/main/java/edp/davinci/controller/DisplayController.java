@@ -20,23 +20,26 @@
 package edp.davinci.controller;
 
 import com.alibaba.druid.util.StringUtils;
+import com.google.common.collect.Iterables;
 import edp.core.annotation.CurrentUser;
+import edp.core.common.job.ScheduleService;
 import edp.davinci.common.controller.BaseController;
 import edp.davinci.core.common.Constants;
 import edp.davinci.core.common.ResultMap;
+import edp.davinci.dao.DisplayMapper;
+import edp.davinci.dao.ProjectMapper;
 import edp.davinci.dto.displayDto.*;
-import edp.davinci.model.Display;
-import edp.davinci.model.DisplaySlide;
-import edp.davinci.model.MemDisplaySlideWidget;
-import edp.davinci.model.User;
+import edp.davinci.model.*;
 import edp.davinci.service.DisplayService;
-import edp.davinci.service.DisplaySlideService;
+import edp.davinci.service.screenshot.ImageContent;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -44,8 +47,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import springfox.documentation.annotations.ApiIgnore;
 
+import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.List;
 
 @Api(value = "/displays", tags = "displays", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
@@ -59,7 +67,16 @@ public class DisplayController extends BaseController {
     private DisplayService displayService;
 
     @Autowired
-    private DisplaySlideService displaySlideService;
+    ScheduleService scheduleService;
+
+    //TODO not this layer, should be removed
+    @Autowired
+    DisplayMapper displayMapper;
+    @Autowired
+    ProjectMapper projectMapper;
+
+    @Value("${file.userfiles-path}")
+    private String fileBasePath;
 
     /**
      * 新建display
@@ -81,7 +98,12 @@ public class DisplayController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        Display display = displayService.createDisplay(displayInfo, user);
+        Display display;
+        if(displayInfo.getIsCopy()){
+            display = displayService.copyDisplay(displayInfo, user);
+        } else {
+            display = displayService.createDisplay(displayInfo, user);
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(display));
     }
 
@@ -169,7 +191,7 @@ public class DisplayController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        DisplaySlide displaySlide = displaySlideService.createDisplaySlide(displaySlideCreate, user);
+        DisplaySlide displaySlide = displayService.createDisplaySlide(displaySlideCreate, user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(displaySlide));
     }
 
@@ -205,7 +227,7 @@ public class DisplayController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        displaySlideService.updateDisplaySildes(displayId, displaySlides, user);
+        displayService.updateDisplaySildes(displayId, displaySlides, user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
     }
 
@@ -229,7 +251,7 @@ public class DisplayController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        displaySlideService.deleteDisplaySlide(slideId, user);
+        displayService.deleteDisplaySlide(slideId, user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
     }
 
@@ -285,7 +307,7 @@ public class DisplayController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        List<MemDisplaySlideWidget> memDisplaySlideWidgets = displaySlideService.addMemDisplaySlideWidgets(displayId, slideId, slideWidgetCreates, user);
+        List<MemDisplaySlideWidget> memDisplaySlideWidgets = displayService.addMemDisplaySlideWidgets(displayId, slideId, slideWidgetCreates, user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(memDisplaySlideWidgets));
     }
 
@@ -340,7 +362,7 @@ public class DisplayController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        displaySlideService.updateMemDisplaySlideWidgets(displayId, slideId, memDisplaySlideWidgets, user);
+        displayService.updateMemDisplaySlideWidgets(displayId, slideId, memDisplaySlideWidgets, user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
     }
 
@@ -373,7 +395,7 @@ public class DisplayController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        displaySlideService.updateMemDisplaySlideWidget(memDisplaySlideWidget, user);
+        displayService.updateMemDisplaySlideWidget(memDisplaySlideWidget, user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
     }
 
@@ -397,7 +419,7 @@ public class DisplayController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        displaySlideService.deleteMemDisplaySlideWidget(relationId, user);
+        displayService.deleteMemDisplaySlideWidget(relationId, user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
     }
 
@@ -441,7 +463,7 @@ public class DisplayController extends BaseController {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid Display id");
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
-        DisplayWithSlides displayWithSlides = displaySlideService.getDisplaySlideList(id, user);
+        DisplayWithSlides displayWithSlides = displayService.getDisplaySlideList(id, user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(displayWithSlides));
     }
 
@@ -472,7 +494,7 @@ public class DisplayController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        SlideWithMem displaySlideMem = displaySlideService.getDisplaySlideMem(displayId, slideId, user);
+        SlideWithMem displaySlideMem = displayService.getDisplaySlideMem(displayId, slideId, user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(displaySlideMem));
     }
 
@@ -509,7 +531,7 @@ public class DisplayController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        displaySlideService.deleteDisplaySlideWidgetList(displayId, slideId, ids, user);
+        displayService.deleteDisplaySlideWidgetList(displayId, slideId, ids, user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
     }
 
@@ -563,7 +585,7 @@ public class DisplayController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        String slideBGImage = displaySlideService.uploadSlideBGImage(slideId, file, user);
+        String slideBGImage = displayService.uploadSlideBGImage(slideId, file, user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(slideBGImage));
     }
 
@@ -593,7 +615,7 @@ public class DisplayController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        String bgImage = displaySlideService.uploadSlideSubWidgetBGImage(relationId, file, user);
+        String bgImage = displayService.uploadSlideSubWidgetBGImage(relationId, file, user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(bgImage));
     }
 
@@ -659,21 +681,41 @@ public class DisplayController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        List<Long> excludeRoles = displaySlideService.getSlideExecludeRoles(id);
+        List<Long> excludeRoles = displayService.getSlideExecludeRoles(id);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(excludeRoles));
     }
 
-    @ApiOperation(value = "copy a display", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @PostMapping(value = "/copy/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity copyDisplay(@PathVariable Long id,
-                                      @ApiIgnore @CurrentUser User user,
-                                      HttpServletRequest request) {
-        if (invalidId(id)) {
-            ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid id");
-            return ResponseEntity.status(resultMap.getCode()).body(resultMap);
+    @ApiOperation(value = "preview display")
+    @GetMapping(value = "/{id}/preview", produces = MediaType.IMAGE_PNG_VALUE)
+    @ResponseBody
+    public void previewDisplay(@PathVariable Long id,
+                                        @RequestParam(required = false) String username,
+                                        @ApiIgnore @CurrentUser User user,
+                                        HttpServletRequest request,
+                                        HttpServletResponse response) throws IOException {
+        Display display = displayMapper.getById(id);
+        Project project = projectMapper.getById(display.getProjectId());
+        if(!user.getId().equals(project.getUserId())){
+            response.setContentType(MediaType.TEXT_PLAIN_VALUE);
+            response.getWriter().write("You have no access to this display.");
+            return;
         }
 
-        Display displayCopy = displayService.copyDisplay(id, user);
-        return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(displayCopy));
+        FileInputStream inputStream = null;
+        try {
+            List<ImageContent> imageFiles = scheduleService.getPreviewImage(user.getId(), "display", id);
+            File imageFile = Iterables.getFirst(imageFiles, null).getImageFile();
+            inputStream = new FileInputStream(imageFile);
+            response.setContentType(MediaType.IMAGE_PNG_VALUE);
+            IOUtils.copy(inputStream, response.getOutputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
+            log.error(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error(e.getMessage());
+        } finally {
+            inputStream.close();
+        }
     }
 }

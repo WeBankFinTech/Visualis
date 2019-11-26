@@ -34,8 +34,8 @@ public class ProjectCreat {
 
     private String description;
 
-    @Min(value = 1L, message = "orgId cannot be EMPTY")
-    private Long orgId;
+    //@Min(value = 1L, message = "orgId cannot be EMPTY")
+    private Long orgId = -1L;
 
     private String pic;
 

@@ -2,7 +2,11 @@
  * <<
  *  Davinci
  *  ==
+<<<<<<< HEAD
  *  Copyright (C) 2016 - 2019 EDP
+=======
+ *  Copyright (C) 2016 - 2018 EDP
+>>>>>>> drawis
  *  ==
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -18,6 +22,7 @@
  */
 
 package edp.davinci.core.config;
+
 
 import edp.core.enums.HttpCodeEnum;
 import edp.core.exception.ForbiddenExecption;
@@ -90,5 +95,4 @@ public class RestExceptionHandler {
         log.error(e.getMessage());
         return new ResultMap(tokenUtils).failAndRefreshToken(request, HttpCodeEnum.FAIL).message(e.getMessage());
     }
-
 }

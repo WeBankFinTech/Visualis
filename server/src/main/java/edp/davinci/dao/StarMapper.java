@@ -55,14 +55,14 @@ public interface StarMapper {
 
 
     @Select({
-            "select p.*, u.id as 'createBy.id', IF(u.`name` is NULL,u.username,u.`name`) as 'createBy.username', u.avatar as 'createBy.avatar'  from project p left join user u on u.id = p.user_id ",
+            "select p.*, u.id as 'createBy.id', IF(u.`name` is NULL,u.username,u.`name`) as 'createBy.username', u.avatar as 'createBy.avatar'  from dss_project p left join linkis_user u on u.id = p.user_id ",
             "where p.id in (select target_id from star where target = #{target} and user_id = #{userId})"
     })
     List<ProjectWithCreateBy> getStarProjectListByUser(@Param("userId") Long userId, @Param("target") String target);
 
 
     @Select({
-            "select u.id, IF(u.`name` is NULL,u.username,u.`name`) as username, u.email, u.avatar, s.star_time from star s left join user u on u.id = s.user_id",
+            "select u.id, IF(u.`name` is NULL,u.username,u.`name`) as username, u.email, u.avatar, s.star_time from star s left join linkis_user u on u.id = s.user_id",
             "where s.target = #{target} and s.target_id = #{targetId}"
     })
     List<StarUser> getStarUserListByTarget(@Param("targetId") Long targetId, @Param("target") String target);
