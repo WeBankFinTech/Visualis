@@ -46,7 +46,7 @@ public class SystemSchedule {
     private CronJobMapper cronJobMapper;
 
     @Autowired
-    private QuartzHandler quartzHandler;
+    private QuartzUtils quartzUtils;
 
     @Autowired
     private RedisUtils redisUtils;
@@ -83,7 +83,7 @@ public class SystemSchedule {
         if (!CollectionUtils.isEmpty(jobs)) {
             for (CronJob job : jobs) {
                 try {
-                    quartzHandler.removeJob(job);
+                    quartzUtils.removeJob(job);
                 } catch (ServerException e) {
                 }
             }

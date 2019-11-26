@@ -21,9 +21,7 @@ package edp.davinci.service.impl;
 
 import com.alibaba.druid.util.StringUtils;
 import edp.core.enums.HttpCodeEnum;
-import edp.core.enums.MailContentTypeEnum;
 import edp.core.exception.ServerException;
-import edp.core.model.MailContent;
 import edp.core.utils.*;
 import edp.davinci.core.common.Constants;
 import edp.davinci.core.common.ResultMap;
@@ -78,7 +76,7 @@ public class UserServiceImpl implements UserService {
     private ServerUtils serverUtils;
 
 
-    @Autowired
+    //@Autowired
     private LdapService ldapService;
 
     /**
@@ -119,13 +117,22 @@ public class UserServiceImpl implements UserService {
 
         User user = new User();
         //密码加密
-        userRegist.setPassword(BCrypt.hashpw(userRegist.getPassword(), BCrypt.gensalt()));
+        //userRegist.setPassword(BCrypt.hashpw(userRegist.getPassword(), BCrypt.gensalt()));
         BeanUtils.copyProperties(userRegist, user);
         //添加用户
         int insert = userMapper.insert(user);
         if (insert > 0) {
             //添加成功，发送激活邮件
-            sendMail(user.getEmail(), user);
+            Map content = new HashMap<String, Object>();
+            content.put("username", user.getUsername());
+            content.put("host", serverUtils.getHost());
+            content.put("token", AESUtils.encrypt(tokenUtils.generateContinuousToken(user), null));
+
+            mailUtils.sendTemplateEmail(user.getEmail(),
+                    Constants.USER_ACTIVATE_EMAIL_SUBJECT,
+                    Constants.USER_ACTIVATE_EMAIL_TEMPLATE,
+                    content);
+
             return user;
         } else {
             log.info("regist fail: {}", userRegist.toString());
@@ -204,16 +211,11 @@ public class UserServiceImpl implements UserService {
      * @param keyword
      * @param user
      * @param orgId
-     * @param includeSelf
      * @return
      */
     @Override
-    public List<UserBaseInfo> getUsersByKeyword(String keyword, User user, Long orgId, Boolean includeSelf) {
+    public List<UserBaseInfo> getUsersByKeyword(String keyword, User user, Long orgId) {
         List<UserBaseInfo> users = userMapper.getUsersByKeyword(keyword, orgId);
-
-        if (includeSelf) {
-            return users;
-        }
 
         Iterator<UserBaseInfo> iterator = users.iterator();
         while (iterator.hasNext()) {
@@ -340,16 +342,11 @@ public class UserServiceImpl implements UserService {
         content.put("username", user.getUsername());
         content.put("host", serverUtils.getHost());
         content.put("token", AESUtils.encrypt(tokenUtils.generateContinuousToken(user), null));
+        mailUtils.sendTemplateEmail(user.getEmail(),
+                Constants.USER_ACTIVATE_EMAIL_SUBJECT,
+                Constants.USER_ACTIVATE_EMAIL_TEMPLATE,
+                content);
 
-        MailContent mailContent = MailContent.MailContentBuilder.builder()
-                .withSubject(Constants.USER_ACTIVATE_EMAIL_SUBJECT)
-                .withTo(user.getEmail())
-                .withMainContent(MailContentTypeEnum.TEMPLATE)
-                .withTemplate(Constants.USER_ACTIVATE_EMAIL_TEMPLATE)
-                .withTemplateContent(content)
-                .build();
-
-        mailUtils.sendMail(mailContent, null);
         return true;
     }
 

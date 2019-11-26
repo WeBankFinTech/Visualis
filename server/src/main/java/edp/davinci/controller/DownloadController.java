@@ -21,9 +21,7 @@ package edp.davinci.controller;
 
 import com.alibaba.druid.util.StringUtils;
 import edp.core.annotation.AuthIgnore;
-import edp.core.annotation.AuthShare;
 import edp.core.annotation.CurrentUser;
-import edp.core.utils.FileUtils;
 import edp.davinci.common.controller.BaseController;
 import edp.davinci.core.common.Constants;
 import edp.davinci.core.common.ResultMap;
@@ -40,7 +38,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.util.http.fileupload.util.Streams;
+import org.elasticsearch.common.io.Streams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -54,7 +52,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
@@ -95,15 +92,11 @@ public class DownloadController extends BaseController {
                                                 HttpServletRequest request,
                                                 HttpServletResponse response) {
         DownloadRecord record = downloadService.downloadById(id, token);
-        FileInputStream is = null;
         try {
             encodeFileName(request, response, record.getName() + FileTypeEnum.XLSX.getFormat());
-            is = new FileInputStream(new File(record.getPath()));
-            Streams.copy(is, response.getOutputStream(), true);
+            Streams.copy(new FileInputStream(new File(record.getPath())), response.getOutputStream());
         } catch (Exception e) {
             log.error("getDownloadRecordFile error,id=" + id + ",e=", e);
-        } finally {
-            FileUtils.closeCloseable(is);
         }
         return null;
     }
@@ -125,7 +118,7 @@ public class DownloadController extends BaseController {
 
     @ApiOperation(value = "submit share download")
     @PostMapping(value = "/share/submit/{type}/{uuid}/{dataToken:.*}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    @AuthShare
+    @AuthIgnore
     public ResponseEntity submitShareDownloadTask(@PathVariable(name = "type") String type,
                                                   @PathVariable(name = "uuid") String uuid,
                                                   @PathVariable(name = "dataToken") String dataToken,
@@ -148,7 +141,7 @@ public class DownloadController extends BaseController {
 
     @ApiOperation(value = "get share download record page")
     @GetMapping(value = "/share/page/{uuid}/{token:.*}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    @AuthShare
+    @AuthIgnore
     public ResponseEntity getShareDownloadRecordPage(@PathVariable(name = "uuid") String uuid,
                                                      @PathVariable(name = "token") String token,
                                                      @ApiIgnore @CurrentUser User user,
@@ -170,7 +163,7 @@ public class DownloadController extends BaseController {
 
     @ApiOperation(value = "get download record file")
     @GetMapping(value = "/share/record/file/{id}/{uuid}/{token:.*}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    @AuthShare
+    @AuthIgnore
     public ResponseEntity getShareDownloadRecordFile(@PathVariable(name = "id") String id,
                                                      @PathVariable(name = "uuid") String uuid,
                                                      @PathVariable(name = "token") String token,
@@ -183,15 +176,12 @@ public class DownloadController extends BaseController {
         }
 
         ShareDownloadRecord record = shareDownloadService.downloadById(id, uuid, token, user);
-        FileInputStream is = null;
+
         try {
             encodeFileName(request, response, record.getName() + FileTypeEnum.XLSX.getFormat());
-            is = new FileInputStream(new File(record.getPath()));
-            Streams.copy(is, response.getOutputStream(), true);
+            Streams.copy(new FileInputStream(new File(record.getPath())), response.getOutputStream());
         } catch (Exception e) {
             log.error("getDownloadRecordFile error,id=" + id + ",e=", e);
-        } finally {
-            FileUtils.closeCloseable(is);
         }
         return null;
     }
@@ -199,14 +189,14 @@ public class DownloadController extends BaseController {
 
     private void encodeFileName(HttpServletRequest request, HttpServletResponse response, String filename) throws UnsupportedEncodingException {
         response.setHeader("Content-Type", "application/force-download");
+        // firefox浏览器
         if (request.getHeader("User-Agent").toLowerCase().indexOf("firefox") > 0) {
-            // firefox浏览器
-            filename = new String(filename.getBytes(StandardCharsets.UTF_8), "ISO8859-1");
-        } else if (isIE(request)) {
+            filename = new String(filename.getBytes("UTF-8"), "ISO8859-1");
             //IE
+        } else if (isIE(request)) {
             filename = URLEncoder.encode(filename, "UTF-8");
         } else {
-            filename = new String(filename.getBytes(StandardCharsets.UTF_8), "ISO8859-1");
+            filename = new String(filename.getBytes("UTF-8"), "ISO8859-1");
         }
         response.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
     }

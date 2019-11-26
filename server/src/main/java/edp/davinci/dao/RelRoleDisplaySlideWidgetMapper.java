@@ -18,7 +18,6 @@
 
 package edp.davinci.dao;
 
-import edp.davinci.common.model.RelModelCopy;
 import edp.davinci.model.RelRoleDisplaySlideWidget;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Param;
@@ -75,5 +74,4 @@ public interface RelRoleDisplaySlideWidgetMapper {
     int deleteByProjectId(@Param("projectId") Long projectId);
 
 
-    int copyRoleSlideWidgetRelation(@Param("relSlideCopies") List<RelModelCopy> memCopies, @Param("userId") Long userId);
 }

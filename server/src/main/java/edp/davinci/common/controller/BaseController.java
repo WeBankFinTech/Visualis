@@ -20,6 +20,7 @@
 package edp.davinci.common.controller;
 
 import edp.core.utils.TokenUtils;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -29,10 +30,12 @@ public class BaseController {
     @Autowired
     public TokenUtils tokenUtils;
 
-    public boolean invalidId(Long value) {
-        if (null == value || value.longValue() < 1L) {
-            return true;
-        }
-        return false;
+    public boolean invalidId(String value) {
+        return StringUtils.isEmpty(value);
     }
+
+    public boolean invalidId(Long value){
+        return (null == value || value < 1L);
+    }
+
 }

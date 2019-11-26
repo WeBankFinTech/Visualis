@@ -25,5 +25,14 @@ import lombok.Data;
 
 @Data
 public class SourceWithProject extends Source {
+
     private Project project;
+    public void setSource(Source source){
+        this.setId(source.getId());
+        this.setConfig(source.getConfig());
+        this.setName(source.getName());
+        this.setDescription(source.getDescription());
+        this.setProjectId(source.getProjectId());
+        this.setType(source.getType());
+    }
 }

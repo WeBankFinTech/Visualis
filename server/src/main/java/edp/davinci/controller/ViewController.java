@@ -19,6 +19,7 @@
 
 package edp.davinci.controller;
 
+import com.webank.wedatasphere.dss.visualis.service.hive.HiveDBHelper;
 import edp.core.annotation.CurrentUser;
 import edp.core.model.Paginate;
 import edp.core.model.PaginateWithQueryColumns;
@@ -61,6 +62,8 @@ public class ViewController extends BaseController {
 
     @Autowired
     private DacChannelUtil dacChannelUtil;
+
+    private HiveDBHelper hiveDBHelper;
 
     /**
      * 获取view
@@ -192,6 +195,71 @@ public class ViewController extends BaseController {
         viewService.deleteView(id, user);
 
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
+
+
+        //TODO Hive related logic, need to be reconsidered
+//=======
+//        try {
+//            ResultMap resultMap = viewService.deleteView(id, user, request);
+//            return ResponseEntity.status(resultMap.getCode()).body(resultMap);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            log.error(e.getMessage());
+//            return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
+//        }
+//    }
+//
+//    /**
+//     * 获取数据库schema信息
+//     *
+//     * @param sourceId
+//     * @param user
+//     * @param request
+//     * @return
+//     */
+//    @ApiOperation(value = "get view data schema")
+//    @GetMapping("/database")
+//    public ResponseEntity getSourceSchema(@RequestParam String sourceId,
+//                                          @ApiIgnore @CurrentUser User user,
+//                                          HttpServletRequest request) {
+//        /*
+//         *如果sourceID是hive_ 开头的话，那么就是hive的数据库，否则就是jdbc的数据库
+//         * */
+//        if (StringUtils.isEmpty(sourceId)) {
+//            log.warn("sourceId is empty, can not get right source for user: {}", user);
+//            ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Empty source id");
+//            return ResponseEntity.status(resultMap.getCode()).body(resultMap);
+//        }
+//
+//        //update by johnnwang
+//        if (sourceId.startsWith(HiveDBHelper.HIVE_PREFIX)) {
+//            //deal hive source
+//            try {
+//                ResultMap resultMap = hiveDBHelper.getHiveSourceSchema(sourceId, user, request);
+//                return ResponseEntity.status(resultMap.getCode()).body(resultMap);
+//            } catch (final Exception e) {
+//                log.error("获取sourceId {} 的hive数据库表信息失败", sourceId, e);
+//                return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
+//            }
+//        } else if (VGUtils.getHiveDataSourceId() == Long.parseLong(sourceId)) {
+//            ResultMap resultMap = new ResultMap(tokenUtils).success();
+//            return ResponseEntity.status(resultMap.getCode()).body(resultMap);
+//        } else {
+//            Long longSourceId = Long.parseLong(sourceId);
+//            if (invalidId(longSourceId)) {
+//                ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Inavlid source id");
+//                return ResponseEntity.status(resultMap.getCode()).body(resultMap);
+//            }
+//            try {
+//                ResultMap resultMap = viewService.getSourceSchema(longSourceId, user, request);
+//                return ResponseEntity.status(resultMap.getCode()).body(resultMap);
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//                log.error(e.getMessage());
+//                return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
+//            }
+//        }
+//>>>>>>> drawis
     }
 
 

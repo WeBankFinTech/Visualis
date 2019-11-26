@@ -20,11 +20,12 @@
 
 
 <assembly>
-    <id>dist-beta.8</id>
+    <id>visualis-server</id>
     <formats>
         <format>zip</format>
     </formats>
-    <includeBaseDirectory>false</includeBaseDirectory>
+    <includeBaseDirectory>true</includeBaseDirectory>
+    <baseDirectory>visualis-server</baseDirectory>
 
     <fileSets>
         <fileSet>
@@ -36,14 +37,19 @@
         </fileSet>
         <fileSet>
             <directory>
-                ${project.parent.basedir}/config
+                ${project.parent.basedir}/conf
             </directory>
-            <outputDirectory>config</outputDirectory>
+            <outputDirectory>conf</outputDirectory>
             <includes>
-                <include>application.yml.example</include>
-                <include>datasource_driver.yml.example</include>
-                <include>logback.xml</include>
+                <include>*</include>
             </includes>
+        </fileSet>
+        <fileSet>
+            <directory>.</directory>
+            <excludes>
+                <exclude>*/**</exclude>
+            </excludes>
+            <outputDirectory>logs</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>
@@ -71,16 +77,15 @@
             </directory>
             <outputDirectory>logs</outputDirectory>
             <includes>
-                <include>sys</include>
-                <include>user</include>
+                <include>text</include>
             </includes>
         </fileSet>
-        <fileSet>
-            <directory>
-                ${project.parent.basedir}/davinci-ui
-            </directory>
-            <outputDirectory>davinci-ui</outputDirectory>
-        </fileSet>
+        <!--<fileSet>-->
+            <!--<directory>-->
+                <!--${project.parent.basedir}/davinci-ui-->
+            <!--</directory>-->
+            <!--<outputDirectory>davinci-ui</outputDirectory>-->
+        <!--</fileSet>-->
         <!--<fileSet>-->
             <!--<directory>-->
                 <!--${project.parent.basedir}/swagger-ui-->

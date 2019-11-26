@@ -28,7 +28,7 @@ import java.util.List;
 
 @Data
 public class ViewExecuteSql {
-    @Min(value = 1L, message = "Invalid Source Id")
+   /* @Min(value = 1L, message = "Invalid Source Id")*/
     private Long sourceId;
 
     @NotBlank(message = "sql cannot be EMPTY")

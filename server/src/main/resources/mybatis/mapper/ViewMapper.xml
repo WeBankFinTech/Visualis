@@ -124,7 +124,7 @@
                s.`project_id`  'source.projectId',
                s.`type`        'source.type'
         FROM `view` v
-                 LEFT JOIN project p on p.id = v.project_id
+                 LEFT JOIN dss_project p on p.id = v.project_id
                  LEFT JOIN source s on s.id = v.source_id
     </sql>
 

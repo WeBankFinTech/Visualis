@@ -34,6 +34,9 @@ public class CronJobBaseInfo {
     @NotBlank(message = "cron job name cannot be EMPTY")
     private String name;
 
+    @NotBlank(message = "cron job itsm no cannot be empty")
+    private String itsm;
+
     @Min(value = 1L, message = "Invalid project Id")
     private Long projectId;
 

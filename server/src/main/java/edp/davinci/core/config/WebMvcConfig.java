@@ -38,6 +38,8 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
+import scala.Boolean;
+import scala.math.BigDecimal;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -118,11 +120,15 @@ public class WebMvcConfig extends WebMvcConfigurationSupport {
         super.addArgumentResolvers(argumentResolvers);
     }
 
+    /**
+     * update by johnnwang：去掉过滤器
+     * @param registry
+     */
     @Override
     protected void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(loginRequiredInterceptor())
+        /*registry.addInterceptor(loginRequiredInterceptor())
                 .addPathPatterns(Constants.BASE_API_PATH + "/**")
-                .excludePathPatterns(Constants.BASE_API_PATH + "/login");
+                .excludePathPatterns(Constants.BASE_API_PATH + "/login");*/
 
         registry.addInterceptor(platformAuthInterceptor())
                 .addPathPatterns(Constants.AUTH_API_PATH + "/**");
@@ -165,6 +171,7 @@ public class WebMvcConfig extends WebMvcConfigurationSupport {
         //处理中文乱码问题
         List<MediaType> fastMediaTypes = new ArrayList<>();
         fastMediaTypes.add(MediaType.APPLICATION_JSON_UTF8);
+        fastMediaTypes.add(MediaType.IMAGE_PNG);
         fastConverter.setSupportedMediaTypes(fastMediaTypes);
         fastConverter.setFastJsonConfig(fastJsonConfig);
         converters.add(fastConverter);

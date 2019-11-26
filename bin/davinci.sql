@@ -5,32 +5,24 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- Table structure for cron_job
 -- ----------------------------
 DROP TABLE IF EXISTS `cron_job`;
-CREATE TABLE `cron_job`
-(
-    `id`              bigint(20)                          NOT NULL AUTO_INCREMENT,
-    `name`            varchar(45) COLLATE utf8_unicode_ci NOT NULL,
-    `project_id`      bigint(20)                          NOT NULL,
-    `job_type`        varchar(45) COLLATE utf8_unicode_ci NOT NULL,
-    `job_status`      varchar(10) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
-    `cron_expression` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
-    `start_date`      datetime                            NOT NULL,
-    `end_date`        datetime                            NOT NULL,
-    `config`          text COLLATE utf8_unicode_ci        NOT NULL,
-    `description`     varchar(255) COLLATE utf8_unicode_ci         DEFAULT NULL,
-    `exec_log`        text COLLATE utf8_unicode_ci,
-    `create_by`       bigint(20)                          NOT NULL,
-    `create_time`     timestamp                           NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `update_by`       varchar(20) COLLATE utf8_unicode_ci          DEFAULT NULL,
-    `update_time`     timestamp                           NULL     DEFAULT NULL,
-    `parent_id`       bigint(20)                                   DEFAULT NULL,
-    `full_parent_id`  varchar(255) COLLATE utf8_unicode_ci         DEFAULT NULL,
-    `is_folder`       tinyint(1)                                   DEFAULT NULL,
-    `index`           int(5)                                       DEFAULT NULL,
-    PRIMARY KEY (`id`) USING BTREE,
-    UNIQUE KEY `name_UNIQUE` (`name`) USING BTREE
-) ENGINE = MyISAM
-  DEFAULT CHARSET = utf8
-  COLLATE = utf8_unicode_ci;
+CREATE TABLE `cron_job` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `name` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
+  `project_id` bigint(20) NOT NULL,
+  `job_type` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
+  `job_status` varchar(10) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+  `cron_expression` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
+  `start_date` datetime NOT NULL,
+  `end_date` datetime NOT NULL,
+  `config` text COLLATE utf8_unicode_ci NOT NULL,
+  `description` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `exec_log` text COLLATE utf8_unicode_ci,
+  `create_by` bigint(20) NOT NULL,
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `update_time` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `name_UNIQUE` (`name`) USING BTREE
+) ENGINE=MyISAM AUTO_INCREMENT=13 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- ----------------------------
 -- Table structure for dashboard
@@ -216,7 +208,7 @@ CREATE TABLE `organization`
     `role_num`             int(20)               DEFAULT '0',
     `allow_create_project` tinyint(1)            DEFAULT '1',
     `member_permission`    smallint(1)  NOT NULL DEFAULT '0',
-    `create_time`          timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `create_time`          timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `create_by`            bigint(20)   NOT NULL DEFAULT '0',
     `update_time`          timestamp    NULL     DEFAULT NULL,
     `update_by`            bigint(20)            DEFAULT '0',
@@ -510,7 +502,7 @@ CREATE TABLE `user`
     `description` varchar(255)          DEFAULT NULL,
     `department`  varchar(255)          DEFAULT NULL,
     `avatar`      varchar(255)          DEFAULT NULL,
-    `create_time` timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `create_time` timestamp    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `create_by`   bigint(20)   NOT NULL DEFAULT '0',
     `update_time` timestamp    NOT NULL DEFAULT '1970-01-01 08:00:01',
     `update_by`   bigint(20)   NOT NULL DEFAULT '0',

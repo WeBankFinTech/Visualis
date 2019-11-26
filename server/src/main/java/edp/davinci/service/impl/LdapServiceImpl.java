@@ -49,7 +49,7 @@ import static org.springframework.ldap.query.LdapQueryBuilder.query;
 
 
 @Slf4j
-@Service("ldapService")
+//@Service("ldapService")
 public class LdapServiceImpl implements LdapService {
 
     @Autowired

@@ -235,7 +235,7 @@ public class TokenUtils {
                             token.trim())
                     .getBody();
         } catch (Exception e) {
-            log.warn(e.getMessage());
+            log.warn(e.getMessage(),e);
             claims = Jwts.parser()
                     .setSigningKey(SECRET)
                     .parseClaimsJws(token.startsWith(Consts.TOKEN_PREFIX) ?

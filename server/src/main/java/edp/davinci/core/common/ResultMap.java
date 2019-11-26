@@ -68,12 +68,12 @@ public class ResultMap extends HashMap<String, Object> {
     }
 
     public ResultMap successAndRefreshToken(HttpServletRequest request) {
-        String token = request.getHeader(Constants.TOKEN_HEADER_STRING);
+       // String token = request.getHeader(Constants.TOKEN_HEADER_STRING);
         this.code = HttpCodeEnum.OK.getCode();
         this.header = new HashMap<>();
         this.header.put("code", this.code);
         this.header.put("msg", "Success");
-        this.header.put("token", this.tokenUtils.refreshToken(token));
+        //this.header.put("token", this.tokenUtils.refreshToken(token));
         this.put("header", header);
         this.put("payload", EMPTY);
         return this;
@@ -134,6 +134,8 @@ public class ResultMap extends HashMap<String, Object> {
         this.header.put("msg", httpCodeEnum.getMessage());
 
         String token = request.getHeader(Constants.TOKEN_HEADER_STRING);
+
+        //TODO this is commented out in drawis version
         if (!StringUtils.isEmpty(token)) {
             this.header.put("token", this.tokenUtils.refreshToken(token));
         }

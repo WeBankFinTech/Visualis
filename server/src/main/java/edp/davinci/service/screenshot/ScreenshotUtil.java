@@ -20,6 +20,15 @@
 package edp.davinci.service.screenshot;
 
 import com.alibaba.druid.util.StringUtils;
+import com.webank.wedatasphere.dss.visualis.configuration.CommonConfig;
+import com.webank.wedatasphere.linkis.adapt.LinkisUtils;
+import edp.core.utils.ServerUtils;
+import edp.davinci.dao.CronJobMapper;
+import edp.davinci.dao.UserMapper;
+import edp.davinci.model.CronJob;
+import edp.davinci.model.User;
+import edp.davinci.service.CronJobService;
+import edp.davinci.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -30,12 +39,14 @@ import org.openqa.selenium.phantomjs.PhantomJSDriverService;
 import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.*;
 
@@ -57,6 +68,12 @@ public class ScreenshotUtil {
     @Value("${screenshot.timeout_second:600}")
     private int timeOutSecond;
 
+    @Autowired
+    ServerUtils serverUtils;
+
+    @Autowired
+    private UserMapper userMapper;
+
 
     private static final int DEFAULT_SCREENSHOT_WIDTH = 1920;
     private static final int DEFAULT_SCREENSHOT_HEIGHT = 1080;
@@ -64,7 +81,8 @@ public class ScreenshotUtil {
     private static final ExecutorService executorService = Executors.newFixedThreadPool(8);
 
 
-    public void screenshot(long jobId, List<ImageContent> imageContents, Integer imageWidth) {
+    public void screenshot(long userId, long jobId, List<ImageContent> imageContents) {
+        User user = userMapper.getById(userId);
         log.info("start screenshot for job: {}", jobId);
         try {
             CountDownLatch countDownLatch = new CountDownLatch(imageContents.size());
@@ -72,7 +90,7 @@ public class ScreenshotUtil {
             imageContents.forEach(content -> futures.add(executorService.submit(() -> {
                 log.info("thread for screenshot start, type: {}, id: {}", content.getDesc(), content.getCId());
                 try {
-                    File image = doScreenshot(content.getUrl(), imageWidth);
+                    File image = doScreenshot(content.getUrl(), user.username);
                     content.setContent(image);
                 } catch (Exception e) {
                     log.error("error ScreenshotUtil.screenshot, ", e);
@@ -101,11 +119,17 @@ public class ScreenshotUtil {
     }
 
 
-    private File doScreenshot(String url, Integer imageWidth) throws Exception {
-        WebDriver driver = generateWebDriver(imageWidth);
+    private File doScreenshot(String url, String username) throws Exception {
+        WebDriver driver = generateWebDriver();
+        Cookie ticketCookie = new Cookie(CommonConfig.TICKET_ID_STRING().getValue(), LinkisUtils.getUserTicketKV(username)._2, serverUtils.getAccessAddress(), "/", new Date(System.currentTimeMillis() + 1000*60*60*24*30L));
+        Cookie innerCookie = new Cookie("dataworkcloud_inner_request", "true", serverUtils.getAccessAddress(), "/", new Date(System.currentTimeMillis() + 1000*60*60*24*30L));
+        driver.manage().addCookie(ticketCookie);
+        driver.manage().addCookie(innerCookie);
+
         driver.get(url);
         log.info("getting... {}", url);
         try {
+
             WebDriverWait wait = new WebDriverWait(driver, timeOutSecond);
 
             ExpectedCondition<WebElement> ConditionOfSign = ExpectedConditions.presenceOfElementLocated(By.id("headlessBrowserRenderSign"));
@@ -117,7 +141,7 @@ public class ScreenshotUtil {
             String widthVal = driver.findElement(By.id("width")).getAttribute("value");
             String heightVal = driver.findElement(By.id("height")).getAttribute("value");
 
-            int width = imageWidth != null && imageWidth > 0 ? imageWidth : DEFAULT_SCREENSHOT_WIDTH;
+            int width = DEFAULT_SCREENSHOT_WIDTH;
             int height = DEFAULT_SCREENSHOT_HEIGHT;
 
             if (!StringUtils.isEmpty(widthVal)) {
@@ -139,7 +163,7 @@ public class ScreenshotUtil {
         return null;
     }
 
-    private WebDriver generateWebDriver(Integer imageWidth) throws ExecutionException {
+    private WebDriver generateWebDriver() throws ExecutionException {
         WebDriver driver;
         BrowserEnum browserEnum = valueOf(DEFAULT_BROWSER);
         switch (browserEnum) {
@@ -155,8 +179,7 @@ public class ScreenshotUtil {
 
         driver.manage().timeouts().implicitlyWait(3, TimeUnit.MINUTES);
         driver.manage().window().maximize();
-        driver.manage().window().setSize(new Dimension(imageWidth != null && imageWidth > 0 ? imageWidth : DEFAULT_SCREENSHOT_WIDTH, DEFAULT_SCREENSHOT_HEIGHT));
-        
+        driver.manage().window().setSize(new Dimension(DEFAULT_SCREENSHOT_WIDTH, DEFAULT_SCREENSHOT_HEIGHT));
         return driver;
     }
 
@@ -165,7 +188,7 @@ public class ScreenshotUtil {
         File file = new File(CHROME_DRIVER_PATH);
         if (!file.canExecute()) {
             if (!file.setExecutable(true)) {
-                throw new ExecutionException(new Exception(CHROME_DRIVER_PATH + " is not executable!"));
+                throw new ExecutionException(new Exception(CHROME_DRIVER_PATH + "is not executable!"));
             }
         }
 

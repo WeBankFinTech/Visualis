@@ -29,10 +29,4 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class DavinciServerApplication {
 
-    public static void main(String[] args) {
-        System.setProperty("mail.mime.splitlongparameters", "false");
-        SpringApplication.run(DavinciServerApplication.class, args);
-    }
-
 }
-
