@@ -33,6 +33,8 @@ import java.util.List;
 
 public interface ProjectService extends CheckEntityService {
 
+    boolean isExist(String name, Long id, Long orgId, Long userId);
+
     ProjectInfo getProjectInfo(Long id, User user);
 
     List<ProjectInfo> getProjects(User user) throws ServerException;

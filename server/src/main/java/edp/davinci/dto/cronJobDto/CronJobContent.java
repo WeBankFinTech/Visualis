@@ -21,19 +21,19 @@ package edp.davinci.dto.cronJobDto;
 
 import lombok.Data;
 
-import java.util.List;
+import java.util.Objects;
 
 @Data
 public class CronJobContent {
     private String contentType;
     private Long id;
-    private List<Long> items;
 
-    public CronJobContent(String contentType, Long id) {
-        this.contentType = contentType;
-        this.id = id;
-    }
-
-    public CronJobContent() {
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CronJobContent that = (CronJobContent) o;
+        return Objects.equals(contentType, that.contentType) &&
+                Objects.equals(id, that.id);
     }
 }

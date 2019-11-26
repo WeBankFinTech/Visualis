@@ -41,7 +41,13 @@ public interface ViewService extends CheckEntityService {
 
     boolean updateView(ViewUpdate viewUpdate, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
 
+
     boolean deleteView(Long id, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
+//=======
+//    ResultMap updateViewColumns(ViewUpdate viewUpdate, User user, HttpServletRequest request);
+//
+//    ResultMap deleteView(Long id, User user, HttpServletRequest request);
+//>>>>>>> drawis
 
     PaginateWithQueryColumns executeSql(ViewExecuteSql executeSql, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
 
@@ -50,6 +56,9 @@ public interface ViewService extends CheckEntityService {
     PaginateWithQueryColumns getResultDataList(boolean isMaintainer, ViewWithSource viewWithSource, ViewExecuteParam executeParam, User user) throws ServerException, SQLException;
 
     List<Map<String, Object>> getDistinctValue(Long id, DistinctParam param, User user) throws NotFoundException, ServerException, UnAuthorizedExecption;
+//=======
+//    List<Map<String, Object>> getResultDataList(ViewWithProjectAndSource viewWithProjectAndSource, ViewExecuteParam executeParam, User user,String sharedUser) throws ServerException;
+//>>>>>>> drawis
 
     List getDistinctValueData(boolean isMaintainer, ViewWithSource viewWithSource, DistinctParam param, User user) throws ServerException;
 

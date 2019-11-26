@@ -30,6 +30,7 @@ import java.util.List;
 @NotNull(message = "view cannot be null")
 public class ViewCreate {
 
+
     @NotBlank(message = "view name cannot be EMPTY")
     private String name;
 
@@ -50,4 +51,16 @@ public class ViewCreate {
     private String config;
 
     private List<RelRoleViewDto> roles;
+
+    public ViewCreate(){}
+
+    public ViewCreate(String name,String description,Long projectId,Long sourceId,String sql,String model,String config){
+        this.name = name;
+        this.description = description;
+        this.projectId = projectId;
+        this.sourceId = sourceId;
+        this.sql = sql;
+        this.model = model;
+        this.config = config;
+    }
 }

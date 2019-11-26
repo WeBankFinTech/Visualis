@@ -49,10 +49,8 @@ public interface DashboardMapper {
     @Select({"select * from dashboard where id = #{id}"})
     Dashboard getById(@Param("id") Long id);
 
-
     @Select({"select id from dashboard where dashboard_portal_id = #{portalId} and `name` = #{name}"})
     Long getByNameWithPortalId(@Param("name") String name, @Param("portalId") Long portalId);
-
 
     @Update({
             "update dashboard",
@@ -100,7 +98,7 @@ public interface DashboardMapper {
             "	p.visibility 'p.visibility'",
             "from dashboard d ",
             "LEFT JOIN dashboard_portal dp on dp.id = d.dashboard_portal_id",
-            "LEFT JOIN project p on p.id = dp.project_id",
+            "LEFT JOIN dss_project p on p.id = dp.project_id",
             "WHERE d.id = #{dashboardId}"
     })
     DashboardWithPortal getDashboardWithPortalAndProject(@Param("dashboardId") Long dashboardId);
@@ -111,7 +109,7 @@ public interface DashboardMapper {
     @Select({"select full_parent_id from dashboard where id = #{id}"})
     String getFullParentId(Long id);
 
-    List<Dashboard> queryByParentIds(@Param("parentIds") Set<Long> parentIds);
+    Map<Long, String> getFullParentIds(@Param("parentIds") Set<Long> parentIds);
 
     Set<Long> getIdSetByIds(@Param("set") Set<Long> dashboardIds);
 
@@ -120,8 +118,4 @@ public interface DashboardMapper {
             "select * from dashboard where type = 1 and FIND_IN_SET(#{id},full_parent_Id)"
     })
     List<Dashboard> getSubDashboardById(@Param("id") Long id);
-
-    Set<Dashboard> queryDashboardsByIds(@Param("set") Set<Long> dashboardIds);
-
-    Set<Dashboard> queryByPortals(@Param("set") Set<Long> portalIds);
 }

@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 public class RedisUtils {
 
     @Autowired(required = false)
-    @Qualifier("initRedisTemplate")
+    @Qualifier("InitRedisTemplate")
     private RedisTemplate<String, Object> redisTemplate;
 
     @Value("${spring.redis.isEnable:false}")
@@ -92,7 +92,6 @@ public class RedisUtils {
     }
 
     public void bLpush(String key, Object value) {
-        // TODO need to fix dead store
         ListOperations<String, Object> list = redisTemplate.opsForList();
     }
 

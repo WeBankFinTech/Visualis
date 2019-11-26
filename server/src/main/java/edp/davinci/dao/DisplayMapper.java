@@ -40,7 +40,6 @@ public interface DisplayMapper {
     @Delete({"delete from display where project_id = #{projectId}"})
     int deleteByProject(@Param("projectId") Long projectId);
 
-
     @Select({"select * from display where id = #{id}"})
     Display getById(@Param("id") Long id);
 
@@ -71,7 +70,7 @@ public interface DisplayMapper {
             "	p.visibility 'p.visibility'",
             "FROM",
             "	display d ",
-            "	LEFT JOIN project p on d.project_id = p.id",
+            "	LEFT JOIN dss_project p on d.project_id = p.id",
             "WHERE d.id = #{id}",
     })
     DisplayWithProject getDisplayWithProjectById(@Param("id") Long id);
@@ -81,10 +80,4 @@ public interface DisplayMapper {
 
     @Select({"select id from display where project_id = #{projectId} and `name` = #{name}"})
     Long getByNameWithProjectId(@Param("name") String name, @Param("projectId") Long projectId);
-
-    @Select({
-            "SELECT max(REPLACE(`name`,'${name}','')) ",
-            "FROM display WHERE project_id = #{projectId} and `name` REGEXP CONCAT('${name}','[0-9]+')"
-    })
-    Integer selectMaxNameOrderByName(@Param("name") String name, @Param("projectId") Long projectId);
 }

@@ -20,11 +20,15 @@
 package edp.davinci.controller;
 
 import edp.core.annotation.AuthIgnore;
+import edp.core.annotation.CurrentUser;
 import edp.core.enums.HttpCodeEnum;
+import edp.core.utils.TokenUtils;
 import edp.davinci.core.common.Constants;
 import edp.davinci.core.common.ResultMap;
 import edp.davinci.core.enums.CheckEntityEnum;
+import edp.davinci.model.User;
 import edp.davinci.service.CheckService;
+import edp.davinci.service.ProjectService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -37,6 +41,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import springfox.documentation.annotations.ApiIgnore;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -49,6 +54,12 @@ public class CheckController {
 
     @Autowired
     private CheckService checkService;
+
+    @Autowired
+    private ProjectService projectService;
+
+    @Autowired
+    private TokenUtils tokenUtils;
 
     /**
      * 检查用户是否存在
@@ -101,11 +112,18 @@ public class CheckController {
      */
     @ApiOperation(value = "check unique project name")
     @GetMapping("/project")
-    public ResponseEntity checkProject(@RequestParam String name,
+    public ResponseEntity checkProject(@ApiIgnore @CurrentUser User user,
+                                       @RequestParam String name,
                                        @RequestParam(required = false) Long id,
-                                       @RequestParam Long orgId, HttpServletRequest request) {
+                                       @RequestParam(required = false) Long orgId, HttpServletRequest request) {
         try {
-            ResultMap resultMap = checkService.checkSource(name, id, CheckEntityEnum.PROJECT, orgId, request);
+            ResultMap resultMap = new ResultMap(tokenUtils);
+            if(projectService.isExist(name, id, orgId, user.getId())){
+                resultMap = resultMap.failAndRefreshToken(request)
+                        .message("the current project name is already taken");
+            } else {
+                resultMap = resultMap.successAndRefreshToken(request);
+            }
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         } catch (Exception e) {
             e.printStackTrace();

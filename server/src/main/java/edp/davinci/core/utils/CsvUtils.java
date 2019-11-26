@@ -23,7 +23,6 @@ import com.alibaba.druid.util.StringUtils;
 import edp.core.exception.ServerException;
 import edp.core.model.QueryColumn;
 import edp.core.utils.CollectionUtils;
-import edp.core.utils.FileUtils;
 import edp.core.utils.SqlUtils;
 import edp.davinci.core.enums.FileTypeEnum;
 import edp.davinci.core.enums.SqlColumnEnum;
@@ -98,12 +97,26 @@ public class CsvUtils {
                 dataUploadEntity.setValues(values);
             }
 
+
+            csvParser.close();
+            reader.close();
+
         } catch (Exception e) {
             e.printStackTrace();
             throw new ServerException(e.getMessage());
         } finally {
-            FileUtils.closeCloseable(csvParser);
-            FileUtils.closeCloseable(reader);
+            try {
+                if (null != csvParser) {
+                    csvParser.close();
+                }
+
+                if (null != reader) {
+                    reader.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new ServerException(e.getMessage());
+            }
         }
 
         return dataUploadEntity;
@@ -181,22 +194,17 @@ public class CsvUtils {
                 e.printStackTrace();
                 throw new ServerException(e.getMessage());
             } finally {
-                flushFlushable(csvPrinter);
-                flushFlushable(fileWriter);
-                FileUtils.closeCloseable(csvPrinter);
-                FileUtils.closeCloseable(fileWriter);
+                try {
+                    csvPrinter.flush();
+                    fileWriter.flush();
+                    fileWriter.close();
+                    csvPrinter.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    throw new ServerException(e.getMessage());
+                }
             }
         }
         return csvFullName;
-    }
-
-    private static void flushFlushable(Flushable f) {
-        if (f != null) {
-            try {
-                f.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
     }
 }

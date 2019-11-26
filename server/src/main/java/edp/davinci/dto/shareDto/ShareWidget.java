@@ -31,5 +31,4 @@ public class ShareWidget {
     private String dataToken;
     private String model;
     private Long viewId;
-    private String variable;
 }

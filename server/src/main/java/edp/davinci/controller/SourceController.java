@@ -20,6 +20,7 @@
 package edp.davinci.controller;
 
 import com.alibaba.druid.util.StringUtils;
+import com.webank.wedatasphere.dss.visualis.utils.HttpUtils;
 import edp.core.annotation.CurrentUser;
 import edp.core.model.DBTables;
 import edp.core.model.TableInfo;
@@ -76,7 +77,7 @@ public class SourceController extends BaseController {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid project id");
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
-        List<Source> sources = sourceService.getSources(projectId, user);
+        List<Source> sources = sourceService.getSources(projectId, user, HttpUtils.getUserTicketId(request));
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(sources));
     }
 
@@ -215,7 +216,6 @@ public class SourceController extends BaseController {
      * 释放重连
      *
      * @param id
-     * @param dbBaseInfo
      * @param user
      * @param request
      * @return
@@ -223,10 +223,9 @@ public class SourceController extends BaseController {
     @ApiOperation(value = "release and reconnect", consumes = MediaType.APPLICATION_JSON_VALUE)
     @PostMapping(value = "/reconnect/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity reconnect(@PathVariable Long id,
-                                    @RequestBody DbBaseInfo dbBaseInfo,
                                     @ApiIgnore @CurrentUser User user,
                                     HttpServletRequest request) {
-        sourceService.reconnect(id, dbBaseInfo, user);
+        sourceService.reconnect(id, user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
     }
 
@@ -322,7 +321,7 @@ public class SourceController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        List<String> dbs = sourceService.getSourceDbs(id, user);
+        List<String> dbs = sourceService.getSourceDbs(id, user, HttpUtils.getUserTicketId(request));
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(new SourceCatalogInfo(id, dbs)));
     }
 
@@ -346,7 +345,7 @@ public class SourceController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        DBTables dbTables = sourceService.getSourceTables(id, dbName, user);
+        DBTables dbTables = sourceService.getSourceTables(id, dbName, user, HttpUtils.getUserTicketId(request));
         SourceDBInfo dbTableInfo = new SourceDBInfo();
         dbTableInfo.setSourceId(id);
         BeanUtils.copyProperties(dbTables, dbTableInfo);
@@ -379,7 +378,7 @@ public class SourceController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        TableInfo tableInfo = sourceService.getTableInfo(id, dbName, tableName, user);
+        TableInfo tableInfo = sourceService.getTableInfo(id, dbName, tableName, user, HttpUtils.getUserTicketId(request));
 
         SourceTableInfo sourceTableInfo = new SourceTableInfo();
         sourceTableInfo.setSourceId(id);

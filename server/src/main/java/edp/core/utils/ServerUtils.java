@@ -39,6 +39,9 @@ public class ServerUtils {
     @Value("${server.port}")
     private String port;
 
+    @Value("${server.url:}")
+    private String serverUrl;
+
     @Value("${server.servlet.context-path:}")
     private String contextPath;
 
@@ -52,7 +55,6 @@ public class ServerUtils {
     private String basePath;
 
     public String getHost() {
-
         String pro = protocol.trim().toLowerCase();
         String accAddress = StringUtils.isEmpty(accessAddress) ? address : accessAddress;
         String accPort = StringUtils.isEmpty(accessPort) ? port : accessPort;
@@ -72,7 +74,7 @@ public class ServerUtils {
         }
 
         if (!StringUtils.isEmpty(contextPath)) {
-            contextPath = contextPath.replaceAll(Consts.SLASH, EMPTY);
+            contextPath.replaceAll(Consts.SLASH, EMPTY);
             sb.append(Consts.SLASH);
             sb.append(contextPath);
         }
@@ -86,5 +88,17 @@ public class ServerUtils {
 
     public String getBasePath() {
         return basePath.replaceAll("/", File.separator).replaceAll(File.separator + "{2,}", File.separator);
+    }
+
+    public String getServerUrl() {
+        return  serverUrl;
+    }
+
+    public String getAccessAddress() {
+        return accessAddress;
+    }
+
+    public String getAccessPort() {
+        return accessPort;
     }
 }

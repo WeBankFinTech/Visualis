@@ -86,7 +86,7 @@ GROUP BY <groups:{group|<if(keywordPrefix && keywordSuffix)><keywordPrefix><grou
 <endif>
 <endif>
 <if(orders)>
-ORDER BY <orders:{order|<if(order)><order.column> <order.direction><endif>}; separator=", ">
+ORDER BY <orders:{order|<if(order)><if(keywordPrefix && keywordSuffix)><keywordPrefix><order.column><keywordSuffix><else><order.column><endif> <order.direction><endif>}; separator=",">
 <endif>
 <endif>
 >>

@@ -2,7 +2,11 @@
  * <<
  *  Davinci
  *  ==
+<<<<<<< HEAD
  *  Copyright (C) 2016 - 2019 EDP
+=======
+ *  Copyright (C) 2016 - 2018 EDP
+>>>>>>> drawis
  *  ==
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,6 +25,7 @@ package edp.core.model;
 
 import lombok.Data;
 
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,5 +36,10 @@ public class Paginate<T> implements Serializable {
     private int pageNo = -1;
     private int pageSize = -1;
     private long totalCount = -1;
+
     private List<T> resultList = new ArrayList<T>();
+
+    public void setResultList(List<T> resultList) {
+        this.resultList = resultList;
+    }
 }

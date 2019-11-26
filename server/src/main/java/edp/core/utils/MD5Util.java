@@ -35,7 +35,7 @@ public class MD5Util {
      * @return
      */
     public static String getMD5(String src, boolean isUpper, Integer bit) {
-        String md5 = "";
+        String md5 = new String();
         try {
             // 创建加密对象
             MessageDigest md = MessageDigest.getInstance("md5");

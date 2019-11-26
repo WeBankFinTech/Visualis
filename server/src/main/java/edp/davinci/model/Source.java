@@ -21,16 +21,12 @@ package edp.davinci.model;
 
 
 import com.alibaba.druid.util.StringUtils;
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.annotation.JSONField;
 import edp.core.model.BaseSource;
-import edp.core.model.Dict;
 import edp.core.utils.SourceUtils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.List;
 
 import static edp.core.consts.Consts.JDBC_DATASOURCE_DEFAULT_VERSION;
 
@@ -49,6 +45,14 @@ public class Source extends BaseSource {
 
     @JSONField(serialize = false)
     private String config;
+
+    public String getConfig() {
+        return config;
+    }
+
+    public void setConfig(String config) {
+        this.config = config;
+    }
 
     /**
      * 从config中获取jdbcUrl
@@ -162,27 +166,6 @@ public class Source extends BaseSource {
     }
 
     @JSONField(serialize = false)
-    public List<Dict> getProperties() {
-        if (null == config) {
-            return null;
-        }
-        List<Dict> dicts = null;
-        try {
-            JSONObject configObject = JSONObject.parseObject(this.config);
-            if (configObject != null && configObject.containsKey("properties")) {
-                JSONArray jsonArray = configObject.getJSONArray("properties");
-                if (jsonArray != null && !jsonArray.isEmpty()) {
-                    dicts = jsonArray.toJavaList(Dict.class);
-                }
-            }
-        } catch (Exception e) {
-            log.error("get jdbc properties from source config, {}", e.getMessage());
-        }
-        return dicts;
-    }
-
-
-    @JSONField(serialize = false)
     public String getConfigParams() {
         String params = null;
         if (null == config) {
@@ -208,5 +191,4 @@ public class Source extends BaseSource {
                 ", config='" + config + '\'' +
                 '}';
     }
-
 }

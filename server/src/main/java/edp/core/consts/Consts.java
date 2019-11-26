@@ -31,8 +31,6 @@ public class Consts {
 
     public static final String SLASH = "/";
 
-    public static final String DOUBLE_SLASH = "//";
-
     public static final String SPACE = " ";
 
     public static final String EMPTY = "";
@@ -70,6 +68,10 @@ public class Consts {
     public static final String SQUARE_BRACKET_START = "[";
 
     public static final String SQUARE_BRACKET_END = "]";
+
+    public static final String BIG_BRACKET_START = "{";
+
+    public static final String BIG_BRACKET_END = "}";
 
 
     public static final char ASSIGNMENT_CHAR = '=';
@@ -131,8 +133,6 @@ public class Consts {
 
     public static final String SCHEDULE_JOB_DATA_KEY = "scheduleJobs";
 
-    public static final String DEFAULT_COPY_SUFFIX = "_COPY";
-
     /**
      * 常用图片格式
      */
@@ -149,6 +149,7 @@ public class Consts {
     /**
      * 敏感sql操作
      */
+    // TODO should not be so much, need to be configurable
     public static final String REG_SENSITIVE_SQL = "drop\\s|alter\\s|grant\\s|insert\\s|replace\\s|delete\\s|truncate\\s|update\\s|remove\\s";
     public static final Pattern PATTERN_SENSITIVE_SQL = Pattern.compile(REG_SENSITIVE_SQL);
 

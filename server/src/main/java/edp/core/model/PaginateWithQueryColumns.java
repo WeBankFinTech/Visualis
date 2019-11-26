@@ -27,4 +27,8 @@ import java.util.Map;
 @Data
 public class PaginateWithQueryColumns extends Paginate<Map<String, Object>> {
     List<QueryColumn> columns;
+
+    public void setColumns(List<QueryColumn> columns) {
+        this.columns = columns;
+    }
 }

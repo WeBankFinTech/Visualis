@@ -73,7 +73,7 @@ public interface DashboardPortalMapper {
             "	p.visibility 'p.visibility'",
             "FROM",
             "	dashboard_portal dp ",
-            "	LEFT JOIN project p on p.id = dp.project_id",
+            "	LEFT JOIN dss_project p on p.id = dp.project_id",
             "WHERE dp.id = #{id}",
     })
     PortalWithProject getPortalWithProjectById(@Param("id") Long id);
