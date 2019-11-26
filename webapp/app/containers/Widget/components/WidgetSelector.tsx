@@ -1,6 +1,8 @@
 import * as React from 'react'
 import * as classnames from 'classnames'
 import { iconMapping } from './util'
+import { message } from 'antd';
+import { MAX_LAYER_COUNT } from 'app/globalConstants'
 
 import { Icon, Row, Col, Checkbox, Pagination, Input } from 'antd'
 const Search = Input.Search
@@ -9,6 +11,7 @@ const styles = require('../Widget.less')
 interface IWidgetSelectorProps {
   className: any
   widgets: any[]
+  layers: any[]
   multiple: boolean
   widgetsSelected: any[]
   onWidgetsSelect: (widgets) => void
@@ -98,6 +101,7 @@ export class WidgetSelector extends React.Component<IWidgetSelectorProps, IWidge
   }
 
   private onWidgetSelect = (w) => (e) => {
+    const tempLay = this.props.layers
     const {
       multiple,
       onWidgetsSelect
@@ -106,13 +110,18 @@ export class WidgetSelector extends React.Component<IWidgetSelectorProps, IWidge
     let newWidgetsSelected
 
     if (!multiple) {
+      // 如果勾选框不是多选
       newWidgetsSelected = [w]
     } else {
       const {
         widgetsSelected
       } = this.props
+      // 看当前点击的这个widget是否已经被选中了
       const idx = widgetsSelected.findIndex((ws) => ws.id === w.id)
       newWidgetsSelected = [...widgetsSelected]
+      // 如果idx是-1，说明当前widget还未被选中
+      // 再选多一个widget时，进行判断，当前已选widget数+总图层数，是否大于等于MAX_LAYER_COUNT了
+      if (idx < 0 && tempLay && newWidgetsSelected && tempLay.length + newWidgetsSelected.length >= MAX_LAYER_COUNT) return message.warning(`当前最多只支持添加${MAX_LAYER_COUNT}个图层！`, 5);
       idx < 0 ? newWidgetsSelected.push(w) : newWidgetsSelected.splice(idx, 1)
       if (widgetsSelected.length <= 0 && this.state.showSelected) {
         this.setState({ showSelected: false })

@@ -37,7 +37,8 @@ function BodyCell (props: IBodyCellProps) {
   const { format, config, cellVal, cellValRange, ...rest } = props
   const cellCssStyle = getBodyCellStyle(config, cellVal, cellValRange)
   if (format) {
-    const formattedVal = getFormattedValue(cellVal, format)
+    let formattedVal = getFormattedValue(cellVal, format)
+    if (config && config.showAsPercent) formattedVal = (formattedVal * 100).toFixed(2) + '%'
     return (
       <td style={cellCssStyle} {...rest}>{formattedVal}</td>
     )

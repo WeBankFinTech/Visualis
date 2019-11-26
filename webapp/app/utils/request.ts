@@ -24,6 +24,9 @@ axios.defaults.validateStatus = function (status) {
   return status < 400
 }
 
+// 设置全局超时时间为60min
+axios.defaults.timeout = 1000 * 60 * 60
+
 function parseJSON (response: AxiosResponse) {
   return response.data
 }

@@ -23,6 +23,7 @@ import {
   LOGGED,
   LOGIN_ERROR,
   LOGOUT,
+  SET_LOGIN_USER,
   GET_LOGIN_USER,
   GET_LOGIN_USER_ERROR,
   SHOW_NAVIGATOR,
@@ -51,6 +52,9 @@ import {
   INITIATE_DOWNLOAD_TASK_SUCCESS,
   INITIATE_DOWNLOAD_TASK_FAILURE
 } from './constants'
+import { promiseActionCreator } from '../../utils/reduxPromisation'
+
+export const setLoginUser = promiseActionCreator(SET_LOGIN_USER, ['user'])
 
 export function login (username, password, resolve) {
   return {

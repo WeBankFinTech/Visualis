@@ -23,18 +23,16 @@ import {
   makeSelectCurrentProject
 } from './selectors'
 
-import { FieldSortTypes } from 'containers/Widget/components/Config/Sort'
-import { widgetDimensionMigrationRecorder } from 'utils/migrationRecorders'
+import config, { env } from '../../globalConfig'
 
 import { hideNavigator } from 'containers/App/actions'
 import { ViewActions } from 'containers/View/actions'
 const { loadViewDataFromVizItem } = ViewActions // @TODO global filter in Display Preview
 import DisplayActions from './actions'
-import LayerItem from './components/LayerItem'
 
 const styles = require('./Display.less')
-import { IWidgetConfig, RenderType } from 'containers/Widget/components/Widget'
-import { decodeMetricName } from 'containers/Widget/components/util'
+import { Spin } from 'antd'
+import { RenderType } from 'containers/Widget/components/Widget'
 import { IQueryConditions, IDataRequestParams } from 'containers/Dashboard/Grid'
 import { IFormedViews } from 'containers/View/types'
 import { statistic } from 'utils/statistic/statistic.dv'
@@ -78,18 +76,25 @@ interface IPreviewProps {
 }
 
 interface IPreviewStates {
-  scale: [number, number]
+  scale: [number, number],
+  spinning: boolean
 }
 
 export class Preview extends React.Component<IPreviewProps, IPreviewStates> {
 
-  private charts: object = {}
 
   public constructor (props) {
     super(props)
     this.state = {
-      scale: [1, 1]
+      scale: [1, 1],
+      spinning: true
     }
+  }
+
+  private picOnload() {
+    this.setState({
+      spinning: false
+    })
   }
 
   public componentWillMount () {
@@ -195,204 +200,6 @@ export class Preview extends React.Component<IPreviewProps, IPreviewStates> {
 
   private statisticFirstVisit: any
 
-  private getChartData = (renderType: RenderType, itemId: number, widgetId: number, queryConditions?: Partial<IQueryConditions>) => {
-    const {
-      currentLayersInfo,
-      widgets,
-      onLoadViewDataFromVizItem
-    } = this.props
-
-    const widget = widgets.find((w) => w.id === widgetId)
-    const widgetConfig: IWidgetConfig = JSON.parse(widget.config)
-    const { cols, rows, metrics, secondaryMetrics, filters, color, label, size, xAxis, tip, orders, cache, expired } = widgetConfig
-    const updatedCols = cols.map((col) => widgetDimensionMigrationRecorder(col))
-    const updatedRows = rows.map((row) => widgetDimensionMigrationRecorder(row))
-    const customOrders = updatedCols.concat(updatedRows)
-      .filter(({ sort }) => sort && sort.sortType === FieldSortTypes.Custom)
-      .map(({ name, sort }) => ({ name, list: sort[FieldSortTypes.Custom].sortList }))
-
-    const cachedQueryConditions = currentLayersInfo[itemId].queryConditions
-
-    let tempFilters
-    let linkageFilters
-    let globalFilters
-    let tempOrders
-    let variables
-    let linkageVariables
-    let globalVariables
-    let pagination
-    let nativeQuery
-
-    if (queryConditions) {
-      tempFilters = queryConditions.tempFilters !== void 0 ? queryConditions.tempFilters : cachedQueryConditions.tempFilters
-      linkageFilters = queryConditions.linkageFilters !== void 0 ? queryConditions.linkageFilters : cachedQueryConditions.linkageFilters
-      globalFilters = queryConditions.globalFilters !== void 0 ? queryConditions.globalFilters : cachedQueryConditions.globalFilters
-      tempOrders = queryConditions.orders !== void 0 ? queryConditions.orders : cachedQueryConditions.orders
-      variables = queryConditions.variables || cachedQueryConditions.variables
-      linkageVariables = queryConditions.linkageVariables || cachedQueryConditions.linkageVariables
-      globalVariables = queryConditions.globalVariables || cachedQueryConditions.globalVariables
-      pagination = queryConditions.pagination || cachedQueryConditions.pagination
-      nativeQuery = queryConditions.nativeQuery || cachedQueryConditions.nativeQuery
-    } else {
-      tempFilters = cachedQueryConditions.tempFilters
-      linkageFilters = cachedQueryConditions.linkageFilters
-      globalFilters = cachedQueryConditions.globalFilters
-      tempOrders = cachedQueryConditions.orders
-      variables = cachedQueryConditions.variables
-      linkageVariables = cachedQueryConditions.linkageVariables
-      globalVariables = cachedQueryConditions.globalVariables
-      pagination = cachedQueryConditions.pagination
-      nativeQuery = cachedQueryConditions.nativeQuery
-    }
-
-    let groups = cols.concat(rows).filter((g) => g.name !== '指标名称').map((g) => g.name)
-    let aggregators =  metrics.map((m) => ({
-      column: decodeMetricName(m.name),
-      func: m.agg
-    }))
-
-    if (secondaryMetrics && secondaryMetrics.length) {
-      aggregators = aggregators.concat(secondaryMetrics.map((second) => ({
-        column: decodeMetricName(second.name),
-        func: second.agg
-      })))
-    }
-
-    if (color) {
-      groups = groups.concat(color.items.map((c) => c.name))
-    }
-    if (label) {
-      groups = groups.concat(label.items
-        .filter((l) => l.type === 'category')
-        .map((l) => l.name))
-      aggregators = aggregators.concat(label.items
-        .filter((l) => l.type === 'value')
-        .map((l) => ({
-          column: decodeMetricName(l.name),
-          func: l.agg
-        })))
-    }
-    if (size) {
-      aggregators = aggregators.concat(size.items
-        .map((s) => ({
-          column: decodeMetricName(s.name),
-          func: s.agg
-        })))
-    }
-    if (xAxis) {
-      aggregators = aggregators.concat(xAxis.items
-        .map((l) => ({
-          column: decodeMetricName(l.name),
-          func: l.agg
-        })))
-    }
-    if (tip) {
-      aggregators = aggregators.concat(tip.items
-        .map((t) => ({
-          column: decodeMetricName(t.name),
-          func: t.agg
-        })))
-    }
-
-    const requestParamsFilters = filters.reduce((a, b) => {
-      return a.concat(b.config.sqlModel)
-    }, [])
-
-    const requestParams = {
-      groups,
-      aggregators,
-      filters: requestParamsFilters,
-      tempFilters,
-      linkageFilters,
-      globalFilters,
-      variables,
-      linkageVariables,
-      globalVariables,
-      orders,
-      cache,
-      expired,
-      flush: renderType === 'flush',
-      pagination,
-      nativeQuery,
-      customOrders
-    }
-
-    if (tempOrders) {
-      requestParams.orders = requestParams.orders.concat(tempOrders)
-    }
-
-    onLoadViewDataFromVizItem(
-      renderType,
-      itemId,
-      widget.viewId,
-      requestParams
-    )
-  }
-
-  private getPreviewStyle = (slideParams) => {
-    const { scaleMode } = slideParams
-    const previewStyle: React.CSSProperties = {}
-    switch (scaleMode) {
-      case 'scaleWidth':
-        previewStyle.overflowY = 'auto'
-        break
-      case 'scaleHeight':
-        previewStyle.overflowX = 'auto'
-        break
-      case 'noScale':
-        previewStyle.overflow = 'auto'
-        break
-      case 'scaleFull':
-      default:
-        break
-    }
-    return previewStyle
-  }
-
-  private getSlideStyle = (slideParams, scale: [number, number]) => {
-    const {
-      width,
-      height,
-      scaleMode,
-      backgroundColor,
-      backgroundImage
-    } = slideParams
-
-    let slideStyle: React.CSSProperties
-
-    const { clientWidth, clientHeight } = document.body
-    const [scaleX, scaleY] = scale
-
-    let translateX = (scaleX - 1) / 2
-    let translateY = (scaleY - 1) / 2
-    translateX += Math.max(0, (clientWidth - scaleX * width) / (2 * width))
-    translateY += Math.max(0, (clientHeight - scaleY * height) / (2 * height))
-
-    const translate = `translate(${translateX * 100}%, ${translateY * 100}%)`
-
-    slideStyle  = {
-      overflow: 'visible',
-      width,
-      height,
-      transform: `${translate} scale(${scaleX}, ${scaleY})`
-    }
-
-    let backgroundStyle: React.CSSProperties | CSSStyleDeclaration = slideStyle
-    if (scaleMode === 'scaleWidth' && screen.width <= 1024) {
-      backgroundStyle = document.body.style
-    }
-    backgroundStyle.backgroundSize = 'cover'
-
-    if (backgroundColor) {
-      const rgb = backgroundColor.join()
-      backgroundStyle.backgroundColor = `rgba(${rgb})`
-    }
-    if (backgroundImage) {
-      backgroundStyle.backgroundImage = `url("${backgroundImage}")`
-    }
-    return slideStyle
-  }
-
   private onVisibilityChanged (event) {
     const flag = event.target.webkitHidden
     if (flag) {
@@ -425,52 +232,22 @@ export class Preview extends React.Component<IPreviewProps, IPreviewStates> {
   }
 
   public render () {
+    const {spinning} = this.state;
     const {
-      widgets,
-      views,
-      formedViews,
-      currentDisplay,
-      currentSlide,
-      currentLayers,
-      currentLayersInfo } = this.props
-    if (!currentDisplay) { return null }
-
-    const { scale } = this.state
-    const slideParams = JSON.parse(currentSlide.config).slideParams
-    const previewStyle = this.getPreviewStyle(slideParams)
-    const slideStyle = this.getSlideStyle(slideParams, scale)
-    const layerItems =  Array.isArray(widgets) ? currentLayers.map((layer) => {
-      const widget = widgets.find((w) => w.id === layer.widgetId)
-      const model = widget && formedViews[widget.viewId].model
-      const layerId = layer.id
-
-      const { polling, frequency } = JSON.parse(layer.params)
-      const { datasource, loading, interactId, rendered, renderType } = currentLayersInfo[layerId]
-
-      return (
-        <LayerItem
-          key={layer.id}
-          ref={(f) => this[`layerId_${layer.id}`]}
-          pure={true}
-          layer={layer}
-          itemId={layerId}
-          widget={widget}
-          model={model}
-          datasource={datasource}
-          loading={loading}
-          polling={polling}
-          frequency={frequency}
-          interactId={interactId}
-          rendered={rendered}
-          renderType={renderType}
-          onGetChartData={this.getChartData}
-        />
-      )
-    }) : null
+      params } = this.props
+    const displayId = +params.displayId
+    const dashboardId = +params.dashboardId
+    let host = `${config[env].host}`
+    if (displayId) {
+      host += `/displays/${displayId}/preview`
+    } else {
+      host += `/dashboard/${dashboardId}/preview`
+    }
     return (
-      <div className={styles.preview} style={previewStyle}>
-        <div className={styles.board} style={slideStyle}>
-          {layerItems}
+      <div className={styles.preview}>
+        <Spin className={styles.preivewLoading} spinning={spinning} size="large"/>
+        <div className={styles.previewImgWrapper}>
+          <img src={host} onLoad={() => {this.picOnload()}}/>
         </div>
       </div>
     )

@@ -44,7 +44,7 @@
         "name": "实际尺寸",
         "value": "noScale"
       }],
-      "default": "scaleWidth"
+      "default": "noScale"
     }]
   }, {
     "name": "image",

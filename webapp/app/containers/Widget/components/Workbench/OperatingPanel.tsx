@@ -1167,6 +1167,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     } else {
       this.props.onViewSelect(viewId)
     }
+    sessionStorage.setItem('viewId', viewId.toString());
   }
 
   private filterView: SelectProps['filterOption'] = (input, option) =>

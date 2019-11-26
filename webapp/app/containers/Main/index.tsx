@@ -24,8 +24,9 @@ import { createStructuredSelector } from 'reselect'
 
 import Navigator from 'components/Navigator'
 
-import { logged, logout, getLoginUser, loadDownloadList } from '../App/actions'
+import { logged, logout, getLoginUser, setLoginUser, loadDownloadList } from '../App/actions'
 import { makeSelectLogged, makeSelectNavigator } from '../App/selectors'
+import { promiseDispatcher } from '../../utils/reduxPromisation'
 import checkLogin from 'utils/checkLogin'
 import { setToken } from 'utils/request'
 import { DOWNLOAD_LIST_POLLING_FREQUENCY } from 'app/globalConstants'
@@ -38,8 +39,9 @@ interface IMainProps {
   router: any
   logged: boolean
   navigator: boolean
-  onLogged: (user) => void
+  onLogged: () => void
   onLogout: () => void
+  onSetLoginUser: (user: object) => any
   onGetLoginUser: (resolve: () => void) => any
   onLoadDownloadList: () => void
 }
@@ -58,6 +60,10 @@ export class Main extends React.Component<IMainProps, {}> {
     }
   }
 
+  public componentWillReceiveProps () {
+    if (location.hash.includes('projects?withHeader=true')) sessionStorage.setItem('withHeader', 'true')
+  }
+
   private checkTokenLink = () => {
     const {
       router,
@@ -66,36 +72,42 @@ export class Main extends React.Component<IMainProps, {}> {
 
     const qs = this.getQs()
     const token = qs['token']
+    const dashboard = qs['dashboard']
     // TODO allow take other parameters
     // const dashboard = qs['dashboard']
-
     if (token) {
       setToken(token)
+      localStorage.setItem('TOKEN', token)
+      localStorage.setItem('TOKEN_EXPIRE', `${new Date().getTime() + 3600000}`)
       onGetLoginUser(() => {
-        router.replace('/projects')
-        // if (dashboard) {
-        //   router.replace(`/project/${this.props.params.pid}/dashboard/${dashboard}`)
-        // } else {
-
-        // }
+        if (dashboard) {
+          //router.replace(`/report/dashboard/${dashboard}`)
+          router.replace(`/project/${this.props.params.pid}/dashboard/${dashboard}`)
+        } else {
+          //router.replace('/report')
+          router.replace('/projects')
+        }
       })
-      this.initPolling()
+      // this.initPolling()
     } else {
       this.checkNormalLogin()
     }
   }
 
   private checkNormalLogin = () => {
-    if (checkLogin()) {
-      const token = localStorage.getItem('TOKEN')
-      const loginUser = localStorage.getItem('loginUser')
-      setToken(token)
-      this.props.onLogged(JSON.parse(loginUser))
-      statistic.sendPrevDurationRecord()
-      this.initPolling()
-    } else {
-      this.props.router.replace('/login')
-    }
+    const loginUser = localStorage.getItem('loginUser')
+    this.props.onLogged()
+    this.props.onSetLoginUser(JSON.parse(loginUser))
+    // if (checkLogin()) {
+    //   const token = localStorage.getItem('TOKEN')
+    //   const loginUser = localStorage.getItem('loginUser')
+    //   setToken(token)
+    //   this.props.onLogged(JSON.parse(loginUser))
+    //   statistic.sendPrevDurationRecord()
+    //   this.initPolling()
+    // } else {
+    //   this.props.router.replace('/login')
+    // }
   }
 
   private getQs = () => {
@@ -129,14 +141,15 @@ export class Main extends React.Component<IMainProps, {}> {
 
   public render () {
     const { logged, navigator, children } = this.props
-
     return logged
       ? (
         <div className={styles.container}>
-          <Navigator
+          {sessionStorage.getItem('withHeader') ?
+            <Navigator
             show={navigator}
             onLogout={this.logout}
-          />
+          /> : null
+          }
           {children}
         </div>
       )
@@ -153,8 +166,10 @@ const mapStateToProps = createStructuredSelector({
 
 export function mapDispatchToProps (dispatch) {
   return {
-    onLogged: (user) => dispatch(logged(user)),
+    onLogged: () => promiseDispatcher(dispatch, logged),
+    // onLogged: () => dispatch(logged(user)),
     onLogout: () => dispatch(logout()),
+    onSetLoginUser: (user) => promiseDispatcher(dispatch, setLoginUser, user),
     onGetLoginUser: (resolve) => dispatch(getLoginUser(resolve)),
     onLoadDownloadList: () => dispatch(loadDownloadList())
   }
