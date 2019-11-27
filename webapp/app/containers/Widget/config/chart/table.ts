@@ -47,7 +47,8 @@ const table: IChartInfo = {
       leftFixedColumns: [],
       rightFixedColumns: [],
       headerFixed: true,
-      autoMergeCell: true,
+      // 图表驱动-表格 自动合并相同内容 默认为关闭
+      autoMergeCell: false,
       bordered: true,
       size: 'default',
       withPaging: true,
