@@ -21,7 +21,8 @@
 export const envName = {
   sit: 'sit',
   production: 'production',
-  development: 'dev'
+  development: 'dev',
+  sandbox: 'sandbox'
 }
 export const env = envName[process.env.NODE_ENV]
 
@@ -40,5 +41,10 @@ export default {
     host: '/api/rest_s/v1/visualis',
     shareHost: '/dws/visualis/share.html',
     iframeUrl: '/dws/visualis/#',
+  },
+  sandbox: {
+    host: '/dws/dss/api/rest_s/v1/vangogh',
+    shareHost: '/dws/dss/dws/vg/share.html',
+    iframeUrl: '/dws/dss/dws/vg/#',
   }
 }
