@@ -1818,7 +1818,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
                 </Row>
               </div>
             </div>
-            <div className={styles.paneBlock}>
+            {/* <div className={styles.paneBlock}>
               <h4>自动加载数据</h4>
               <div className={styles.blockBody}>
                 <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
@@ -1830,7 +1830,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
                   </Col>
                 </Row>
               </div>
-            </div>
+            </div> */}
           </div>
         )
         break
