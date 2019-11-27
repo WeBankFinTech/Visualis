@@ -362,7 +362,7 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
           </div>
         </div> */}
         <div className={styles.paneBlock}>
-          <h4>大小</h4>
+          <h4>表格尺寸</h4>
           <div className={styles.blockBody}>
             <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
               <Col span={24}>
@@ -388,7 +388,7 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
             </Row>
           </div>
         </div>
-        <div className={styles.paneBlock}>
+        {/* <div className={styles.paneBlock}>
           <h4>分页</h4>
           <div className={styles.blockBody}>
             <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
@@ -411,8 +411,8 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
                 </Col>}
             </Row>
           </div>
-        </div>
-        <div className={styles.paneBlock}>
+        </div> */}
+        {/* <div className={styles.paneBlock}>
           <h4>使用原始数据</h4>
           <div className={styles.blockBody}>
             <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
@@ -424,7 +424,7 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
               </Col>
             </Row>
           </div>
-        </div>
+        </div> */}
         <React.Suspense fallback={null}>
           <HeaderConfigModal
             visible={headerConfigModalVisible}
