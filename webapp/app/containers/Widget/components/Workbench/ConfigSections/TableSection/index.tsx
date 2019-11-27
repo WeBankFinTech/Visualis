@@ -327,7 +327,7 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
             </Row>
           </div>
         </div>
-        <div className={styles.paneBlock}>
+        {/* <div className={styles.paneBlock}>
           <h4>左固定列</h4>
           <div className={styles.blockBody}>
             <Row gutter={8} type="flex" align="middle" className={styles.rowBlock}>
@@ -343,8 +343,8 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
               </Col>
             </Row>
           </div>
-        </div>
-        <div className={styles.paneBlock}>
+        </div> */}
+        {/* <div className={styles.paneBlock}>
           <h4>右固定列</h4>
           <div className={styles.blockBody}>
             <Row gutter={8} type="flex" align="middle" className={styles.rowBlock}>
@@ -360,7 +360,7 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
               </Col>
             </Row>
           </div>
-        </div>
+        </div> */}
         <div className={styles.paneBlock}>
           <h4>大小</h4>
           <div className={styles.blockBody}>
