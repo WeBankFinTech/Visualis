@@ -65,6 +65,7 @@ interface IDisplayProps extends RouteComponentProps<{}, {}> {
   layersInfo: {
     [key: string]: {
       datasource: {
+        columns: any[]
         pageNo: number
         pageSize: number
         resultList: any[]
@@ -125,8 +126,14 @@ export class Display extends React.Component<IDisplayProps, IDisplayStates> {
     if (layersInfo && slide) {
       if (Object.values(layersInfo)
       .filter((info) => {
-        // !![]也是true，经过了这一步说明info.datasource不为undefined（非widget时，如标签、时间器等的datasource就为undefined）
-        return !!info.datasource
+        // 一共有 4 种情况，其中phantomRenderSign需要等3、4的loading都变成false才生成
+        // 1、非widget的其他如标签等 datasource为undefined，loading从始至终都是false
+        // 2、一个全空的widget 指标维度什么都没选，接口返回的payload为""，datasource是{resultList: []}，loading不会从true变为false
+        // 3、一个只有表头没有数据的widget，接口返回的payload不为""，是个对象，payload中columns数组不为空resultList为[]，datasource是{columns: Array(不为空), resultList: []}，loading会从true变为false
+        // 4、一个数据完整的widget，datasource是{columns: Array(不为空), resultList: (不为空)}
+
+        // info.datasource.columns为不为空的数组时，才是phantomRenderSign需要等待的widget
+        return !!info.datasource && Array.isArray(info.datasource.columns) && info.datasource.columns.length
       })
       .every((info) => { 
         // 这里不应该加 ‘&& !!info.datasource.length’，不然有数据为空的图表的时候，会无法生成phantomRenderSign
