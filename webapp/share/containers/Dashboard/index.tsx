@@ -274,12 +274,8 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
     }
     if (currentItemsInfo) {
       if (Object.values(currentItemsInfo)
-      .filter((info) => {
-        // !![]也是true，经过了这一步说明info.datasource不为undefined（非widget时，如标签、时间器等的datasource就为undefined）
-        return !!info.datasource
-      })
-      .every((info) => { 
-        // 这里不应该加 ‘&& !!info.datasource.length’，不然有数据为空的图表的时候，会无法生成phantomRenderSign
+      .every((info) => {
+        // 在dashboard中，无论widget有没有数据，也即无论是LOAD_SHARE_RESULTSET_SUCCESS还是LOAD_SHARE_RESULTSET_FAILURE，所以也不用管返回的数据payload是不是为""，只要加载完，loading全都会变成false，所以phantomRenderSign等所有变成false了再生成就好
         return info.loading === false 
        })) {
         // FIXME
