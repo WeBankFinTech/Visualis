@@ -1,3 +1,5 @@
+![DSS](images/visualis.png)
+====
 
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
@@ -63,7 +65,7 @@ Click to [Quick start]()
 
 ## Architecture
 
-![Viusalis Architecture](images/en_US/readme/architecture.png)
+![Viusalis Architecture](images/architecture.png)
 
 ## Documents
 
