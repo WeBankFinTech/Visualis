@@ -245,7 +245,7 @@ export class Widget extends React.Component<
     }
 
     const waterMaskProps = {
-      text: "由DataSphere Studio生成，仅供内部参考，严禁对外分享-${username}",
+      text: `由DataSphere Studio生成，仅供内部参考，严禁对外分享-${username}`,
     }
 
     return (
