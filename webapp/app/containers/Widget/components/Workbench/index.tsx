@@ -169,11 +169,19 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
 
   public componentDidMount () {
     this.props.onHideNavigator()
+    const routeParams = this.getParams();
+    const isWaterMask = routeParams[1] ? routeParams[1].split('=')[1] : '';
+    if (isWaterMask) {
+      localStorage.setItem('isWaterMask', isWaterMask);
+    }
   }
 
   public componentWillReceiveProps (nextProps: IWorkbenchProps) {
     const { views, currentWidget } = nextProps
     const viewId = sessionStorage.getItem('viewId');
+    // 水印相关的逻辑
+    // const params = this.getParams();
+    // const viewId = params[0] ? params[0].split('=')[1] : '';
     // 说明此时是直接在url里加上了?viewId=${viewId}，要自动选中该view，只有第一次进入的时候要，所以this.state.selectedViewId当时应该为null
     if(views && views.length && viewId && !this.state.selectedViewId) {
       this.setState({ selectedViewId: Number(viewId) }, () => this.viewSelect(Number(viewId)))

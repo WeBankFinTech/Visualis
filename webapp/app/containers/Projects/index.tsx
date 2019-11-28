@@ -161,6 +161,15 @@ export class Projects extends React.PureComponent<IProjectsProps, IProjectsState
     // historyStack.init()
   }
 
+  public componentDidMount () {
+    const search = location.hash.split('?')[1] || '';
+    const params = search.split('&');
+    const isWaterMaster =params[0] ? params[0].split('=')[1] : 0;
+    if (isWaterMaster) {
+      localStorage.setItem('isWaterMask', isWaterMaster)
+    }
+  }
+
   public componentWillReceiveProps (nextProps) {
     // if (nextProps.loginUser !== this.props.loginUser) {
     //   historyBrowser.init()
