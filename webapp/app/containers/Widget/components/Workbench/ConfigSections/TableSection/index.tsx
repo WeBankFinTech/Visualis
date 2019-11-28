@@ -11,7 +11,7 @@ import {
   TableCellStyleTypes, DefaultTableCellStyle } from 'containers/Widget/components/Config/Table'
 import { pageSizeOptions } from './constants'
 
-import { Icon, Row, Col, Select, Radio, Checkbox, Modal } from 'antd'
+import { Icon, Row, Col, Select, Radio, Checkbox, Modal, message } from 'antd'
 const { Option } = Select
 const RadioGroup = Radio.Group
 const RadioButton = Radio.Button
@@ -188,9 +188,10 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
   private deleteHeaderConfig = () => {
     const { onChange } = this.props
     Modal.confirm({
-      title: '确定恢复到初始设置？',
+      title: '确定将表头设置恢复到初始状态？',
       onOk: () => {
         onChange('headerConfig', [])
+        message.success('已将表头设置恢复到初始状态')
       }
     })
   }
@@ -225,9 +226,10 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
   private deleteColumnConfig = () => {
     const { onChange } = this.props
     Modal.confirm({
-      title: '确定恢复到初始设置？',
+      title: '确定将表格数据设置恢复到初始状态？',
       onOk: () => {
         onChange('columnsConfig', [])
+        message.success('已将表格数据设置恢复到初始状态')
       }
     })
   }
