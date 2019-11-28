@@ -3,6 +3,8 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
+[English](README.md) | 中文
+
 ## 简介
 
 Visualis是一个基于宜信的开源项目[Davinci](https://github.com/edp963/davinci)开发的数据可视化BI工具。现已被集成到数据应用开发门户[DataSphere Studio](https://github.com/WeBankFinTech/DataSphereStudio)中。
@@ -69,11 +71,11 @@ Visualis与DataSphere Studio的数据开发、工作流调度和数据质量校�
 
 ## 文档
 
-[单独部署文档]()
+[单独部署文档](visualis_docs/zh_CN/Visualis_deploy_doc_cn.md)
 
-[快速对接DSS和Linkis]()
+[快速对接DSS和Linkis](visualis_docs/zh_CN/Visualis_deploy_doc_cn.md)
 
-[Visualis与Davinci的区别]()
+[Visualis与Davinci的区别](visualis_docs/zh_CN/Visualis_Davinci_difference_cn.md)
 
 ## 交流贡献
 
