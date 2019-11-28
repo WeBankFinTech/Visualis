@@ -23,6 +23,7 @@ import com.alibaba.druid.util.StringUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.collect.Maps;
 import edp.core.consts.Consts;
 import edp.core.exception.NotFoundException;
 import com.webank.wedatasphere.linkis.server.BDPJettyServerHelper;
@@ -756,10 +757,12 @@ public class ViewServiceImpl implements ViewService {
             if(view != null){
                 querySource = querySource + "/" + view.getName();
             }
+            HashMap<String ,String> sourceMap = Maps.newHashMap();
+            sourceMap.put("fileName", querySource);
             if (isFirst){
-                 ujesJob = new UJESJob(script,user.getName(),UJESJob.SCALA_TYPE(), querySource );
+                 ujesJob = new UJESJob(script,user.getName(),UJESJob.SCALA_TYPE(), sourceMap );
             } else {
-               ujesJob = new UJESJob(script,user.getName(),UJESJob.SQL_TYPE(), querySource);
+               ujesJob = new UJESJob(script,user.getName(),UJESJob.SQL_TYPE(), sourceMap);
             }
             return  BDPJettyServerHelper.gson().toJson(ujesJob);
         }

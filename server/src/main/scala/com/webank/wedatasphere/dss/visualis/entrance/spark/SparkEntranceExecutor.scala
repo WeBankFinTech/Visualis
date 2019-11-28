@@ -61,6 +61,8 @@ import org.springframework.context.annotation.Scope
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.web.context.WebApplicationContext
 
+import scala.collection.JavaConversions
+
 
 /**
   * Created by shanhuang on 2019/1/23.
@@ -107,7 +109,7 @@ class SparkEntranceExecutor extends SqlUtils with Logging{
     val input = read[UJESJob](sql)
     var code =input.code
     val jobType = input.jobType
-    val source = input.source
+    val source = JavaConversions.mapAsJavaMap(input.source.asInstanceOf[Map[String, String]])
     umUser = input.user
     if(jobType.equals(UJESJob.SQL_TYPE)) {
       code = SqlUtils.filterAnnotate(code)
