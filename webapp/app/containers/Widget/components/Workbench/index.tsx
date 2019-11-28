@@ -28,6 +28,7 @@ import { DEFAULT_SPLITER, DEFAULT_CACHE_EXPIRED } from 'app/globalConstants'
 import { getStyleConfig } from 'containers/Widget/components/util'
 import ChartTypes from '../../config/chart/ChartTypes'
 import { FieldSortTypes, fieldGroupedSort } from '../Config/Sort'
+import { type } from 'os';
 import { message } from 'antd'
 import 'assets/less/resizer.less'
 import { IDistinctValueReqeustParams } from 'app/components/Filters/types'
@@ -162,8 +163,14 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     })
     const routeParams = this.getParams();
     const viewId = routeParams[0] ? routeParams[0].split('=')[1] : '';
+    const isWaterMask = routeParams[1] ? routeParams[1].split('=')[1] : '';
+    const username = routeParams[2] ? routeParams[2].split('=')[1] : '';
     if (viewId) {
       sessionStorage.setItem('viewId', viewId);
+    }
+    if (isWaterMask) {
+      localStorage.setItem('isWaterMask', isWaterMask);
+      localStorage.setItem('username', username);
     }
   }
 
@@ -179,9 +186,6 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
   public componentWillReceiveProps (nextProps: IWorkbenchProps) {
     const { views, currentWidget } = nextProps
     const viewId = sessionStorage.getItem('viewId');
-    // 水印相关的逻辑
-    // const params = this.getParams();
-    // const viewId = params[0] ? params[0].split('=')[1] : '';
     // 说明此时是直接在url里加上了?viewId=${viewId}，要自动选中该view，只有第一次进入的时候要，所以this.state.selectedViewId当时应该为null
     if(views && views.length && viewId && !this.state.selectedViewId) {
       this.setState({ selectedViewId: Number(viewId) }, () => this.viewSelect(Number(viewId)))

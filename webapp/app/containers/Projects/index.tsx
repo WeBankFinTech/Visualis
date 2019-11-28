@@ -161,12 +161,14 @@ export class Projects extends React.PureComponent<IProjectsProps, IProjectsState
     // historyStack.init()
   }
 
-  public componentDidMount () {
+  public componentDidMount() {
     const search = location.hash.split('?')[1] || '';
     const params = search.split('&');
-    const isWaterMaster =params[0] ? params[0].split('=')[1] : 0;
+    const isWaterMaster =params[0] ? params[0].split('=')[1] : '';
+    const username = params[1] ? params[1].split('=')[1] : '';
     if (isWaterMaster) {
       localStorage.setItem('isWaterMask', isWaterMaster)
+      localStorage.setItem('username', username)
     }
   }
 
