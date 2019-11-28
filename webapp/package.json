@@ -17,7 +17,6 @@
     "prebuild": "npm run build:clean",
     "build:prod": "cross-env NODE_ENV=production webpack --config internals/webpack/webpack.dv.babel.js --color -p --progress --hide-modules --display-optimization-bailout",
     "build": "cross-env NODE_ENV=production webpack --config internals/webpack/webpack.prod.babel.js --color -p --progress --hide-modules --display-optimization-bailout",
-    "build:sandbox": "cross-env NODE_ENV=sandbox webpack --config internals/webpack/webpack.prod.babel.js --color -p --progress --hide-modules --display-optimization-bailout",
     "build:clean": "rimraf ./build",
     "start": "cross-env NODE_ENV=development node server",
     "start:production": "npm run test && npm run build && npm run start:prod",
