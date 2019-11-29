@@ -170,10 +170,10 @@ interface IDashboardStates {
   allowFullScreen: boolean,
   currentDataInFullScreen: any,
   showLogin: boolean,
+  headlessBrowserRenderSign: boolean
   controlTokenMapping: {
     [key: string]: string
   }
-  phantomRenderSign: boolean
 }
 
 export class Share extends React.Component<IDashboardProps, IDashboardStates> {
@@ -190,7 +190,7 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
       currentDataInFullScreen: {},
       showLogin: false,
 
-      phantomRenderSign: false,
+      headlessBrowserRenderSign: false,
 
       controlTokenMapping: {}
     }
@@ -273,22 +273,13 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
       }
     }
     if (currentItemsInfo) {
-      if (Object.values(currentItemsInfo)
-      .every((info) => {
-        // 在dashboard中，无论widget有没有数据，也即无论是LOAD_SHARE_RESULTSET_SUCCESS还是LOAD_SHARE_RESULTSET_FAILURE，所以也不用管返回的数据payload是不是为""，只要加载完，loading全都会变成false，所以phantomRenderSign等所有变成false了再生成就好
-        return info.loading === false 
-       })) {
+      const initialedItems = Object.values(currentItemsInfo)
+        .filter((info) => [DashboardItemStatus.Fulfilled, DashboardItemStatus.Error].includes(info.status))
+      if (initialedItems.length === currentItems.length) {
         // FIXME
         setTimeout(() => {
           this.setState({
-            phantomRenderSign: true
-          }, () => {
-            const phantomEle = document.getElementById('phantomRenderSign')
-            const outPhantomEle = phantomEle.parentElement
-            if (phantomEle.getBoundingClientRect() && phantomEle.getBoundingClientRect().height === 0) {
-              phantomEle.style.width = outPhantomEle.scrollWidth + 'px';
-              // phantomEle.style.height = outPhantomEle.scrollHeight + 'px';
-            }
+            headlessBrowserRenderSign: true
           })
         }, 5000)
       }
@@ -986,7 +977,7 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
       views,
       interactingStatus,
       allowFullScreen,
-      phantomRenderSign
+      headlessBrowserRenderSign
     } = this.state
 
     let grids = null
@@ -1105,7 +1096,6 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
     loginPanel = showLogin ? <Login shareInfo={this.state.shareInfo} legitimateUser={this.handleLegitimateUser} /> : ''
 
     const headlessBrowserRenderParentNode = document.getElementById('app')
-    const phantomDOM = phantomRenderSign && (<div id="phantomRenderSign" />)
 
     return (
       <Container>
@@ -1136,7 +1126,10 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
         <div className={styles.gridBottom} />
         {fullScreenComponent}
         {loginPanel}
-        {phantomDOM}
+        <HeadlessBrowserIdentifier
+          renderSign={headlessBrowserRenderSign}
+          parentNode={headlessBrowserRenderParentNode}
+        />
       </Container>
     )
   }
