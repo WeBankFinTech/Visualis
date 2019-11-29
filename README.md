@@ -3,6 +3,8 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
+English | [中文](README-CH.md)
+
 ## Introduction
 
 Visualis is a BI tool for data visualization. It is developed based on the open source project [Davinci](https://github.com/edp963/davinci) contributed by CreditEase.
@@ -71,11 +73,11 @@ Click to [Quick start]()
 
 ## Documents
 
-[Deploy documentation]()
+[Deploy documentation](visualis_docs/zh_CN/Visualis_deploy_doc_cn.md)
 
-[Quick integration with DSS and Linkis]()
+[Quick integration with DSS and Linkis](visualis_docs/zh_CN/Visualis_dss_integration_cn.md)
 
-[The differences between Visualis and Davinci]()
+[The differences between Visualis and Davinci](visualis_docs/zh_CN/Visualis_Davinci_difference_cn.md)
 
 ## Communication
 
