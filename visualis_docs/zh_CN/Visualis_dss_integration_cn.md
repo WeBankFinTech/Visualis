@@ -5,7 +5,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;在开始使用Visualis前，执行以下SQL插入数据，即可自动通过Linkis适配Hive数据源：
 
 ````sql
-INSERT INTO `source` (id,name,description,config,type,project_id,create_by,create_time,update_by,update_time,parent_id,full_parent_id,is_folder,index) VALUES (1,'hiveDataSource','','{"parameters":"","password":"","url":"","username":"hiveDataSource-token"}','hive',-1,null,null,null,null,null,null,null,null);
+INSERT INTO `source` (id,name,description,config,type,project_id,create_by,create_time,update_by,update_time,parent_id,full_parent_id,is_folder,`index`) VALUES (1,'hiveDataSource','','{"parameters":"","password":"","url":"test","username":"hiveDataSource-token"}','hive',-1,null,null,null,null,null,null,null,null);
 
 ````
 注意：如果要在View编辑界面使用Hive的元数据浏览功能，需要依赖Linkis的metadata模块。

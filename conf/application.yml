@@ -63,7 +63,7 @@ spring:
 
   config:
     location: classpath:/
-    additional-location: file:${DAVINCI3_HOME}/config/
+    additional-location: file:${DAVINCI3_HOME}/conf/
     name: application
 
   resources:
@@ -136,7 +136,7 @@ mapper:
 
 sql_template_delimiter: $
 
-custom-datasource-driver-path: ${DAVINCI3_HOME}/config/datasource_driver.yml
+custom-datasource-driver-path: ${DAVINCI3_HOME}/conf/datasource_driver.yml
 
 phantomjs_home: ${DAVINCI3_HOME}/bin/phantomjs
 
