@@ -663,3 +663,5 @@ CREATE TABLE `share_download_record` (
 
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+INSERT INTO `source` (id,name,description,config,type,project_id,create_by,create_time,update_by,update_time,parent_id,full_parent_id,is_folder,`index`) VALUES (1,'hiveDataSource','','{"parameters":"","password":"","url":"test","username":"hiveDataSource-token"}','hive',-1,null,null,null,null,null,null,null,null);
