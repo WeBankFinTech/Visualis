@@ -32,13 +32,13 @@ export default {
     shareHost: '/share.html',
   },
   sit: {
-    iframeUrl: '/dws/visualis/#',
+    iframeUrl: '/dss/visualis/#',
     host: '/api/rest_s/v1/visualis',
-    shareHost: '/dws/visualis/share.html',
+    shareHost: '/dss/visualis/share.html',
   },
   production: {
     host: '/api/rest_s/v1/visualis',
-    shareHost: '/dws/visualis/share.html',
-    iframeUrl: '/dws/visualis/#',
+    shareHost: '/dss/visualis/share.html',
+    iframeUrl: '/dss/visualis/#',
   }
 }
