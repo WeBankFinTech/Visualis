@@ -11,7 +11,12 @@ function HeadlessBrowserIdentifier (props: IHeadlessBrowserIdentifierProps) {
       <span />
     )
   } else {
-    const { offsetWidth, offsetHeight } = props.parentNode
+    let offsetWidth, offsetHeight
+    if (props.parentNode) {
+      offsetWidth = props.parentNode.offsetWidth
+      offsetHeight = props.parentNode.offsetHeight
+    }
+
     return (
       <>
         <input id="headlessBrowserRenderSign" type="hidden" />
