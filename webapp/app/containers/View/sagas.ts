@@ -91,6 +91,9 @@ export function* editView (action: ViewActionType) {
   const { payload } = action
   const { view, resolve } = payload
   const { viewEdited, editViewFail } = ViewActions
+  // 做一下数据格式的转换，确保view.model和view.variable都是string类型
+  if (typeof view.model !== 'string') view.model = JSON.stringify(view.model)
+  if (typeof view.variable !== 'string') view.variable = JSON.stringify(view.variable)
   try {
     yield call<AxiosRequestConfig>(request, {
       method: 'put',

@@ -7,8 +7,8 @@ export function getFormedView (view: IView): IFormedView {
   const { model, variable, roles } = view
   const formedView = {
     ...view,
-    model: JSON.parse((model || '{}')),
-    variable: JSON.parse((variable || '[]')),
+    model: typeof model === 'object' ? model : JSON.parse((model || '{}')),
+    variable: typeof variable === 'object' ? variable : JSON.parse((variable || '[]')),
     roles: (roles as IViewRoleRaw[]).map<IViewRole>(({ roleId, columnAuth, rowAuth }) => ({
       roleId,
       columnAuth: JSON.parse(columnAuth || '[]'),
