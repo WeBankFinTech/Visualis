@@ -17,7 +17,7 @@ import { addWidget, editWidget, loadWidgetDetail, clearCurrentWidget, executeCom
 import { makeSelectCurrentWidget, makeSelectLoading, makeSelectDataLoading, makeSelectDistinctColumnValues, makeSelectColumnValueLoading } from 'containers/Widget/selectors'
 import { makeSelectViews, makeSelectFormedViews } from 'containers/View/selectors'
 
-import { IViewBase, IFormedViews, IFormedView } from 'containers/View/types'
+import { IView, IViewBase, IFormedViews, IFormedView } from 'containers/View/types'
 import OperatingPanel from './OperatingPanel'
 import Widget, { IWidgetProps } from '../Widget'
 import { IDataRequestParams } from 'app/containers/Dashboard/Grid'
@@ -28,6 +28,7 @@ import { DEFAULT_SPLITER, DEFAULT_CACHE_EXPIRED } from 'app/globalConstants'
 import { getStyleConfig } from 'containers/Widget/components/util'
 import ChartTypes from '../../config/chart/ChartTypes'
 import { FieldSortTypes, fieldGroupedSort } from '../Config/Sort'
+import { type } from 'os';
 import { message } from 'antd'
 import 'assets/less/resizer.less'
 import { IDistinctValueReqeustParams } from 'app/components/Filters/types'
@@ -72,6 +73,7 @@ interface IWorkbenchProps {
   onEditWidget: (widget: IWidget, resolve: () => void) => void
   onLoadViewDistinctValue: (viewId: number, params: Partial<IDistinctValueReqeustParams>) => void
   onClearCurrentWidget: () => void
+  onBeofreDropColunm: (view: IView, resolve: () => void) => void
   onExecuteComputed: (sql: string) => void
 }
 
@@ -162,13 +164,24 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     })
     const routeParams = this.getParams();
     const viewId = routeParams[0] ? routeParams[0].split('=')[1] : '';
+    const isWaterMask = routeParams[1] ? routeParams[1].split('=')[1] : '';
+    const username = routeParams[2] ? routeParams[2].split('=')[1] : '';
     if (viewId) {
       sessionStorage.setItem('viewId', viewId);
+    }
+    if (isWaterMask) {
+      localStorage.setItem('isWaterMask', isWaterMask);
+      localStorage.setItem('username', username);
     }
   }
 
   public componentDidMount () {
     this.props.onHideNavigator()
+    const routeParams = this.getParams();
+    const isWaterMask = routeParams[1] ? routeParams[1].split('=')[1] : '';
+    if (isWaterMask) {
+      localStorage.setItem('isWaterMask', isWaterMask);
+    }
   }
 
   public componentWillReceiveProps (nextProps: IWorkbenchProps) {
@@ -520,7 +533,8 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       distinctColumnValues,
       columnValueLoading,
       onLoadViewData,
-      onLoadViewDistinctValue
+      onLoadViewDistinctValue,
+      onBeofreDropColunm
     } = this.props
     const {
       name,
@@ -600,6 +614,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
                 onDeleteComputed={this.deleteComputed}
                 onLoadData={onLoadViewData}
                 onLoadDistinctValue={onLoadViewDistinctValue}
+                onBeofreDropColunm={onBeofreDropColunm}
               />
               <div className={styles.viewPanel}>
                 <div className={styles.widgetBlock}>
@@ -648,6 +663,7 @@ export function mapDispatchToProps (dispatch) {
     onEditWidget: (widget, resolve) => dispatch(editWidget(widget, resolve)),
     onLoadViewDistinctValue: (viewId, params) => dispatch(loadViewDistinctValue(viewId, params)),
     onClearCurrentWidget: () => dispatch(clearCurrentWidget()),
+    onBeofreDropColunm: (view, resolve) => dispatch(ViewActions.editView(view, resolve)),
     onExecuteComputed: (sql) => dispatch(executeComputed(sql))
   }
 }

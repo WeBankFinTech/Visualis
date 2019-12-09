@@ -39,6 +39,7 @@ import injectReducer from 'utils/injectReducer'
 import saga from '../Projects/sagas'
 import injectSaga from 'utils/injectSaga'
 import { makeSelectCurrentProject } from '../Projects/selectors'
+import { Link } from 'react-router'
 
 import MenuPermission from '../Account/components/checkMenuPermission'
 import { hasOnlyVizPermission } from '../Account/components/checkUtilPermission'
@@ -162,9 +163,14 @@ export class Report extends React.Component<IReportProps, IReportStates> {
       && currentProject.permission
       && !hasOnlyVizPermission(currentProject.permission)
         ? (
-          <Sidebar>
-            {sidebarOptions}
-          </Sidebar>
+          <div className={styles.sidebar}>
+            <Link to="/projects">
+              <Icon type="home" className={styles.home} title='home'/>
+            </Link>
+            <Sidebar style={{flex: 1}}>
+              {sidebarOptions}
+            </Sidebar>
+          </div>
         ) : ''
 
     const reportView = isPermissioned ? (

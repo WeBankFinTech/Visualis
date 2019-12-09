@@ -28,6 +28,7 @@ import { ITableConfig } from '../Config/Table'
 import { IRichTextConfig, IBarConfig, IRadarConfig } from '../Workbench/ConfigSections'
 import { IDoubleYAxisConfig } from '../Workbench/ConfigSections/DoubleYAxisSection'
 import { IModel } from '../Workbench/index'
+import WaterMask from '../WaterMask/index'
 import { IQueryVariableMap } from 'containers/Dashboard/Grid'
 import { getStyleConfig } from '../util'
 import ChartTypes from '../../config/chart/ChartTypes'
@@ -174,6 +175,7 @@ export interface IWidgetWrapperProps extends IWidgetProps {
 export interface IWidgetWrapperStates {
   width: number
   height: number
+  isShow: boolean
 }
 
 export class Widget extends React.Component<
@@ -188,7 +190,8 @@ export class Widget extends React.Component<
     super(props)
     this.state = {
       width: 0,
-      height: 0
+      height: 0,
+      isShow: true
     }
   }
 
@@ -221,8 +224,10 @@ export class Widget extends React.Component<
   }
 
   public render () {
-    const { loading, empty } = this.props
-    const { width, height } = this.state
+    const { loading, empty, mode } = this.props
+    const { width, height, isShow } = this.state
+    const isWaterMask = localStorage.getItem('isWaterMask') === 'true';
+    const username = localStorage.getItem('username');
 
     const widgetProps = { width, height, ...this.props }
 
@@ -239,8 +244,13 @@ export class Widget extends React.Component<
         )
     }
 
+    const waterMaskProps = {
+      text: `由DataSphere Studio生成，仅供内部参考，严禁对外分享-${username}`,
+    }
+
     return (
       <div className={styles.wrapper} ref={this.container}>
+        {isShow && isWaterMask &&  <WaterMask {...waterMaskProps} />}
         {widgetContent}
         {loading}
         {empty}
