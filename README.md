@@ -56,12 +56,6 @@ Visualis seamlessly integrates with the data develoment, workflow scheduling and
 For more detail, please visit [DataSphere Studio documentations]().
 
 ![Visualis](images/Visualis_AppJoint.gif)
-
-## Demo environment
-
- &nbsp; &nbsp;&nbsp; &nbsp;[click me to](https://sandbox.webank.com/wds/dss/#) DSS Demo environment
-
- &nbsp; &nbsp;&nbsp; &nbsp;User/Password: bdp/Abcd1234
  
 ## Quick start
 
