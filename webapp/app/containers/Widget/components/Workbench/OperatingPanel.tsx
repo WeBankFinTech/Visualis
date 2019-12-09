@@ -4,9 +4,10 @@ import set from 'lodash/set'
 
 import widgetlibs from '../../config'
 import { IDataRequestParams } from 'app/containers/Dashboard/Grid'
-import { IViewBase, IFormedView } from 'containers/View/types'
+import { IView, IViewBase, IFormedView } from 'containers/View/types'
 import { ViewModelVisualTypes } from 'containers/View/constants'
 import Dropbox, { DropboxType, DropType, AggregatorType, IDataParamSource, IDataParamConfig, DragType, IDragItem} from './Dropbox'
+import DropArea from './DropArea'
 import { IWidgetProps, IChartStyles, IChartInfo, IPaginationParams, WidgetMode, RenderType, DimetionType } from '../Widget'
 import { IFieldConfig, getDefaultFieldConfig, FieldConfigModal } from '../Config/Field'
 import { IFieldFormatConfig, getDefaultFieldFormatConfig, FormatConfigModal } from '../Config/Format'
@@ -41,7 +42,7 @@ import PivotTypes from '../../config/pivot/PivotTypes'
 import { uuid } from 'utils/util'
 
 import { RadioChangeEvent } from 'antd/lib/radio'
-import { Row, Col, Icon, Menu, Radio, InputNumber, Dropdown, Modal, Popconfirm, Checkbox, notification, Tooltip, Select } from 'antd'
+import { Row, Col, Icon, Menu, Radio, InputNumber, Dropdown, Modal, Popconfirm, Checkbox, notification, Tooltip, Select, message } from 'antd'
 import { IDistinctValueReqeustParams } from 'app/components/Filters/types'
 import { WorkbenchQueryMode } from './types'
 import { CheckboxChangeEvent } from 'antd/lib/checkbox'
@@ -95,7 +96,8 @@ interface IOperatingPanelProps {
     resolve: (data) => void,
     reject: (error) => void
   ) => void
-  onLoadDistinctValue: (viewId: number, params: Partial<IDistinctValueReqeustParams>) => void
+  onLoadDistinctValue: (viewId: number, params: Partial<IDistinctValueReqeustParams>) => void,
+  onBeofreDropColunm: (view: IView, resolve: () => void) => void
 }
 
 interface IOperatingPanelStates {
@@ -195,7 +197,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     })
   }
 
-  public componentWillReceiveProps (nextProps: IOperatingPanelProps) {
+  public componentWillReceiveProps (nextProps: IOperatingPanelProps, prevProps: IOperatingPanelProps) {
     const { selectedView, originalWidgetProps } = nextProps
     if (selectedView && selectedView !== this.props.selectedView) {
       const model = selectedView.model
@@ -264,6 +266,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
           items: []
         }
       }
+
       metrics.forEach((m) => {
         const modelColumn = model[decodeMetricName(m.name)]
         if (modelColumn) {
@@ -295,6 +298,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
           }
         })
       }
+
       filters.forEach((f) => {
         const modelColumn = model[f.name]
         if (modelColumn) {
@@ -411,6 +415,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     (e: React.DragEvent<HTMLLIElement | HTMLParagraphElement>) => {
       // hack firefox trigger dragEnd
       e.dataTransfer.setData('text/plain', '')
+      e.dataTransfer.effectAllowed = "move";
       this.setState({
         dragged: {...item}
       })
@@ -429,6 +434,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       this.dragStart({ ...item, from })(e)
     }
 
+  // 已经在维度、指标、筛选里的项进行拖拽放下时就会触发，但是仅是维度或指标里的拖拽排序时，dropType为'inside'（也可能是unmoved），如果是从指标或维度里拖拽某一项放到筛选中时，dropType才为undefined，才可能会执行下面getVisualData的逻辑
   private insideDragEnd = (dropType: DropType) => {
     if (!dropType) {
       const { dragged: { name, from }, dataParams, styleParams } = this.state
@@ -504,6 +510,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     }
   }
 
+  // 拖拽某一个维度或指标或筛选之后在盒子里放下时
   private drop = (name: string, dropIndex: number, dropType: DropType, changedItems: IDataParamSource[], config?: IDataParamConfig) => {
     const { multiDrag } = this.props
     const {
@@ -591,6 +598,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     this.setWidgetProps(dataParams, styleParams)
   }
 
+  // 透视驱动中 使用维度和使用行列的切换
   private toggleRowsAndCols = () => {
     const { dataParams, styleParams } = this.state
     const { cols, rows } = dataParams
@@ -606,6 +614,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     })
   }
 
+  // 透视驱动中 行列切换
   private switchRowsAndCols = () => {
     const { dataParams, styleParams } = this.state
     const { cols, rows } = dataParams
@@ -618,6 +627,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     this.setWidgetProps(dataParams, styleParams)
   }
 
+  // 清除某一个指标或维度或筛选
   private removeDropboxItem = (from: string) => (name: string) => () => {
     const { dataParams, styleParams } = this.state
     const prop = dataParams[from]
@@ -625,6 +635,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     this.setWidgetProps(dataParams, styleParams)
   }
 
+  // 某一个配置项点开下拉菜单，进行升序、降序、默认顺序的配置
   private getDropboxItemSortDirection = (from: string) => (item: IDataParamSource, sortType: FieldSortTypes) => {
     const { dataParams, styleParams } = this.state
     const prop = dataParams[from]
@@ -643,6 +654,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     }
   }
 
+  // 指标中的某一项点开下拉菜单，选择 总计、平均数等值
   private getDropboxItemAggregator = (from: string) => (item: IDataParamSource, agg: AggregatorType) => {
     const { dataParams, styleParams } = this.state
     const prop = dataParams[from]
@@ -651,6 +663,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     this.setWidgetProps(dataParams, styleParams)
   }
 
+  // 筛选中的某一项点开下拉菜单，选择配置筛选
   private dropboxItemChangeFieldConfig = (from: string) => (item: IDataParamSource) => {
     this.setState({
       currentEditingCommonParamKey: from,
@@ -1126,6 +1139,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     }
   }
 
+  // 选择 透视驱动和图表驱动下面的各个图标
   private chartSelect = (chart: IChartInfo) => {
     const { mode, dataParams } = this.state
     const { cols, rows, metrics } = dataParams
@@ -1200,6 +1214,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     }
   }
 
+  // 如切换 透视驱动和图表驱动 时，重置各配置
   private resetWorkbench = (mode) => {
     const { dataParams } = this.state
     Object.values(dataParams).forEach((param) => {
@@ -1219,6 +1234,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     this.setWidgetProps(resetedParams.dataParams, resetedParams.styleParams)
   }
 
+  // 某个dropbox的设置里面更改值之后触发
   private dropboxValueChange = (name) => (key: string, value: string | number) => {
     const { mode, dataParams, styleParams } = this.state
     const { color, size } = dataParams
@@ -1245,6 +1261,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     this.setWidgetProps(dataParams, styleParams, { renderType: 'refresh' })
   }
 
+  // 更改 样式 配置里的内容
   private styleChange = (name) => (prop, value, propPath?: string[]) => {
     const { dataParams, styleParams } = this.state
     if (!propPath || !propPath.length) {
@@ -1635,6 +1652,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
 
     let queryInfo: string[] = []
     if (selectedView) {
+      if (typeof selectedView.variable !== 'object') selectedView.variable = JSON.parse(selectedView.variable)
       queryInfo = selectedView.variable.map((v) => v.name)
     }
 
@@ -1818,7 +1836,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
                 </Row>
               </div>
             </div>
-            <div className={styles.paneBlock}>
+            {/* <div className={styles.paneBlock}>
               <h4>自动加载数据</h4>
               <div className={styles.blockBody}>
                 <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
@@ -1830,7 +1848,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
                   </Col>
                 </Row>
               </div>
-            </div>
+            </div> */}
           </div>
         )
         break
@@ -1852,6 +1870,68 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         default:
           actOnSettingConfig = selectedItem ? selectedItem.config : {}
           break
+      }
+    }
+
+    const categoryAreaProps = {
+      dragged: this.state.dragged,
+      type: 'category' as DragType,
+      beforeDrop: (draggedItem: IDataParamSource) => {
+        const draggedItemName = decodeMetricName(draggedItem.name)
+        const params = this.state.dataParams
+        const keys = Object.keys(params)
+        // 判断该字段是否已经被拖拽进了维度、指标等任意地方，已经被拖进去了就不能再切换分类型和数值型了
+        let isChoosed = false
+        keys.forEach((key) => {
+          if (params[key] && Array.isArray(params[key].items)) {
+            params[key].items.forEach((item) => {
+              if (decodeMetricName(item.name) === draggedItemName) isChoosed = true
+            })
+          }
+        })
+
+        if (isChoosed) return message.warning('该字段已被使用，无法切换分类型/数值型')
+
+        // 如果该字段没被使用，执行下面的逻辑
+        let selectedView = this.props.selectedView;
+        const propName = draggedItem.name;
+        draggedItem.modelType = 'value';
+        if (selectedView) {
+          if (typeof selectedView.model !== 'object') selectedView.model = JSON.parse(selectedView.model)
+          selectedView.model[propName] = draggedItem;
+        }
+        this.props.onBeofreDropColunm(selectedView, () => {})
+      }
+    }
+    const valueAreaProps = {
+      dragged: this.state.dragged,
+      type: 'value' as DragType,
+      beforeDrop: (draggedItem: IDataParamSource) => {
+        const draggedItemName = decodeMetricName(draggedItem.name)
+        const params = this.state.dataParams
+        const keys = Object.keys(params)
+        // 判断该字段是否已经被拖拽进了维度、指标等任意地方，已经被拖进去了就不能再切换分类型和数值型了
+        let isChoosed = false
+        keys.forEach((key) => {
+          if (params[key] && Array.isArray(params[key].items)) {
+            params[key].items.forEach((item) => {
+              if (decodeMetricName(item.name) === draggedItemName) isChoosed = true
+            })
+          }
+        })
+
+        if (isChoosed) return message.warning('该字段已被使用，无法切换分类型/数值型')
+
+        // 如果该字段没被使用，再执行下面的逻辑
+        let selectedView = this.props.selectedView;
+        const propName = decodeMetricName(draggedItem.name);
+        draggedItem.modelType = 'category';
+        draggedItem.name = propName;
+        if (selectedView) {
+          if (typeof selectedView.model !== 'object') selectedView.model = JSON.parse(selectedView.model)
+          selectedView.model[propName] = draggedItem;
+        }
+        this.props.onBeofreDropColunm(selectedView, () => {})
       }
     }
 
@@ -1913,7 +1993,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
                     key={name}
                     onDragStart={this.dragStart(data)}
                     onDragEnd={this.dragEnd}
-                    draggable
+                    draggable={item.name !== "指标名称"}
                   >
                     <i className={`iconfont ${this.getDragItemIconClass(visualType)}`} />
                     <p>{name}</p>
@@ -1930,6 +2010,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
                 )
               })}
             </ul>
+            <DropArea {...valueAreaProps}/>
           </div>
           <div className={styles.columnContainer}>
             <div className={styles.title}>
@@ -1970,6 +2051,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
                 )
               })}
             </ul>
+            <DropArea {...categoryAreaProps}/>
           </div>
         </div>
         <div className={styles.config}>

@@ -18,27 +18,16 @@
  * >>
  */
 
-export const envName = {
-  sit: 'sit',
-  production: 'production',
-  development: 'dev'
+export function readListAdapter (data, apiName) {
+  return data.payload || []
 }
-export const env = envName[process.env.NODE_ENV]
 
-export default {
-  dev: {
-    iframeUrl: 'http://localhost:5000',
-    host: 'http://yourServerIp:yourServerPort/api/rest_s/v1/visualis',
-    shareHost: '/share.html',
-  },
-  sit: {
-    iframeUrl: '/dss/visualis/#',
-    host: '/api/rest_s/v1/visualis',
-    shareHost: '/dss/visualis/share.html',
-  },
-  production: {
-    host: '/api/rest_s/v1/visualis',
-    shareHost: '/dss/visualis/share.html',
-    iframeUrl: '/dss/visualis/#',
+export function readObjectAdapter (data, apiName) {
+  return data.payload || []
+}
+
+export function writeAdapter (data, apiName) {
+  return {
+    payload: [data]
   }
 }

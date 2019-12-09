@@ -32,6 +32,7 @@ interface IDataColumn {
 }
 
 export interface IDataParamSource extends IDataColumn {
+  modelType?: string
   type: DragType
   visualType: ViewModelVisualTypes
   title?: string
