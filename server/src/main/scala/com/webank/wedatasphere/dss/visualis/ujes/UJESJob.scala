@@ -16,10 +16,12 @@
  */
 package com.webank.wedatasphere.dss.visualis.ujes
 
+import com.webank.wedatasphere.linkis.server.JMap
+
 /**
   * Created by johnnwang on 2019/1/26.
   */
-case class UJESJob(code:String,user:String,jobType:String, source:String)
+case class UJESJob(code:String,user:String,jobType:String, source:Any)
 
 object UJESJob{
   val SQL_TYPE = "sql"

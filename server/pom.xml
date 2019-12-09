@@ -39,7 +39,7 @@
         <dependency>
             <groupId>com.webank.wedatasphere.linkis</groupId>
             <artifactId>linkis-ujes-spark-entracne</artifactId>
-            <version>0.9.0</version>
+            <version>0.9.1</version>
             <exclusions>
                 <exclusion>
                     <groupId>javax.validation</groupId>
