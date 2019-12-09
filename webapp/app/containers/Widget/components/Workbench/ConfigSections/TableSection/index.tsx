@@ -11,7 +11,7 @@ import {
   TableCellStyleTypes, DefaultTableCellStyle } from 'containers/Widget/components/Config/Table'
 import { pageSizeOptions } from './constants'
 
-import { Icon, Row, Col, Select, Radio, Checkbox, Modal } from 'antd'
+import { Icon, Row, Col, Select, Radio, Checkbox, Modal, message } from 'antd'
 const { Option } = Select
 const RadioGroup = Radio.Group
 const RadioButton = Radio.Button
@@ -188,9 +188,10 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
   private deleteHeaderConfig = () => {
     const { onChange } = this.props
     Modal.confirm({
-      title: '确定恢复到初始设置？',
+      title: '确定将表头设置恢复到初始状态？',
       onOk: () => {
         onChange('headerConfig', [])
+        message.success('已将表头设置恢复到初始状态')
       }
     })
   }
@@ -225,9 +226,10 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
   private deleteColumnConfig = () => {
     const { onChange } = this.props
     Modal.confirm({
-      title: '确定恢复到初始设置？',
+      title: '确定将表格数据设置恢复到初始状态？',
       onOk: () => {
         onChange('columnsConfig', [])
+        message.success('已将表格数据设置恢复到初始状态')
       }
     })
   }
@@ -327,7 +329,7 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
             </Row>
           </div>
         </div>
-        <div className={styles.paneBlock}>
+        {/* <div className={styles.paneBlock}>
           <h4>左固定列</h4>
           <div className={styles.blockBody}>
             <Row gutter={8} type="flex" align="middle" className={styles.rowBlock}>
@@ -343,8 +345,8 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
               </Col>
             </Row>
           </div>
-        </div>
-        <div className={styles.paneBlock}>
+        </div> */}
+        {/* <div className={styles.paneBlock}>
           <h4>右固定列</h4>
           <div className={styles.blockBody}>
             <Row gutter={8} type="flex" align="middle" className={styles.rowBlock}>
@@ -360,9 +362,9 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
               </Col>
             </Row>
           </div>
-        </div>
+        </div> */}
         <div className={styles.paneBlock}>
-          <h4>大小</h4>
+          <h4>表格尺寸</h4>
           <div className={styles.blockBody}>
             <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
               <Col span={24}>
@@ -388,7 +390,7 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
             </Row>
           </div>
         </div>
-        <div className={styles.paneBlock}>
+        {/* <div className={styles.paneBlock}>
           <h4>分页</h4>
           <div className={styles.blockBody}>
             <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
@@ -411,8 +413,8 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
                 </Col>}
             </Row>
           </div>
-        </div>
-        <div className={styles.paneBlock}>
+        </div> */}
+        {/* <div className={styles.paneBlock}>
           <h4>使用原始数据</h4>
           <div className={styles.blockBody}>
             <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
@@ -424,7 +426,7 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
               </Col>
             </Row>
           </div>
-        </div>
+        </div> */}
         <React.Suspense fallback={null}>
           <HeaderConfigModal
             visible={headerConfigModalVisible}

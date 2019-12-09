@@ -52,6 +52,7 @@ export function encodeMetricName (name) {
 }
 
 export function decodeMetricName (encodedName) {
+  if (!encodedName) encodedName = ""
   return encodedName.split(DEFAULT_SPLITER)[0]
 }
 
