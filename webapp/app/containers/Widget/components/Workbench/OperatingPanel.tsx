@@ -1257,8 +1257,6 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
           size.value[key] = value
         }
     }
-    console.log('dropboxValueChange')
-    this.setWidgetProps(dataParams, styleParams, { renderType: 'refresh' })
   }
 
   // 更改 样式 配置里的内容

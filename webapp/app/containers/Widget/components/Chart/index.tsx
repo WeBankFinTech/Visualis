@@ -8,7 +8,7 @@ import Chart from './Chart'
 import ChartTypes from '../../config/chart/ChartTypes'
 
 export interface IChartProps extends IWidgetProps {
-  width: number
+  // width: number
   height: number
 }
 

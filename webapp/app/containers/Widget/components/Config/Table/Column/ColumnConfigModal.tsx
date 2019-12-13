@@ -5,12 +5,13 @@ import set from 'lodash/set'
 import { uuid } from 'utils/util'
 import { fontWeightOptions, fontStyleOptions, fontFamilyOptions, fontSizeOptions } from '../constants'
 import { defaultConditionStyle, AvailableTableConditionStyleTypes } from './constants'
+import { TOTAL_COLUMN_WIDTH } from 'app/globalConstants'
 import { getColumnIconByType } from './util'
 import { ITableColumnConfig, ITableConditionStyle } from './types'
 import ColorPicker from 'components/ColorPicker'
 import ConditionStyleConfigModal from './ConditionStyleConfigModal'
 
-import { Row, Col, Tooltip, Select, Button, Radio, Checkbox, Table, Modal } from 'antd'
+import { Row, Col, Tooltip, Select, Button, Radio, Checkbox, Table, Modal, InputNumber } from 'antd'
 const RadioGroup = Radio.Group
 const RadioButton = Radio.Button
 
@@ -81,11 +82,17 @@ export class ColumnStyleConfig extends React.PureComponent<IColumnStyleConfigPro
   private propChange = (
     propPath: Exclude<keyof(ITableColumnConfig), 'style'> | ['style', keyof ITableColumnConfig['style']]
   ) => (e) => {
+    if (e.target) console.log('e.target.value: ', e.target.value);
+    // 如果是配置 列宽 时，必须要是输入的数字才有意义
+    if (propPath === 'width' && typeof e !== 'number') return e = null
+
     const value = e.target ? (e.target.value || e.target.checked) : e
     const { localConfig, selectedColumnName } = this.state
     const nextLocalConfig = produce(localConfig, (draft) => {
       const selectedColumn = draft.find(({ columnName }) => columnName === selectedColumnName)
       set(selectedColumn, propPath, value)
+      // 如果是更改了列宽之后，要改这个widthChanged值为true
+      if (propPath === 'width') set(selectedColumn, 'widthChanged', true)
       return draft
     })
     this.setState({
@@ -201,8 +208,9 @@ export class ColumnStyleConfig extends React.PureComponent<IColumnStyleConfigPro
     if (localConfig.length <= 0) {
       return (<div />)
     }
-
-    const { style, visualType, sort, conditionStyles, showAsPercent } = localConfig.find((c) => c.columnName === selectedColumnName)
+    console.log('ColumnConfigModal this.props: ', this.props);
+    console.log('ColumnConfigModal this.state: ', this.state);
+    const { style, visualType, sort, conditionStyles, showAsPercent, width } = localConfig.find((c) => c.columnName === selectedColumnName)
     const { fontSize, fontFamily, fontWeight, fontColor, fontStyle, backgroundColor, justifyContent } = style
     return (
       <Modal
@@ -246,6 +254,19 @@ export class ColumnStyleConfig extends React.PureComponent<IColumnStyleConfigPro
                     </Row>
                   )
                 }
+                <Row gutter={8} type="flex" align="middle" className={stylesConfig.rowBlock}>
+                  <Col span={4}>列宽</Col>
+                  <Col span={10}>
+                      <InputNumber
+                        placeholder="20-2000"
+                        min={20}
+                        max={2000}
+                        className={styles.blockElm}
+                        value={width}
+                        onChange={this.propChange('width')}
+                      />
+                  </Col>
+                </Row>
                 <Row gutter={8} type="flex" align="middle" className={stylesConfig.rowBlock}>
                   <Col span={4}>背景色</Col>
                   <Col span={2}>

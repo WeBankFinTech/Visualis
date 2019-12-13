@@ -38,6 +38,7 @@ import { TABLE_PAGE_SIZES } from 'app/globalConstants'
 import { getFieldAlias } from 'containers/Widget/components/Config/Field'
 import { decodeMetricName } from 'containers/Widget/components/util'
 import Styles from './Table.less'
+import { TOTAL_COLUMN_WIDTH } from 'app/globalConstants'
 
 import {
   findChildConfig, traverseConfig,
@@ -95,16 +96,48 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
 
   private table = React.createRef<AntTable<any>>()
 
+  // 通过拖拽的方式调整表格列宽时触发的事件
   private handleResize = (idx: number) => (_, { size }: IResizeCallbackData) => {
+    // console.log('handleResize _: ', _);
+    // console.log('handleResize size: ', size);
     const nextColumns = resizeTableColumns(this.state.tableColumns, idx, size.width)
     this.setState({ tableColumns: nextColumns })
   }
 
+  // 可拖拽列宽的列的配置
+  private adjustTableColumns (tableColumns: Array<ColumnProps<any>>, mapTableHeaderConfig: IMapTableHeaderConfig) {
+    // const totalWidth = tableColumns.reduce((acc, col) => acc + Number(col.width), 0)
+    // const totalWidth = TOTAL_COLUMN_WIDTH
+    // const ratio = totalWidth < containerWidth ? containerWidth / totalWidth : 1
+    traverseConfig<ColumnProps<any>>(tableColumns, 'children', (column, idx, siblings) => {
+      // column.width = ratio * Number(column.width)
+      const canResize = siblings === tableColumns
+      column.onHeaderCell = (col) => ({
+        width: col.width,
+        onResize: canResize && this.handleResize(idx),
+        config: mapTableHeaderConfig[column.key]
+      })
+    })
+    return tableColumns
+  }
+
+  // 分页有改动时触发的事件
   private paginationChange = (current: number, pageSize: number) => {
     const { currentSorter } = this.state
     this.refreshTable(current, pageSize, currentSorter)
   }
 
+  // 基础的分页配置，实际使用时还会增加一些额外的分页配置
+  private basePagination: PaginationConfig = {
+    pageSizeOptions: TABLE_PAGE_SIZES.map((s) => s.toString()),
+    showQuickJumper: true,
+    showSizeChanger: true,
+    showTotal: (total: number) => `共${total}条`,
+    onChange: this.paginationChange,
+    onShowSizeChange: this.paginationChange
+  }
+
+  // 表格有改动时触发的事件
   private tableChange = (pagination: PaginationConfig, _, sorter: SorterResult<object>) => {
     const nextCurrentSorter: ITableStates['currentSorter'] = sorter.field
       ? { column: sorter.field, direction: MapAntSortOrder[sorter.order] }
@@ -114,6 +147,7 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
     this.refreshTable(current, pageSize, nextCurrentSorter)
   }
 
+  // 刷新表格 表格变换分页或者更改筛选后就要刷新表格
   private refreshTable = (current: number, pageSize: number, sorter?: ITableStates['currentSorter']) => {
     const { tablePagination } = this.state
     if (pageSize !== tablePagination.pageSize) {
@@ -121,15 +155,6 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
     }
     const { onPaginationChange } = this.props
     onPaginationChange(current, pageSize, sorter)
-  }
-
-  private basePagination: PaginationConfig = {
-    pageSizeOptions: TABLE_PAGE_SIZES.map((s) => s.toString()),
-    showQuickJumper: true,
-    showSizeChanger: true,
-    showTotal: (total: number) => `共${total}条`,
-    onChange: this.paginationChange,
-    onShowSizeChange: this.paginationChange
   }
 
   public componentDidMount () {
@@ -168,38 +193,24 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
     })
   }
 
+  // 将传入的props映射到state上
   public static getDerivedStateFromProps (nextProps: IChartProps, prevState: ITableStates) {
-    const { chartStyles, data, width } = nextProps
-    if (chartStyles !== prevState.chartStyles
-      || data !== prevState.data
-      || width !== prevState.width
-    ) {
+    const { chartStyles, data } = nextProps
+    // console.log('getDerivedStateFromProps nextProps: ', nextProps);
+    if (chartStyles !== prevState.chartStyles || data !== prevState.data) {
       const { tableColumns, mapTableHeaderConfig } = getTableColumns(nextProps)
       const tablePagination = getPaginationOptions(nextProps)
-      return { tableColumns, mapTableHeaderConfig, tablePagination, chartStyles, data, width }
+      return { tableColumns, mapTableHeaderConfig, tablePagination, chartStyles, data }
     }
-    return { chartStyles, data, width }
+    return { chartStyles, data }
   }
 
-  private adjustTableColumns (tableColumns: Array<ColumnProps<any>>, mapTableHeaderConfig: IMapTableHeaderConfig, containerWidth: number) {
-    const totalWidth = tableColumns.reduce((acc, col) => acc + Number(col.width), 0)
-    const ratio = totalWidth < containerWidth ? containerWidth / totalWidth : 1
-    traverseConfig<ColumnProps<any>>(tableColumns, 'children', (column, idx, siblings) => {
-      column.width = ratio * Number(column.width)
-      const canResize = siblings === tableColumns
-      column.onHeaderCell = (col) => ({
-        width: col.width,
-        onResize: canResize && this.handleResize(idx),
-        config: mapTableHeaderConfig[column.key]
-      })
-    })
-    return tableColumns
-  }
-
+  // 获取行的key值
   private getRowKey = (record: object, idx: number) => {
     return Object.values(record).join('_' + idx)
   }
 
+  // 获取表格的 scroll项的配置
   private getTableScroll (
     columns: Array<ColumnProps<any>>,
     containerWidth: number,
@@ -215,6 +226,19 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
       scroll.y = tableBodyHeght
     }
     return scroll
+  }
+
+  // 获取表格的样式
+  private getTableStyle (
+    headerFixed: boolean,
+    tableBodyHeght: number
+  ) {
+    const tableStyle: React.CSSProperties = { }
+    if (!headerFixed) {
+      tableStyle.height = tableBodyHeght
+      tableStyle.overflowY = 'scroll'
+    }
+    return tableStyle
   }
 
   private isSameObj (
@@ -242,6 +266,7 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
     return isb
   }
 
+  // 表格每行的点击事件
   private rowClick = (record, row, event) => {
     const { getDataDrillDetail, onCheckTableInteract, onDoInteract } = this.props
     let selectedRow = [...this.state.selectedRow]
@@ -301,35 +326,33 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
     })
   }
 
+  // 设置行的类名
   private setRowClassName = (record, row) =>
    this.state.selectedRow.some((sr) => this.isSameObj(sr, record, true)) ? Styles.selectedRow : Styles.unSelectedRow
 
-
-  private getTableStyle (
-    headerFixed: boolean,
-    tableBodyHeght: number
-  ) {
-    const tableStyle: React.CSSProperties = { }
-    if (!headerFixed) {
-      tableStyle.height = tableBodyHeght
-      tableStyle.overflowY = 'scroll'
-    }
-    return tableStyle
-  }
-
   public render () {
-    const { data, chartStyles, width } = this.props
+    const { data, chartStyles } = this.props
     const { headerFixed, bordered, withPaging, size } = chartStyles.table
     const { tablePagination, tableColumns, tableBodyHeight, mapTableHeaderConfig } = this.state
-    const adjustedTableColumns = this.adjustTableColumns(tableColumns, mapTableHeaderConfig, width)
 
+    // tableWidth是表格的实际总宽度，为当前所有列的width之和
+    let tableWidth = 0
+    tableColumns.forEach((col) => tableWidth += col.width)
+    tableWidth = typeof tableWidth === 'number' ? tableWidth : TOTAL_COLUMN_WIDTH
+
+    // 获取可拖拽列宽的列的配置
+    const adjustedTableColumns = this.adjustTableColumns(tableColumns, mapTableHeaderConfig)
+    // 获取表格的 scroll配置
+    const scroll = this.getTableScroll(adjustedTableColumns, tableWidth, headerFixed, tableBodyHeight)
+    // 获取表格的样式配置
+    const style = this.getTableStyle(headerFixed, tableBodyHeight)
+
+    // 获取表格的分页配置
     const paginationConfig: PaginationConfig = {
       ...this.basePagination,
       ...tablePagination
     }
-    const scroll = this.getTableScroll(adjustedTableColumns, width, headerFixed, tableBodyHeight)
-    const style = this.getTableStyle(headerFixed, tableBodyHeight)
-
+    // 不显示总条数的分页
     const paginationWithoutTotal = withPaging && tablePagination.total === -1 ? (
       <PaginationWithoutTotal
         dataLength={data.length}
@@ -337,11 +360,14 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
         {...paginationConfig}
       />
     ) : null
+    // 表格的类名
     const tableCls = classnames({
       [Styles.table]: true,
       [Styles.noBorder]: bordered !== undefined && !bordered
     })
-
+    style.width = tableWidth
+    // console.log('Table this.props: ', this.props);
+    // console.log('Table this.state: ', this.state);
     return (
       <>
         <AntTable
@@ -352,6 +378,7 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
           dataSource={data}
           rowKey={this.getRowKey}
           components={tableComponents}
+          // 列的配置
           columns={adjustedTableColumns}
           pagination={withPaging && tablePagination.total !== -1 ? paginationConfig : false}
           scroll={scroll}
@@ -377,12 +404,23 @@ function getTableColumns (props: IChartProps) {
       mapTableHeaderConfig: {}
     }
   }
-  const { cols, rows, metrics, data, queryVariables } = props
+  const { cols, rows, metrics, data, queryVariables, onSetWidgetProps, pagination, secondaryMetrics, filters, selectedChart, orders, mode, model, onPaginationChange } = props
   const { headerConfig, columnsConfig, autoMergeCell, leftFixedColumns, rightFixedColumns, withNoAggregators } = chartStyles.table
   const tableColumns: Array<ColumnProps<any>> = []
   const mapTableHeaderConfig: IMapTableHeaderConfig = {}
-  cols.concat(rows).forEach((dimension) => {
-    const { name, field, format } = dimension
+  // tempWidgetProps是用来在onSetWidgetProps中使用的，所以只需要workbench中的原始字段
+  const tempWidgetProps = { data, pagination, cols, rows, metrics, secondaryMetrics, filters, chartStyles, selectedChart, orders, mode, model, onPaginationChange }
+  // 获取当前总列数
+  let totalColumnsLength = 0
+  if (Array.isArray(cols) && Array.isArray(metrics)) totalColumnsLength = cols.length + metrics.length
+  console.log('totalColumnsLength: ', totalColumnsLength);
+  // console.log('getTableColumns cols: ', cols);
+  // 下面新增的列的宽度的逻辑应该是：
+  // 1. 新添加进来的列的宽度就是 TOTAL_COLUMN_WIDTH/当前列数
+  // 2. 增加列时，用户未手动改动宽度的列的列宽要自动更新为 TOTAL_COLUMN_WIDTH/当前列数
+  // 3. 增加列时，用户手动改动宽度的列的列宽就保持为用户改的那个值
+  cols.concat(rows).forEach((dimension, index) => {
+    const { name, field, format, width, widthChanged, alreadySetWidth, oldColumnCounts } = dimension
     const headerText = getFieldAlias(field, queryVariables || {}) || name
     const column: ColumnProps<any> = {
       key: name,
@@ -397,7 +435,11 @@ function getTableColumns (props: IChartProps) {
           </Tooltip>
         </>
       ) : headerText,
-      dataIndex: name
+      dataIndex: name,
+      width,
+      widthChanged,
+      alreadySetWidth,
+      oldColumnCounts
     }
     if (autoMergeCell) {
       column.render = (text, _, idx) => {
@@ -411,11 +453,73 @@ function getTableColumns (props: IChartProps) {
       headerConfigItem = config
     })
     const columnConfigItem = columnsConfig.find((cfg) => cfg.columnName === name)
-    column.width = getDataColumnWidth(name, columnConfigItem, format, data)
-    column.width = Math.max(+column.width, computeCellWidth(headerConfigItem && headerConfigItem.style, headerText))
+    // console.log('columnConfigItem: ', columnConfigItem);
+    // console.log('column.width: ', column.width);
+    // console.log('column.widthChanged: ', column.widthChanged);
     if (columnConfigItem) {
       column.sorter = columnConfigItem.sort
+      column.width = columnConfigItem.width
+      column.widthChanged = columnConfigItem.widthChanged
     }
+    // console.log('column 111: ', column);
+    // console.log('column.width 111: ', column.width);
+    // console.log('column.widthChanged 111: ', column.widthChanged);
+    // console.log('column.alreadySetWidth 111: ', column.alreadySetWidth);
+    // console.log('column.oldColumnCounts 111: ', column.oldColumnCounts);
+    // 如果至少有一列已经调整了列宽，删除一列或多列时，其余列宽不动
+    let atLeastOneColumnChanged = false
+    if (column.oldColumnCounts <= totalColumnsLength) {
+      for (let i = 0; i < cols.length; i++) {
+        if (cols[i].widthChanged) {
+          // 如果atLeastOneColumnChanged为true，说明是删除了一列或多列并且有至少一列是改动过宽度的情况
+          // 但是可能是手动加载数据的，所以可能是删了两列，新增了一列这样，下面不能全局进行判断 column.width和column.widthChanged都为undefined的时候还是要计算数据的
+          atLeastOneColumnChanged = true
+          break
+        }
+      }
+    }
+    // 对列进行初始列宽的设置
+    if (column.width && column.widthChanged) {
+      // 已经设置过column的width，并且已经通过拖拽或者输入框输入宽度的方式更给了宽度，无论其他列怎么变化，这列都不进行变动
+    } else if (column.width && !column.widthChanged) {
+      // 已经设置过column的width，但没有通过拖拽或者输入框输入宽度的方式更给宽度
+      if (!column.alreadySetWidth || column.oldColumnCounts !== totalColumnsLength) {
+        // column.alreadySetWidth可能为undefined, false, true;其中为undefined或false时要进行设置 || 列数变化了（可能增加可能减少）
+        if (!atLeastOneColumnChanged) {
+          // 排除掉删除了一列或多列并且有至少一列是改动过宽度的情况
+
+          // 需要将column.width更新为TOTAL_COLUMN_WIDTH / totalColumnsLength
+          cols[index].width = TOTAL_COLUMN_WIDTH / totalColumnsLength
+          // 用alreadySetWidth来控制只设置一次，避免父子组件不断更新的死循环
+          cols[index].alreadySetWidth = true
+          // 更新 “上一次的列数”为当前column的数量
+          cols[index].oldColumnCounts = totalColumnsLength
+          // 更改全局数据中该column的width
+          tempWidgetProps.cols = cols
+          onSetWidgetProps(tempWidgetProps)
+        }
+      }
+    } else if (!column.width && column.widthChanged) {
+      // 不会有这种情况，还未设置过column.width，该column就不可能已经更改过
+    } else {
+      if (!column.alreadySetWidth) {
+        // 第一次渲染该列，未设置过column.width，肯定也没更改过
+        // 这里column.totalColumnsLength肯定也为undefined，不用判断
+        cols[index].width = TOTAL_COLUMN_WIDTH / totalColumnsLength
+        // 初始化column.widthChanged
+        cols[index].widthChanged = false
+        // 用alreadySetWidth来控制只设置一次，避免父子组件不断更新的死循环
+        cols[index].alreadySetWidth = true
+        // 更改全局数据中该column的width
+        tempWidgetProps.cols = cols
+        // 更新 “上一次的列数”为当前column的数量
+        cols[index].oldColumnCounts = totalColumnsLength
+        onSetWidgetProps(tempWidgetProps)
+      }
+    }
+    // column.width = getDataColumnWidth(name, columnConfigItem, format, data)
+    // column.width = Math.max(+column.width, computeCellWidth(headerConfigItem && headerConfigItem.style, headerText))
+
     mapTableHeaderConfig[name] = headerConfigItem
     column.onCell = (record) => ({
       config: columnConfigItem,
@@ -425,8 +529,9 @@ function getTableColumns (props: IChartProps) {
     })
     tableColumns.push(column)
   })
-  metrics.forEach((metric) => {
-    const { name, field, format, agg } = metric
+  metrics.forEach((metric, index) => {
+    // console.log('212121212121212 metric: ', metric);
+    const { name, field, format, agg, width, widthChanged, alreadySetWidth, oldColumnCounts } = metric
     let expression = decodeMetricName(name)
     if (!withNoAggregators) {
       expression = `${agg}(${expression})`
@@ -445,7 +550,11 @@ function getTableColumns (props: IChartProps) {
           </Tooltip>
         </>
       ) : headerText,
-      dataIndex: expression
+      dataIndex: expression,
+      width,
+      widthChanged,
+      alreadySetWidth,
+      oldColumnCounts
     }
     let headerConfigItem: ITableHeaderConfig = null
     findChildConfig(headerConfig, 'headerName', 'children', name, (config) => {
@@ -454,9 +563,68 @@ function getTableColumns (props: IChartProps) {
     const columnConfigItem = columnsConfig.find((cfg) => cfg.columnName === name)
     if (columnConfigItem) {
       column.sorter = columnConfigItem.sort
+      column.width = columnConfigItem.width
+      column.widthChanged = columnConfigItem.widthChanged
     }
-    column.width = getDataColumnWidth(expression, columnConfigItem, format, data)
-    column.width = Math.max(+column.width, computeCellWidth(headerConfigItem && headerConfigItem.style, headerText))
+    // // 对列进行初始列宽的设置
+    // column.width = TOTAL_COLUMN_WIDTH / totalColumnsLength
+    // console.log('column 222: ', column);
+    // console.log('column.width 222: ', column.width);
+    // console.log('column.widthChanged 222: ', column.widthChanged);
+    // console.log('column.alreadySetWidth 222: ', column.alreadySetWidth);
+    // 如果至少有一列已经调整了列宽，删除一列或多列时，其余列宽不动
+    let atLeastOneColumnChanged = false
+    if (column.oldColumnCounts <= totalColumnsLength) {
+      for (let i = 0; i < metrics.length; i++) {
+        if (metrics[i].widthChanged) {
+          // 如果atLeastOneColumnChanged为true，说明是删除了一列或多列并且有至少一列是改动过宽度的情况
+          // 但是可能是手动加载数据的，所以可能是删了两列，新增了一列这样，下面不能全局进行判断 column.width和column.widthChanged都为undefined的时候还是要计算数据的
+          atLeastOneColumnChanged = true
+          break
+        }
+      }
+    }
+    // 对列进行初始列宽的设置
+    if (column.width && column.widthChanged) {
+      // 已经设置过column的width，并且已经通过拖拽或者输入框输入宽度的方式更给了宽度，无论其他列怎么变化，这列都不进行变动
+    } else if (column.width && !column.widthChanged) {
+      // 已经设置过column的width，但没有通过拖拽或者输入框输入宽度的方式更给宽度
+      if (!column.alreadySetWidth || column.oldColumnCounts !== totalColumnsLength) {
+        // column.alreadySetWidth可能为undefined, false, true;其中为undefined或false时要进行设置 || 列数变化了（可能增加可能减少）
+        if (!atLeastOneColumnChanged) {
+          // 排除掉删除了一列或多列并且有至少一列是改动过宽度的情况
+
+          // 需要将column.width更新为TOTAL_COLUMN_WIDTH / totalColumnsLength
+          metrics[index].width = TOTAL_COLUMN_WIDTH / totalColumnsLength
+          // 用alreadySetWidth来控制只设置一次，避免父子组件不断更新的死循环
+          metrics[index].alreadySetWidth = true
+          // 更新 “上一次的列数”为当前column的数量
+          metrics[index].oldColumnCounts = totalColumnsLength
+          // 更改全局数据中该column的width
+          tempWidgetProps.metrics = metrics
+          onSetWidgetProps(tempWidgetProps)
+        }
+      }
+    } else if (!column.width && column.widthChanged) {
+      // 不会有这种情况，还未设置过column.width，该column就不可能已经更改过
+    } else {
+      if (!column.alreadySetWidth) {
+        // 第一次渲染该列，未设置过column.width，肯定也没更改过
+        // 这里column.totalColumnsLength肯定也为undefined，不用判断
+        metrics[index].width = TOTAL_COLUMN_WIDTH / totalColumnsLength
+        // 初始化column.widthChanged
+        metrics[index].widthChanged = false
+        // 用alreadySetWidth来控制只设置一次，避免父子组件不断更新的死循环
+        metrics[index].alreadySetWidth = true
+        // 更改全局数据中该column的width
+        tempWidgetProps.metrics = metrics
+        // 更新 “上一次的列数”为当前column的数量
+        metrics[index].oldColumnCounts = totalColumnsLength
+        onSetWidgetProps(tempWidgetProps)
+      }
+    }
+    // column.width = getDataColumnWidth(expression, columnConfigItem, format, data)
+    // column.width = Math.max(+column.width, computeCellWidth(headerConfigItem && headerConfigItem.style, headerText))
     mapTableHeaderConfig[name] = headerConfigItem
     column.onCell = (record) => ({
       config: columnConfigItem,
@@ -515,12 +683,12 @@ function getTableColumns (props: IChartProps) {
       column.fixed = 'right'
     }
   })
-
+  // console.log('getTableColumns tableColumns: ', tableColumns);
   return { tableColumns, mapTableHeaderConfig }
 }
 
 function getPaginationOptions (props: IChartProps) {
-  const { chartStyles, width, pagination } = props
+  const { chartStyles, pagination } = props
   // fixme
   let pageNo = void 0
   let pageSize = void 0
@@ -537,7 +705,7 @@ function getPaginationOptions (props: IChartProps) {
     current: pageNo,
     pageSize: pageSize || +initialPageSize,
     total: totalCount,
-    simple: width <= 768
+    simple: true
   }
   return paginationOptions
 }

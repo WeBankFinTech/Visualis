@@ -51,6 +51,10 @@ export interface IWidgetDimension {
   field: IFieldConfig
   format: IFieldFormatConfig
   sort: IFieldSortConfig
+  width?: number
+  widthChanged?: boolean
+  alreadySetWidth?: boolean
+  oldColumnCounts?: number
 }
 
 export interface IWidgetMetric {
@@ -59,6 +63,10 @@ export interface IWidgetMetric {
   chart: IChartInfo
   field: IFieldConfig
   format: IFieldFormatConfig
+  width?: number
+  widthChanged?: boolean
+  alreadySetWidth?: boolean
+  oldColumnCounts?: number
 }
 
 export interface IWidgetSecondaryMetric {
@@ -157,6 +165,7 @@ export interface IWidgetProps {
   computed?: any[]
   selectedItems?: number[]
   onSelectChartsItems?: (selectedItems: number[]) => void
+  onSetWidgetProps: (widgetProps: IWidgetProps) => void
   // onHideDrillPanel?: (swtich: boolean) => void
 }
 
@@ -173,7 +182,6 @@ export interface IWidgetWrapperProps extends IWidgetProps {
 }
 
 export interface IWidgetWrapperStates {
-  width: number
   height: number
   isShow: boolean
 }
@@ -189,7 +197,6 @@ export class Widget extends React.Component<
   constructor (props) {
     super(props)
     this.state = {
-      width: 0,
       height: 0,
       isShow: true
     }
@@ -208,33 +215,25 @@ export class Widget extends React.Component<
   }
 
   private getContainerSize = () => {
-    const { offsetWidth, offsetHeight } = this.container
+    const { offsetHeight } = this.container
       .current as HTMLDivElement
-    const { width, height } = this.state
-    if (
-      offsetWidth &&
-      offsetHeight &&
-      (offsetWidth !== width || offsetHeight !== height)
-    ) {
-      this.setState({
-        width: offsetWidth,
-        height: offsetHeight
-      })
+    const { height } = this.state
+    if ( offsetHeight && offsetHeight !== height ) {
+      this.setState({ height: offsetHeight })
     }
   }
 
   public render () {
     const { loading, empty, mode } = this.props
-    const { width, height, isShow } = this.state
+    const { isShow, height } = this.state
     const isWaterMask = localStorage.getItem('isWaterMask') === 'true';
     const username = localStorage.getItem('username');
-
-    const widgetProps = { width, height, ...this.props }
+    const widgetProps = { height, ...this.props }
 
     delete widgetProps.loading
-
+    // console.log('Widget widgetProps: ', widgetProps);
     let widgetContent: JSX.Element
-    if (width && height) {
+    if (height) {
       // FIXME
       widgetContent =
         widgetProps.mode === 'chart' ? (
@@ -249,7 +248,7 @@ export class Widget extends React.Component<
     }
 
     return (
-      <div className={styles.wrapper} ref={this.container}>
+      <div className={styles.wrapper} ref={this.container} id="widget" style={{overflow: 'auto'}}>
         {isShow && isWaterMask &&  <WaterMask {...waterMaskProps} />}
         {widgetContent}
         {loading}

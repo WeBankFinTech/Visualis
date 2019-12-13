@@ -397,6 +397,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     })
   }
 
+  // 点击widget编辑页面右上角的保存
   private saveWidget = () => {
     const { params, onAddWidget, onEditWidget } = this.props
     const { id, name, description, selectedViewId, controls, cache, expired, widgetProps, computed, originalWidgetProps, originalComputed, autoLoadData } = this.state
@@ -408,6 +409,9 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       message.error('请选择一个View')
       return
     }
+    // 在保存时，将现在最新的columnsWidth放在config中传到后端（当前只有在图表驱动的表格里操作过，this.columnsWidth才不为空，其他图表的this.columnsWidth都为{}，所以后面可以用this.columnsWidth是否为空来判断是不是图表驱动里的表格）
+    const columnsWidth = this.columnsWidth
+    // console.log('{...widgetProps}: ', {...widgetProps});
     const widget = {
       name,
       description,
@@ -563,6 +567,8 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       empty: !data.length,
       hasDataConfig
     }
+    // console.log('workbench this.props: ', this.props);
+    // console.log('workbench this.state: ', this.state);
 
     return (
       <div className={styles.workbench}>
@@ -619,6 +625,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
               <div className={styles.viewPanel}>
                 <div className={styles.widgetBlock}>
                   <Widget
+                    onSetWidgetProps={this.setWidgetProps}
                     {...widgetProps}
                     loading={<DashboardItemMask.Loading {...maskProps}/>}
                     empty={<DashboardItemMask.Empty {...maskProps}/>}

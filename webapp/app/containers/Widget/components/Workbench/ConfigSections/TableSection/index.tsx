@@ -113,13 +113,15 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
 
   private getValidColumnConfig = (props: ITableSectionProps, validColumns: IDataParamSource[]) => {
     const { config } = props
+    console.log('getValidColumnConfig props: ', props);
 
     const validColumnConfig = produce(config.columnsConfig, (draft) => {
       const config: ITableColumnConfig[] = []
-
       validColumns.forEach((column) => {
         const existedConfig = draft.find((item) => item.columnName === column.name)
+        // console.log('existedConfig: ', existedConfig);
         if (existedConfig) {
+          console.log('{...existedConfig}: ', {...existedConfig});
           config.push({
             ...existedConfig,
             alias: this.getColumnDisplayName(column),
@@ -132,7 +134,11 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
             visualType: column.visualType,
             styleType: TableCellStyleTypes.Column,
             style: { ...DefaultTableCellStyle },
-            conditionStyles: []
+            conditionStyles: [],
+            width: column.width,
+            alreadySetWidth: column.alreadySetWidth,
+            oldColumnCounts: column.oldColumnCounts,
+            widthChanged: column.widthChanged
           })
         }
       })
@@ -300,7 +306,9 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
       headerConfigModalVisible, columnConfigModalVisible } = this.state
     const fixedColumnOptions = this.getValidFixedColumns(validHeaderConfig, validColumns)
 
-
+    console.log('TableSection this.props: ', this.props);
+    console.log('TableSection this.state: ', this.state);
+    console.log('TableSection validColumnConfig: ', validColumnConfig);
     return (
       <div>
         <div className={styles.paneBlock}>
