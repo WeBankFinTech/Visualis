@@ -58,11 +58,6 @@ Visualis与DataSphere Studio的数据开发、工作流调度和数据质量校�
 
 ![Visualis](images/Visualis_AppJoint.gif)
 
-## Demo试用环境
-
- &nbsp; &nbsp;&nbsp; &nbsp;[点我访问](https://sandbox.webank.com/wds/dss/#) DSS Demo 试用环境
-
- &nbsp; &nbsp;&nbsp; &nbsp;用户名/密码: bdp/Abcd1234
  
 
 ## 架构设计
