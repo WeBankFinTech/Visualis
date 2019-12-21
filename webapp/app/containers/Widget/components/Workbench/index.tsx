@@ -421,7 +421,9 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
         cache,
         expired,
         autoLoadData,
-        data: []
+        data: [],
+        // 这个queryData就是widget要调用getdata接口会传的参数，因为在dss工作流里，需要从后台直接提交计算widget的请求
+        query: this.queryData
       }),
       publish: true
     }
@@ -451,6 +453,14 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
         this.props.router.replace(`/project/${params.pid}/widgets`)
       })
     }
+  }
+
+  // 这个queryData就是widget要调用getdata接口会传的参数，因为在dss工作流里，需要从后台直接提交计算widget的请求
+  private queryData = null
+
+  // 每次queryData有变化，也就是每次请求了数据时都更新成最新的请求接口的参数
+  private setQueryData = (data) => {
+    this.queryData = data
   }
 
   private cancel = () => {
@@ -613,6 +623,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
                 onSetComputed={this.setComputed}
                 onDeleteComputed={this.deleteComputed}
                 onLoadData={onLoadViewData}
+                onSetQueryData={this.setQueryData}
                 onLoadDistinctValue={onLoadViewDistinctValue}
                 onBeofreDropColunm={onBeofreDropColunm}
               />

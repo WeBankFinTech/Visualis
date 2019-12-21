@@ -96,6 +96,7 @@ interface IOperatingPanelProps {
     resolve: (data) => void,
     reject: (error) => void
   ) => void
+  onSetQueryData: (data: object) => void
   onLoadDistinctValue: (viewId: number, params: Partial<IDistinctValueReqeustParams>) => void,
   onBeofreDropColunm: (view: IView, resolve: () => void) => void
 }
@@ -836,7 +837,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     }
   ) => {
     const { cols, rows, metrics, secondaryMetrics, filters, color, label, size, xAxis, tip, yAxis } = dataParams
-    const { selectedView, onLoadData, onSetWidgetProps } = this.props
+    const { selectedView, onLoadData, onSetWidgetProps, onSetQueryData } = this.props
     const { mode, chartModeSelectedChart, pagination } = this.state
     let renderType
     let updatedPagination
@@ -998,6 +999,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
 
     if (needRequest) {
       this.lastRequestParamString = requestParamString
+      onSetQueryData(requestParams)
       onLoadData(selectedView.id, requestParams, (result) => {
         const { resultList: data, pageNo, pageSize, totalCount } = result
         updatedPagination = !updatedPagination.withPaging ? updatedPagination : {
