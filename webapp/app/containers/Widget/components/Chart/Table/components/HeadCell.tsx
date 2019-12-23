@@ -52,19 +52,14 @@ function HeadCell (props: IHeadCellProps) {
 }
 
 export function resizeTableColumns (columns: Array<ColumnProps<any>>, columnIndex: number, width: number) {
-  console.log('resizeTableColumns columns: ', columns);
-  console.log('resizeTableColumns columnIndex: ', columnIndex);
-  console.log('resizeTableColumns width: ', width);
   const nextColumns = [...columns]
   const resizedColumn = nextColumns[columnIndex]
   const ratio = Number((width / (+resizedColumn.width)).toFixed(2))
-  console.log('resizeTableColumns ratio: ', ratio);
   nextColumns[columnIndex] = {
     ...resizedColumn,
     width
   }
   traverseConfig(resizedColumn.children, 'children', (childColumn) => {
-    console.log('resizeTableColumns childColumn: ', childColumn);
     childColumn.width = ratio * (+childColumn.width)
   })
   return nextColumns

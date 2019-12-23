@@ -166,6 +166,7 @@ export interface IWidgetProps {
   selectedItems?: number[]
   onSelectChartsItems?: (selectedItems: number[]) => void
   onSetWidgetProps: (widgetProps: IWidgetProps) => void
+  onSetNeedUpdateDataParams: (value: boolean) => void
   // onHideDrillPanel?: (swtich: boolean) => void
 }
 
@@ -231,7 +232,6 @@ export class Widget extends React.Component<
     const widgetProps = { height, ...this.props }
 
     delete widgetProps.loading
-    // console.log('Widget widgetProps: ', widgetProps);
     let widgetContent: JSX.Element
     if (height) {
       // FIXME

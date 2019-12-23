@@ -98,10 +98,34 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
 
   // 通过拖拽的方式调整表格列宽时触发的事件
   private handleResize = (idx: number) => (_, { size }: IResizeCallbackData) => {
-    // console.log('handleResize _: ', _);
-    // console.log('handleResize size: ', size);
     const nextColumns = resizeTableColumns(this.state.tableColumns, idx, size.width)
     this.setState({ tableColumns: nextColumns })
+    const { cols, rows, metrics, data, onSetWidgetProps, onSetNeedUpdateDataParams, pagination, secondaryMetrics, filters, selectedChart, orders, mode, model, onPaginationChange, chartStyles } = this.props
+    // tempWidgetProps是用来在onSetWidgetProps中使用的，所以只需要workbench中的原始字段
+    const tempWidgetProps = { data, pagination, cols, rows, metrics, secondaryMetrics, filters, chartStyles, selectedChart, orders, mode, model, onPaginationChange }
+    tempWidgetProps.cols.forEach((col, index) => {
+      for (let i = 0; i < nextColumns.length; i++) {
+        if (col.name === nextColumns[i].key) {
+          tempWidgetProps.cols[index].width = nextColumns[i].width
+          // 通过输入框里输入或拖拽改变列宽之后，widthChanged都要设为true
+          tempWidgetProps.cols[index].widthChanged = true
+          break
+        }
+      }
+    })
+    tempWidgetProps.metrics.forEach((metric, index) => {
+      for (let i = 0; i < nextColumns.length; i++) {
+        if (metric.name === nextColumns[i].key) {
+          tempWidgetProps.metrics[index].width = nextColumns[i].width
+          // 通过输入框里输入或拖拽改变列宽之后，widthChanged都要设为true
+          tempWidgetProps.metrics[index].widthChanged = true
+          break
+        }
+      }
+    })
+    // tempWidgetProps.cols = cols
+    onSetNeedUpdateDataParams(true)
+    onSetWidgetProps(tempWidgetProps)
   }
 
   // 可拖拽列宽的列的配置
@@ -196,7 +220,6 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
   // 将传入的props映射到state上
   public static getDerivedStateFromProps (nextProps: IChartProps, prevState: ITableStates) {
     const { chartStyles, data } = nextProps
-    // console.log('getDerivedStateFromProps nextProps: ', nextProps);
     if (chartStyles !== prevState.chartStyles || data !== prevState.data) {
       const { tableColumns, mapTableHeaderConfig } = getTableColumns(nextProps)
       const tablePagination = getPaginationOptions(nextProps)
@@ -366,8 +389,6 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
       [Styles.noBorder]: bordered !== undefined && !bordered
     })
     style.width = tableWidth
-    // console.log('Table this.props: ', this.props);
-    // console.log('Table this.state: ', this.state);
     return (
       <>
         <AntTable
@@ -404,7 +425,7 @@ function getTableColumns (props: IChartProps) {
       mapTableHeaderConfig: {}
     }
   }
-  const { cols, rows, metrics, data, queryVariables, onSetWidgetProps, pagination, secondaryMetrics, filters, selectedChart, orders, mode, model, onPaginationChange } = props
+  const { cols, rows, metrics, data, queryVariables, onSetWidgetProps, onSetNeedUpdateDataParams, pagination, secondaryMetrics, filters, selectedChart, orders, mode, model, onPaginationChange } = props
   const { headerConfig, columnsConfig, autoMergeCell, leftFixedColumns, rightFixedColumns, withNoAggregators } = chartStyles.table
   const tableColumns: Array<ColumnProps<any>> = []
   const mapTableHeaderConfig: IMapTableHeaderConfig = {}
@@ -413,8 +434,6 @@ function getTableColumns (props: IChartProps) {
   // 获取当前总列数
   let totalColumnsLength = 0
   if (Array.isArray(cols) && Array.isArray(metrics)) totalColumnsLength = cols.length + metrics.length
-  console.log('totalColumnsLength: ', totalColumnsLength);
-  // console.log('getTableColumns cols: ', cols);
   // 下面新增的列的宽度的逻辑应该是：
   // 1. 新添加进来的列的宽度就是 TOTAL_COLUMN_WIDTH/当前列数
   // 2. 增加列时，用户未手动改动宽度的列的列宽要自动更新为 TOTAL_COLUMN_WIDTH/当前列数
@@ -453,19 +472,13 @@ function getTableColumns (props: IChartProps) {
       headerConfigItem = config
     })
     const columnConfigItem = columnsConfig.find((cfg) => cfg.columnName === name)
-    // console.log('columnConfigItem: ', columnConfigItem);
-    // console.log('column.width: ', column.width);
-    // console.log('column.widthChanged: ', column.widthChanged);
     if (columnConfigItem) {
       column.sorter = columnConfigItem.sort
       column.width = columnConfigItem.width
       column.widthChanged = columnConfigItem.widthChanged
+      column.oldColumnCounts = columnConfigItem.oldColumnCounts
+      column.alreadySetWidth = columnConfigItem.alreadySetWidth
     }
-    // console.log('column 111: ', column);
-    // console.log('column.width 111: ', column.width);
-    // console.log('column.widthChanged 111: ', column.widthChanged);
-    // console.log('column.alreadySetWidth 111: ', column.alreadySetWidth);
-    // console.log('column.oldColumnCounts 111: ', column.oldColumnCounts);
     // 如果至少有一列已经调整了列宽，删除一列或多列时，其余列宽不动
     let atLeastOneColumnChanged = false
     if (column.oldColumnCounts <= totalColumnsLength) {
@@ -496,6 +509,7 @@ function getTableColumns (props: IChartProps) {
           cols[index].oldColumnCounts = totalColumnsLength
           // 更改全局数据中该column的width
           tempWidgetProps.cols = cols
+          onSetNeedUpdateDataParams(true)
           onSetWidgetProps(tempWidgetProps)
         }
       }
@@ -514,6 +528,7 @@ function getTableColumns (props: IChartProps) {
         tempWidgetProps.cols = cols
         // 更新 “上一次的列数”为当前column的数量
         cols[index].oldColumnCounts = totalColumnsLength
+        onSetNeedUpdateDataParams(true)
         onSetWidgetProps(tempWidgetProps)
       }
     }
@@ -530,7 +545,6 @@ function getTableColumns (props: IChartProps) {
     tableColumns.push(column)
   })
   metrics.forEach((metric, index) => {
-    // console.log('212121212121212 metric: ', metric);
     const { name, field, format, agg, width, widthChanged, alreadySetWidth, oldColumnCounts } = metric
     let expression = decodeMetricName(name)
     if (!withNoAggregators) {
@@ -568,10 +582,6 @@ function getTableColumns (props: IChartProps) {
     }
     // // 对列进行初始列宽的设置
     // column.width = TOTAL_COLUMN_WIDTH / totalColumnsLength
-    // console.log('column 222: ', column);
-    // console.log('column.width 222: ', column.width);
-    // console.log('column.widthChanged 222: ', column.widthChanged);
-    // console.log('column.alreadySetWidth 222: ', column.alreadySetWidth);
     // 如果至少有一列已经调整了列宽，删除一列或多列时，其余列宽不动
     let atLeastOneColumnChanged = false
     if (column.oldColumnCounts <= totalColumnsLength) {
@@ -602,6 +612,7 @@ function getTableColumns (props: IChartProps) {
           metrics[index].oldColumnCounts = totalColumnsLength
           // 更改全局数据中该column的width
           tempWidgetProps.metrics = metrics
+          onSetNeedUpdateDataParams(true)
           onSetWidgetProps(tempWidgetProps)
         }
       }
@@ -620,6 +631,7 @@ function getTableColumns (props: IChartProps) {
         tempWidgetProps.metrics = metrics
         // 更新 “上一次的列数”为当前column的数量
         metrics[index].oldColumnCounts = totalColumnsLength
+        onSetNeedUpdateDataParams(true)
         onSetWidgetProps(tempWidgetProps)
       }
     }
@@ -683,7 +695,6 @@ function getTableColumns (props: IChartProps) {
       column.fixed = 'right'
     }
   })
-  // console.log('getTableColumns tableColumns: ', tableColumns);
   return { tableColumns, mapTableHeaderConfig }
 }
 

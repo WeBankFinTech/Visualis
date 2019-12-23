@@ -62,6 +62,7 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
     })
   }
 
+  // 从props中的dataParams提取出需要展示的列
   private getCurrentTableColumns (props: ITableSectionProps) {
     const { dataParams } = props
     const keyNames = ['cols', 'metrics', 'rows']
@@ -113,15 +114,13 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
 
   private getValidColumnConfig = (props: ITableSectionProps, validColumns: IDataParamSource[]) => {
     const { config } = props
-    console.log('getValidColumnConfig props: ', props);
 
     const validColumnConfig = produce(config.columnsConfig, (draft) => {
       const config: ITableColumnConfig[] = []
+      // 这个validColumns里的数据就是显示在表格数据设置弹框里的各列的数据
       validColumns.forEach((column) => {
         const existedConfig = draft.find((item) => item.columnName === column.name)
-        // console.log('existedConfig: ', existedConfig);
         if (existedConfig) {
-          console.log('{...existedConfig}: ', {...existedConfig});
           config.push({
             ...existedConfig,
             alias: this.getColumnDisplayName(column),
@@ -305,10 +304,6 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
       validColumns, validHeaderConfig, validColumnConfig,
       headerConfigModalVisible, columnConfigModalVisible } = this.state
     const fixedColumnOptions = this.getValidFixedColumns(validHeaderConfig, validColumns)
-
-    console.log('TableSection this.props: ', this.props);
-    console.log('TableSection this.state: ', this.state);
-    console.log('TableSection validColumnConfig: ', validColumnConfig);
     return (
       <div>
         <div className={styles.paneBlock}>

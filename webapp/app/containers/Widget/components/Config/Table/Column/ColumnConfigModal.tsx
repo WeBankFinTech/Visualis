@@ -36,6 +36,7 @@ export class ColumnStyleConfig extends React.PureComponent<IColumnStyleConfigPro
 
   public constructor (props: IColumnStyleConfigProps) {
     super(props)
+    // config是从tableSection里面传进来的validColumnConfig
     const localConfig = props.config
     this.state = {
       localConfig,
@@ -82,7 +83,6 @@ export class ColumnStyleConfig extends React.PureComponent<IColumnStyleConfigPro
   private propChange = (
     propPath: Exclude<keyof(ITableColumnConfig), 'style'> | ['style', keyof ITableColumnConfig['style']]
   ) => (e) => {
-    if (e.target) console.log('e.target.value: ', e.target.value);
     // 如果是配置 列宽 时，必须要是输入的数字才有意义
     if (propPath === 'width' && typeof e !== 'number') return e = null
 
@@ -208,8 +208,6 @@ export class ColumnStyleConfig extends React.PureComponent<IColumnStyleConfigPro
     if (localConfig.length <= 0) {
       return (<div />)
     }
-    console.log('ColumnConfigModal this.props: ', this.props);
-    console.log('ColumnConfigModal this.state: ', this.state);
     const { style, visualType, sort, conditionStyles, showAsPercent, width } = localConfig.find((c) => c.columnName === selectedColumnName)
     const { fontSize, fontFamily, fontWeight, fontColor, fontStyle, backgroundColor, justifyContent } = style
     return (

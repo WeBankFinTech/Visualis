@@ -70,6 +70,7 @@ export interface IDataParams {
 
 interface IOperatingPanelProps {
   views: IViewBase[]
+  widgetProps: IWidgetProps
   originalWidgetProps: IWidgetProps
   selectedView: IFormedView
   distinctColumnValues: any[]
@@ -90,6 +91,8 @@ interface IOperatingPanelProps {
   onSetComputed: (computesField: any[]) => void
   onDeleteComputed: (computesField: any[]) => void
   onSetWidgetProps: (widgetProps: IWidgetProps) => void
+  needUpdateDataParams: boolean
+  onSetNeedUpdateDataParams: (value: boolean) => void
   onLoadData: (
     viewId: number,
     requestParams: IDataRequestParams,
@@ -199,7 +202,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
   }
 
   public componentWillReceiveProps (nextProps: IOperatingPanelProps, prevProps: IOperatingPanelProps) {
-    const { selectedView, originalWidgetProps } = nextProps
+    const { selectedView, originalWidgetProps, widgetProps } = nextProps
     if (selectedView && selectedView !== this.props.selectedView) {
       const model = selectedView.model
       const categoryDragItems = []
@@ -228,14 +231,17 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         valueDragItems
       })
     }
-
+    // 现在的问题是，拖拽调整列宽，或者新增、删除列改变的列宽，都是改动的是widgetProps，而originalProps是没改动的
     if ((originalWidgetProps && selectedView) &&
-      (originalWidgetProps !== this.props.originalWidgetProps || selectedView !== this.props.selectedView)) {
-      const { cols, rows, metrics, secondaryMetrics, filters, color, label, size, xAxis, tip, chartStyles, mode, selectedChart } = originalWidgetProps
+      (originalWidgetProps !== this.props.originalWidgetProps || selectedView !== this.props.selectedView || nextProps.needUpdateDataParams)) {
+      if (this.props.needUpdateDataParams) this.props.onSetNeedUpdateDataParams(false)
+      const { secondaryMetrics, filters, color, label, size, xAxis, tip, chartStyles, mode, selectedChart } = originalWidgetProps
+      const { cols, rows, metrics } = widgetProps
       const { dataParams } = this.state
       const model = selectedView.model
       const currentWidgetlibs = widgetlibs[mode || 'pivot'] // FIXME 兼容 0.3.0-beta.1 之前版本
-
+      // 在这里，从originalWidgetProps拿到的cols、rows、metrics等，放进dataParams中
+      dataParams.cols.items = []
       cols.forEach((c) => {
         const modelColumn = model[c.name]
         if (modelColumn) {
@@ -248,6 +254,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         }
       })
 
+      dataParams.rows.items = []
       rows.forEach((r) => {
         const modelColumn = model[r.name]
         if (modelColumn) {
@@ -268,6 +275,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         }
       }
 
+      dataParams.metrics.items = []
       metrics.forEach((m) => {
         const modelColumn = model[decodeMetricName(m.name)]
         if (modelColumn) {
@@ -287,6 +295,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
           type: 'value',
           items: []
         }
+        dataParams.secondaryMetrics.items = []
         secondaryMetrics.forEach((m) => {
           const modelColumn = model[decodeMetricName(m.name)]
           if (modelColumn) {
@@ -300,6 +309,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         })
       }
 
+      dataParams.filters.items = []
       filters.forEach((f) => {
         const modelColumn = model[f.name]
         if (modelColumn) {
@@ -595,7 +605,6 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       dragged: null,
       modalCachedData: null
     })
-
     this.setWidgetProps(dataParams, styleParams)
   }
 
@@ -947,9 +956,6 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         ? getPivotModeSelectedCharts([])
         : [getTable()]
     }
-    const mergedParams = this.getChartDataConfig(selectedCharts)
-    const mergedDataParams = mergedParams.dataParams
-    const mergedStyleParams = mergedParams.styleParams
 
     let noAggregators = false
     if (styleParams.table) { // @FIXME pagination in table style config
@@ -1008,6 +1014,9 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
           pageSize,
           totalCount
         }
+        const mergedParams = this.getChartDataConfig(selectedCharts)
+        const mergedDataParams = mergedParams.dataParams
+        const mergedStyleParams = mergedParams.styleParams
         onSetWidgetProps({
           cols: cols.items.map((item) => ({
             ...item,
@@ -1057,8 +1066,13 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         this.setState({
           chartModeSelectedChart: mode === 'pivot' ? chartModeSelectedChart : selectedCharts[0],
           pagination: updatedPagination,
-          dataParams: mergedDataParams,
           styleParams: mergedStyleParams
+        }, () => {
+          const mergedParams = this.getChartDataConfig(selectedCharts)
+          const mergedDataParams = mergedParams.dataParams
+          this.setState({
+            dataParams: mergedDataParams,
+          })
         })
       }, (error) => {
         notification.destroy()
@@ -1078,6 +1092,9 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         })
       })
     } else {
+      const mergedParams = this.getChartDataConfig(selectedCharts)
+      const mergedDataParams = mergedParams.dataParams
+      const mergedStyleParams = mergedParams.styleParams
       onSetWidgetProps({
         data: null,
         cols: cols.items.map((item) => ({

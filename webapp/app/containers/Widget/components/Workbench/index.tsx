@@ -88,6 +88,7 @@ interface IWorkbenchStates {
   cache: boolean
   expired: number
   splitSize: number
+  // 初始的widgetProps
   originalWidgetProps: IWidgetProps
   originalComputed: any[]
   widgetProps: IWidgetProps
@@ -221,6 +222,13 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     sessionStorage.setItem('viewId', '');
   }
 
+  // 增加一个手动判断的标志，是否需要更新OpratingPanel中的dataParams
+  private needUpdateDataParams = false
+
+  private setNeedUpdateDataParams = (value) => {
+    this.needUpdateDataParams = value
+  }
+
   private initSettings = (): IWorkbenchSettings => {
     let workbenchSettings = {
       queryMode: WorkbenchQueryMode.Immediately,
@@ -274,10 +282,9 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
   }
 
   private deleteComputed = (computeField) => {
-    console.log({computeField})
     const { from } = computeField
     const { params, onEditWidget } = this.props
-    const { id, name, description, selectedViewId, controls, cache, autoLoadData, expired, widgetProps, computed, originalWidgetProps, originalComputed } = this.state
+    const { id, name, description, selectedViewId, controls, cache, autoLoadData, expired, widgetProps, computed, originalComputed } = this.state
     if (from === 'originalComputed') {
       this.setState({
         originalComputed: originalComputed.filter((oc) => oc.id !== computeField.id)
@@ -400,7 +407,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
   // 点击widget编辑页面右上角的保存
   private saveWidget = () => {
     const { params, onAddWidget, onEditWidget } = this.props
-    const { id, name, description, selectedViewId, controls, cache, expired, widgetProps, computed, originalWidgetProps, originalComputed, autoLoadData } = this.state
+    const { id, name, description, selectedViewId, controls, cache, expired, widgetProps, computed, originalComputed, autoLoadData } = this.state
     if (!name.trim()) {
       message.error('Widget名称不能为空')
       return
@@ -409,9 +416,6 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       message.error('请选择一个View')
       return
     }
-    // 在保存时，将现在最新的columnsWidth放在config中传到后端（当前只有在图表驱动的表格里操作过，this.columnsWidth才不为空，其他图表的this.columnsWidth都为{}，所以后面可以用this.columnsWidth是否为空来判断是不是图表驱动里的表格）
-    const columnsWidth = this.columnsWidth
-    // console.log('{...widgetProps}: ', {...widgetProps});
     const widget = {
       name,
       description,
@@ -431,9 +435,6 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       }),
       publish: true
     }
-    console.info({
-      widget
-    })
     if (id) {
       onEditWidget({...widget, id}, () => {
         message.success('修改成功')
@@ -577,9 +578,6 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       empty: !data.length,
       hasDataConfig
     }
-    // console.log('workbench this.props: ', this.props);
-    // console.log('workbench this.state: ', this.state);
-
     return (
       <div className={styles.workbench}>
         <EditorHeader
@@ -607,6 +605,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
             >
               <OperatingPanel
                 ref={(f) => this.operatingPanel = f}
+                widgetProps={widgetProps}
                 views={views}
                 originalWidgetProps={originalWidgetProps}
                 originalComputed={originalComputed}
@@ -626,6 +625,8 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
                 onCacheChange={this.cacheChange}
                 onExpiredChange={this.expiredChange}
                 onSetWidgetProps={this.setWidgetProps}
+                needUpdateDataParams={this.needUpdateDataParams}
+                onSetNeedUpdateDataParams={this.setNeedUpdateDataParams}
                 onSetComputed={this.setComputed}
                 onDeleteComputed={this.deleteComputed}
                 onLoadData={onLoadViewData}
@@ -637,6 +638,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
                 <div className={styles.widgetBlock}>
                   <Widget
                     onSetWidgetProps={this.setWidgetProps}
+                    onSetNeedUpdateDataParams={this.setNeedUpdateDataParams}
                     {...widgetProps}
                     loading={<DashboardItemMask.Loading {...maskProps}/>}
                     empty={<DashboardItemMask.Empty {...maskProps}/>}
