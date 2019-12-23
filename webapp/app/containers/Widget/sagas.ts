@@ -36,6 +36,7 @@ import {
   widgetDeleted,
   deleteWidgetFail,
   widgetDetailLoaded,
+  widgetDetailLoadedWithoutViewDetail,
   loadWidgetDetailFail,
   widgetEdited,
   editWidgetFail
@@ -91,9 +92,12 @@ export function* getWidgetDetail (action) {
     const result = yield call(request, `${api.widget}/${payload.id}`)
     const viewId = result.payload.viewId
     // 直接从dss里面创建widget并且不绑定view的时候，是没有viewId的，这个时候不请求view详情接口
-    if (!viewId) return
-    const view = yield call(request, `${api.view}/${viewId}`)
-    yield put(widgetDetailLoaded(result.payload, view.payload))
+    if (!viewId) {
+      yield put(widgetDetailLoadedWithoutViewDetail(result.payload)) 
+    } else {
+      const view = yield call(request, `${api.view}/${viewId}`)
+      yield put(widgetDetailLoaded(result.payload, view.payload))
+    }
   } catch (err) {
     yield put(loadWidgetDetailFail(err))
     errorHandler(err)
