@@ -183,6 +183,7 @@ export interface IWidgetWrapperProps extends IWidgetProps {
 }
 
 export interface IWidgetWrapperStates {
+  width: number
   height: number
   isShow: boolean
 }
@@ -198,6 +199,7 @@ export class Widget extends React.Component<
   constructor (props) {
     super(props)
     this.state = {
+      width: 0,
       height: 0,
       isShow: true
     }
@@ -216,24 +218,24 @@ export class Widget extends React.Component<
   }
 
   private getContainerSize = () => {
-    const { offsetHeight } = this.container
+    const { offsetWidth, offsetHeight } = this.container
       .current as HTMLDivElement
-    const { height } = this.state
-    if ( offsetHeight && offsetHeight !== height ) {
-      this.setState({ height: offsetHeight })
+    const { width, height } = this.state
+    if ( offsetWidth && offsetHeight && (offsetWidth !== width || offsetHeight !== height) ) {
+      this.setState({ width: offsetWidth, height: offsetHeight })
     }
   }
 
   public render () {
     const { loading, empty, mode } = this.props
-    const { isShow, height } = this.state
+    const { isShow, width, height } = this.state
     const isWaterMask = localStorage.getItem('isWaterMask') === 'true';
     const username = localStorage.getItem('username');
-    const widgetProps = { height, ...this.props }
+    const widgetProps = { width, height, ...this.props }
 
     delete widgetProps.loading
     let widgetContent: JSX.Element
-    if (height) {
+    if (width && height) {
       // FIXME
       widgetContent =
         widgetProps.mode === 'chart' ? (
