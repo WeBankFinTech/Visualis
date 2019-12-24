@@ -25,6 +25,7 @@ interface ITableSectionProps {
   dataParams: IDataParams
   config: ITableConfig
   onChange: (prop: string, value: any) => void
+  onSetWidthChangedInInput: (value: boolean) => void
 }
 
 interface ITableSectionStates {
@@ -124,7 +125,11 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
           config.push({
             ...existedConfig,
             alias: this.getColumnDisplayName(column),
-            visualType: column.visualType
+            visualType: column.visualType,
+            width: column.width,
+            alreadySetWidth: column.alreadySetWidth,
+            oldColumnCounts: column.oldColumnCounts,
+            widthChanged: column.widthChanged
           })
         } else {
           config.push({
@@ -296,7 +301,7 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
   }
 
   public render () {
-    const { config } = this.props
+    const { config, onSetWidthChangedInInput } = this.props
     const {
       leftFixedColumns, rightFixedColumns, headerFixed, bordered, size,
       autoMergeCell, withPaging, pageSize, withNoAggregators } = config
@@ -442,6 +447,7 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
             config={validColumnConfig}
             onCancel={this.closeColumnConfig}
             onSave={this.saveColumnConfig}
+            onSetWidthChangedInInput={onSetWidthChangedInInput}
           />
         </React.Suspense>
       </div>

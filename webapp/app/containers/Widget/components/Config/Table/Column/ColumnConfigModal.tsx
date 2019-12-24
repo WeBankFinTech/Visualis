@@ -23,6 +23,7 @@ interface IColumnStyleConfigProps {
   config: ITableColumnConfig[]
   onCancel: () => void
   onSave: (config: ITableColumnConfig[]) => void
+  onSetWidthChangedInInput: (value: boolean) => void
 }
 
 interface IColumnStyleConfigStates {
@@ -92,7 +93,10 @@ export class ColumnStyleConfig extends React.PureComponent<IColumnStyleConfigPro
       const selectedColumn = draft.find(({ columnName }) => columnName === selectedColumnName)
       set(selectedColumn, propPath, value)
       // 如果是更改了列宽之后，要改这个widthChanged值为true
-      if (propPath === 'width') set(selectedColumn, 'widthChanged', true)
+      if (propPath === 'width') {
+        set(selectedColumn, 'widthChanged', true)
+        this.props.onSetWidthChangedInInput(true)
+      }
       return draft
     })
     this.setState({

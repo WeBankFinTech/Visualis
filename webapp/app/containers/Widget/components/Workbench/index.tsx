@@ -229,6 +229,14 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     this.needUpdateDataParams = value
   }
 
+  // 增加一个判断标志，判断是否在“表格数据设置”弹框中改变了列宽，控制改变了列宽之后在表格那边只更新一次数据
+  private widthChangedInInput = true
+
+  private setWidthChangedInInput = (value) => {
+    this.widthChangedInInput = value
+  }
+
+
   private initSettings = (): IWorkbenchSettings => {
     let workbenchSettings = {
       queryMode: WorkbenchQueryMode.Immediately,
@@ -627,6 +635,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
                 onSetWidgetProps={this.setWidgetProps}
                 needUpdateDataParams={this.needUpdateDataParams}
                 onSetNeedUpdateDataParams={this.setNeedUpdateDataParams}
+                onSetWidthChangedInInput={this.setWidthChangedInInput}
                 onSetComputed={this.setComputed}
                 onDeleteComputed={this.deleteComputed}
                 onLoadData={onLoadViewData}
@@ -639,6 +648,8 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
                   <Widget
                     onSetWidgetProps={this.setWidgetProps}
                     onSetNeedUpdateDataParams={this.setNeedUpdateDataParams}
+                    widthChangedInInput={this.widthChangedInInput}
+                    onSetWidthChangedInInput={this.setWidthChangedInInput}
                     {...widgetProps}
                     loading={<DashboardItemMask.Loading {...maskProps}/>}
                     empty={<DashboardItemMask.Empty {...maskProps}/>}

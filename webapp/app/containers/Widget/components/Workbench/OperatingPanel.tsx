@@ -93,6 +93,7 @@ interface IOperatingPanelProps {
   onSetWidgetProps: (widgetProps: IWidgetProps) => void
   needUpdateDataParams: boolean
   onSetNeedUpdateDataParams: (value: boolean) => void
+  onSetWidthChangedInInput: (value: boolean) => void
   onLoadData: (
     viewId: number,
     requestParams: IDataRequestParams,
@@ -702,7 +703,6 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       fieldModalVisible: false
     })
   }
-
 
   private dropboxItemChangeFormatConfig = (from: string) => (item: IDataParamSource) => {
     this.setState({
@@ -1544,7 +1544,8 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       onChangeAutoLoadData,
       onExpiredChange,
       originalWidgetProps,
-      originalComputed
+      originalComputed,
+      onSetWidthChangedInInput
     } = this.props
     const {
       dragged,
@@ -1570,7 +1571,6 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       computedConfigModalVisible,
       selectedComputed
     } = this.state
-
     const widgetPropsModel = selectedView && selectedView.model ? selectedView.model : {}
 
     const { metrics } = dataParams
@@ -1791,6 +1791,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
             {table && <TableSection
               dataParams={dataParams}
               config={table}
+              onSetWidthChangedInInput={onSetWidthChangedInInput}
               onChange={this.styleChange('table')}
             />}
             {pivotConfig && <PivotSection

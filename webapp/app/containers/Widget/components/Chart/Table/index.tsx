@@ -71,6 +71,9 @@ interface ITableStates {
   tableBodyHeight: number
 }
 
+// 保留一个刚拖拽列宽的状态，用于下面判断是采用拖拽后的列宽值还是“表格数据设置”里配置的列宽值
+let isDragged = false
+
 export class Table extends React.PureComponent<IChartProps, ITableStates> {
 
   private static HeaderSorterWidth = 0
@@ -100,7 +103,7 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
   private handleResize = (idx: number) => (_, { size }: IResizeCallbackData) => {
     const nextColumns = resizeTableColumns(this.state.tableColumns, idx, size.width)
     this.setState({ tableColumns: nextColumns })
-    const { cols, rows, metrics, data, onSetWidgetProps, onSetNeedUpdateDataParams, pagination, secondaryMetrics, filters, selectedChart, orders, mode, model, onPaginationChange, chartStyles } = this.props
+    const { cols, rows, metrics, data, onSetWidgetProps, onSetWidthChangedInInput, onSetNeedUpdateDataParams, pagination, secondaryMetrics, filters, selectedChart, orders, mode, model, onPaginationChange, chartStyles } = this.props
     // tempWidgetProps是用来在onSetWidgetProps中使用的，所以只需要workbench中的原始字段
     const tempWidgetProps = { data, pagination, cols, rows, metrics, secondaryMetrics, filters, chartStyles, selectedChart, orders, mode, model, onPaginationChange }
     tempWidgetProps.cols.forEach((col, index) => {
@@ -126,6 +129,9 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
     // tempWidgetProps.cols = cols
     onSetNeedUpdateDataParams(true)
     onSetWidgetProps(tempWidgetProps)
+    // 保留一个刚拖拽列宽的状态，用于下面判断是采用拖拽后的列宽值还是“表格数据设置”里配置的列宽值
+    isDragged = true
+    onSetWidthChangedInInput(false)
   }
 
   // 可拖拽列宽的列的配置
@@ -418,7 +424,7 @@ export default Table
 
 
 function getTableColumns (props: IChartProps) {
-  const { chartStyles } = props
+  const { chartStyles, widthChangedInInput } = props
   if (!chartStyles.table) {
     return {
       tableColumns: [],
@@ -471,13 +477,21 @@ function getTableColumns (props: IChartProps) {
     findChildConfig(headerConfig, 'headerName', 'children', name, (config) => {
       headerConfigItem = config
     })
+
+    // columnsConfig默认是空数组，当在 “表格数据设置” 弹框中设置之后就不再为空了
     const columnConfigItem = columnsConfig.find((cfg) => cfg.columnName === name)
-    if (columnConfigItem) {
-      column.sorter = columnConfigItem.sort
-      column.width = columnConfigItem.width
-      column.widthChanged = columnConfigItem.widthChanged
-      column.oldColumnCounts = columnConfigItem.oldColumnCounts
-      column.alreadySetWidth = columnConfigItem.alreadySetWidth
+    if (isDragged) {
+      isDragged = false
+    } else {
+      // 否则就读取 “表格数据设置” 弹框里的配置
+      // 要把 “表格数据设置” 弹框里的设置更新到其中，不然表格里的更改不生效
+      if (columnConfigItem && widthChangedInInput) {
+        column.sorter = columnConfigItem.sort
+        column.width = columnConfigItem.width
+        column.widthChanged = columnConfigItem.widthChanged
+        column.oldColumnCounts = columnConfigItem.oldColumnCounts
+        column.alreadySetWidth = columnConfigItem.alreadySetWidth
+      }
     }
     // 如果至少有一列已经调整了列宽，删除一列或多列时，其余列宽不动
     let atLeastOneColumnChanged = false
