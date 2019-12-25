@@ -1,6 +1,7 @@
 import React from 'react'
 import classnames from 'classnames'
 import set from 'lodash/set'
+import _ from 'lodash'
 
 import widgetlibs from '../../config'
 import { IDataRequestParams } from 'app/containers/Dashboard/Grid'
@@ -91,9 +92,6 @@ interface IOperatingPanelProps {
   onSetComputed: (computesField: any[]) => void
   onDeleteComputed: (computesField: any[]) => void
   onSetWidgetProps: (widgetProps: IWidgetProps) => void
-  needUpdateDataParams: boolean
-  onSetNeedUpdateDataParams: (value: boolean) => void
-  onSetWidthChangedInInput: (value: boolean) => void
   onLoadData: (
     viewId: number,
     requestParams: IDataRequestParams,
@@ -202,8 +200,9 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     })
   }
 
-  public componentWillReceiveProps (nextProps: IOperatingPanelProps, prevProps: IOperatingPanelProps) {
+  public componentWillReceiveProps (nextProps: IOperatingPanelProps) {
     const { selectedView, originalWidgetProps, widgetProps } = nextProps
+    const { dataParams } = this.state
     if (selectedView && selectedView !== this.props.selectedView) {
       const model = selectedView.model
       const categoryDragItems = []
@@ -232,12 +231,40 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         valueDragItems
       })
     }
-    // 现在的问题是，拖拽调整列宽，或者新增、删除列改变的列宽，都是改动的是widgetProps，而originalProps是没改动的
-    if ((originalWidgetProps && selectedView) &&
-      (originalWidgetProps !== this.props.originalWidgetProps || selectedView !== this.props.selectedView || nextProps.needUpdateDataParams)) {
-      if (this.props.needUpdateDataParams) this.props.onSetNeedUpdateDataParams(false)
-      const { secondaryMetrics, filters, color, label, size, xAxis, tip, chartStyles, mode, selectedChart } = originalWidgetProps
-      const { cols, rows, metrics } = widgetProps
+
+    // 只要widgetProps.cols和widgetProps.metrics里有任何一列的width,widthChanged,alreadySetWidth,oldColumnCounts这四个属性中的任意一个变化了之后，就要更新dataParams
+    let needUpdate = false
+    if (widgetProps.cols && dataParams && dataParams.cols && dataParams.cols.items && typeof dataParams.cols.items.length === 'number') {
+      widgetProps.cols.forEach((col) => {
+        for (let i = 0; i < dataParams.cols.items.length; i++) {
+          const tempCol = dataParams.cols.items[i]
+          if (col.name === tempCol.name) {
+            if (col.width !== tempCol.width || col.widthChanged !== tempCol.widthChanged || col.alreadySetWidth !== tempCol.alreadySetWidth || col.oldColumnCounts !== tempCol.oldColumnCounts) {
+              needUpdate = true
+              break
+            }
+          }
+        }
+      })
+    }
+    if (widgetProps.metrics && dataParams && dataParams.metrics && dataParams.metrics.items && typeof dataParams.metrics.items.length === 'number') {
+      widgetProps.metrics.forEach((col) => {
+        for (let i = 0; i < dataParams.metrics.items.length; i++) {
+          const tempMetric = dataParams.metrics.items[i]
+          if (col.name === tempMetric.name) {
+            if (col.width !== tempMetric.width || col.widthChanged !== tempMetric.widthChanged || col.alreadySetWidth !== tempMetric.alreadySetWidth || col.oldColumnCounts !== tempMetric.oldColumnCounts) {
+              needUpdate = true
+              break
+            }
+          }
+        }
+      })
+    }
+
+    if ((originalWidgetProps && selectedView) && (originalWidgetProps !== this.props.originalWidgetProps || selectedView !== this.props.selectedView || needUpdate)) {
+      const { rows, secondaryMetrics, filters, color, label, size, xAxis, tip, chartStyles, mode, selectedChart } = originalWidgetProps
+      const { cols, metrics } = widgetProps
+
       const { dataParams } = this.state
       const model = selectedView.model
       const currentWidgetlibs = widgetlibs[mode || 'pivot'] // FIXME 兼容 0.3.0-beta.1 之前版本
@@ -1002,7 +1029,6 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
                        && selectedView
                        && requestParamString !== this.lastRequestParamString
                        && queryMode === WorkbenchQueryMode.Immediately
-
     if (needRequest) {
       this.lastRequestParamString = requestParamString
       onSetQueryData(requestParams)
@@ -1301,6 +1327,36 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         renderType = 'clear'
         break
     }
+    if (name === 'table') {
+      // 如果是图表驱动表格，就要更新dataParams里的cols和metrics的width, alreadySetWidth, oldColumnCounts, widthChanged属性
+      if (dataParams.cols && dataParams.cols.items) {
+        dataParams.cols.items.forEach((item, index) => {
+          for (let i = 0; i < value.length; i++) {
+            if (item.name === value[i].columnName) {
+              dataParams.cols.items[index].width = value[i].width
+              dataParams.cols.items[index].alreadySetWidth = value[i].alreadySetWidth
+              dataParams.cols.items[index].oldColumnCounts = value[i].oldColumnCounts
+              dataParams.cols.items[index].widthChanged = value[i].widthChanged
+              break
+            }
+          }
+        })
+      }
+      if (dataParams.metrics && dataParams.metrics.items) {
+        dataParams.metrics.items.forEach((item, index) => {
+          for (let i = 0; i < value.length; i++) {
+            if (item.name === value[i].columnName) {
+              dataParams.metrics.items[index].width = value[i].width
+              dataParams.metrics.items[index].alreadySetWidth = value[i].alreadySetWidth
+              dataParams.metrics.items[index].oldColumnCounts = value[i].oldColumnCounts
+              dataParams.metrics.items[index].widthChanged = value[i].widthChanged
+              break
+            }
+          }
+        })
+      }
+      this.setState({dataParams})
+    }
     this.setWidgetProps(dataParams, styleParams, { renderType })
     // const { layerType } = styleParams.spec
     // chartModeSelectedChart.style.spec.layerType = layerType
@@ -1545,7 +1601,6 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       onExpiredChange,
       originalWidgetProps,
       originalComputed,
-      onSetWidthChangedInInput
     } = this.props
     const {
       dragged,
@@ -1791,7 +1846,6 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
             {table && <TableSection
               dataParams={dataParams}
               config={table}
-              onSetWidthChangedInInput={onSetWidthChangedInInput}
               onChange={this.styleChange('table')}
             />}
             {pivotConfig && <PivotSection

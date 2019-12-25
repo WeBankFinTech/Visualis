@@ -222,21 +222,6 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     sessionStorage.setItem('viewId', '');
   }
 
-  // 增加一个手动判断的标志，是否需要更新OpratingPanel中的dataParams
-  private needUpdateDataParams = false
-
-  private setNeedUpdateDataParams = (value) => {
-    this.needUpdateDataParams = value
-  }
-
-  // 增加一个判断标志，判断是否在“表格数据设置”弹框中改变了列宽，控制改变了列宽之后在表格那边只更新一次数据
-  private widthChangedInInput = true
-
-  private setWidthChangedInInput = (value) => {
-    this.widthChangedInInput = value
-  }
-
-
   private initSettings = (): IWorkbenchSettings => {
     let workbenchSettings = {
       queryMode: WorkbenchQueryMode.Immediately,
@@ -397,6 +382,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     })
   }
 
+  // 更新widgetProps
   private setWidgetProps = (widgetProps: IWidgetProps) => {
     const { cols, rows } = widgetProps
     const data = [...(widgetProps.data || this.state.widgetProps.data)]
@@ -431,6 +417,8 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       viewId: selectedViewId,
       projectId: Number(params.pid),
       config: JSON.stringify({
+        // 把当前最新的widgetProps放到config参数里传给后端，每次打开widget页面时，默认从config里读取出初始widgetProps
+        // 所以就始终保持widgetProps是最新的配置就行了，比如更改列宽所有相关的，保持cols和metrics里都是最新的数据
         ...widgetProps,
         controls,
         computed: originalComputed && originalComputed ? [...computed, ...originalComputed] : [...computed],
@@ -514,7 +502,6 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       }
     })
   }
-
 
   private changeAutoLoadData = (e) => {
     this.setState({
@@ -633,9 +620,6 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
                 onCacheChange={this.cacheChange}
                 onExpiredChange={this.expiredChange}
                 onSetWidgetProps={this.setWidgetProps}
-                needUpdateDataParams={this.needUpdateDataParams}
-                onSetNeedUpdateDataParams={this.setNeedUpdateDataParams}
-                onSetWidthChangedInInput={this.setWidthChangedInInput}
                 onSetComputed={this.setComputed}
                 onDeleteComputed={this.deleteComputed}
                 onLoadData={onLoadViewData}
@@ -647,9 +631,6 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
                 <div className={styles.widgetBlock}>
                   <Widget
                     onSetWidgetProps={this.setWidgetProps}
-                    onSetNeedUpdateDataParams={this.setNeedUpdateDataParams}
-                    widthChangedInInput={this.widthChangedInInput}
-                    onSetWidthChangedInInput={this.setWidthChangedInInput}
                     {...widgetProps}
                     loading={<DashboardItemMask.Loading {...maskProps}/>}
                     empty={<DashboardItemMask.Empty {...maskProps}/>}

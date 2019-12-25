@@ -71,9 +71,6 @@ interface ITableStates {
   tableBodyHeight: number
 }
 
-// 保留一个刚拖拽列宽的状态，用于下面判断是采用拖拽后的列宽值还是“表格数据设置”里配置的列宽值
-let isDragged = false
-
 export class Table extends React.PureComponent<IChartProps, ITableStates> {
 
   private static HeaderSorterWidth = 0
@@ -103,44 +100,31 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
   private handleResize = (idx: number) => (_, { size }: IResizeCallbackData) => {
     const nextColumns = resizeTableColumns(this.state.tableColumns, idx, size.width)
     this.setState({ tableColumns: nextColumns })
-    const { cols, rows, metrics, data, onSetWidgetProps, onSetWidthChangedInInput, onSetNeedUpdateDataParams, pagination, secondaryMetrics, filters, selectedChart, orders, mode, model, onPaginationChange, chartStyles } = this.props
+    const { cols, rows, metrics, data, onSetWidgetProps, pagination, secondaryMetrics, filters, selectedChart, orders, mode, model, onPaginationChange, chartStyles } = this.props
     // tempWidgetProps是用来在onSetWidgetProps中使用的，所以只需要workbench中的原始字段
     const tempWidgetProps = { data, pagination, cols, rows, metrics, secondaryMetrics, filters, chartStyles, selectedChart, orders, mode, model, onPaginationChange }
-    tempWidgetProps.cols.forEach((col, index) => {
-      for (let i = 0; i < nextColumns.length; i++) {
-        if (col.name === nextColumns[i].key) {
-          tempWidgetProps.cols[index].width = nextColumns[i].width
-          // 通过输入框里输入或拖拽改变列宽之后，widthChanged都要设为true
-          tempWidgetProps.cols[index].widthChanged = true
-          break
-        }
+    for (let i = 0; i < tempWidgetProps.cols.length; i++) {
+      if (tempWidgetProps.cols[i].name === nextColumns[idx].key) {
+        tempWidgetProps.cols[i].width = nextColumns[idx].width
+        // 通过输入框里输入或拖拽改变列宽之后，widthChanged都要设为true
+        tempWidgetProps.cols[i].widthChanged = true
+        break
       }
-    })
-    tempWidgetProps.metrics.forEach((metric, index) => {
-      for (let i = 0; i < nextColumns.length; i++) {
-        if (metric.name === nextColumns[i].key) {
-          tempWidgetProps.metrics[index].width = nextColumns[i].width
-          // 通过输入框里输入或拖拽改变列宽之后，widthChanged都要设为true
-          tempWidgetProps.metrics[index].widthChanged = true
-          break
-        }
+    }
+    for (let i = 0; i < tempWidgetProps.metrics.length; i++) {
+      if (tempWidgetProps.metrics[i].name === nextColumns[idx].key) {
+        tempWidgetProps.metrics[i].width = nextColumns[idx].width
+        // 通过输入框里输入或拖拽改变列宽之后，widthChanged都要设为true
+        tempWidgetProps.metrics[i].widthChanged = true
+        break
       }
-    })
-    // tempWidgetProps.cols = cols
-    onSetNeedUpdateDataParams(true)
+    }
     onSetWidgetProps(tempWidgetProps)
-    // 保留一个刚拖拽列宽的状态，用于下面判断是采用拖拽后的列宽值还是“表格数据设置”里配置的列宽值
-    isDragged = true
-    onSetWidthChangedInInput(false)
   }
 
   // 可拖拽列宽的列的配置
   private adjustTableColumns (tableColumns: Array<ColumnProps<any>>, mapTableHeaderConfig: IMapTableHeaderConfig) {
-    // const totalWidth = tableColumns.reduce((acc, col) => acc + Number(col.width), 0)
-    // const totalWidth = TOTAL_COLUMN_WIDTH
-    // const ratio = totalWidth < containerWidth ? containerWidth / totalWidth : 1
     traverseConfig<ColumnProps<any>>(tableColumns, 'children', (column, idx, siblings) => {
-      // column.width = ratio * Number(column.width)
       const canResize = siblings === tableColumns
       column.onHeaderCell = (col) => ({
         width: col.width,
@@ -394,6 +378,8 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
       [Styles.table]: true,
       [Styles.noBorder]: bordered !== undefined && !bordered
     })
+
+    // 设置表格的总宽度
     style.width = tableWidth
     return (
       <>
@@ -424,19 +410,22 @@ export default Table
 
 
 function getTableColumns (props: IChartProps) {
-  const { chartStyles, widthChangedInInput } = props
+  const { chartStyles } = props
   if (!chartStyles.table) {
     return {
       tableColumns: [],
       mapTableHeaderConfig: {}
     }
   }
-  const { cols, rows, metrics, data, queryVariables, onSetWidgetProps, onSetNeedUpdateDataParams, pagination, secondaryMetrics, filters, selectedChart, orders, mode, model, onPaginationChange } = props
+
+  const { cols, rows, metrics, data, queryVariables, onSetWidgetProps, pagination, secondaryMetrics, filters, selectedChart, orders, mode, model, onPaginationChange } = props
   const { headerConfig, columnsConfig, autoMergeCell, leftFixedColumns, rightFixedColumns, withNoAggregators } = chartStyles.table
   const tableColumns: Array<ColumnProps<any>> = []
   const mapTableHeaderConfig: IMapTableHeaderConfig = {}
+
   // tempWidgetProps是用来在onSetWidgetProps中使用的，所以只需要workbench中的原始字段
   const tempWidgetProps = { data, pagination, cols, rows, metrics, secondaryMetrics, filters, chartStyles, selectedChart, orders, mode, model, onPaginationChange }
+
   // 获取当前总列数
   let totalColumnsLength = 0
   if (Array.isArray(cols) && Array.isArray(metrics)) totalColumnsLength = cols.length + metrics.length
@@ -480,24 +469,21 @@ function getTableColumns (props: IChartProps) {
 
     // columnsConfig默认是空数组，当在 “表格数据设置” 弹框中设置之后就不再为空了
     const columnConfigItem = columnsConfig.find((cfg) => cfg.columnName === name)
-    if (isDragged) {
-      isDragged = false
-    } else {
-      // 否则就读取 “表格数据设置” 弹框里的配置
-      // 要把 “表格数据设置” 弹框里的设置更新到其中，不然表格里的更改不生效
-      if (columnConfigItem && widthChangedInInput) {
-        column.sorter = columnConfigItem.sort
-        column.width = columnConfigItem.width
-        column.widthChanged = columnConfigItem.widthChanged
-        column.oldColumnCounts = columnConfigItem.oldColumnCounts
-        column.alreadySetWidth = columnConfigItem.alreadySetWidth
-      }
-    }
+
     // 如果至少有一列已经调整了列宽，删除一列或多列时，其余列宽不动
     let atLeastOneColumnChanged = false
-    if (column.oldColumnCounts <= totalColumnsLength) {
+    if (column.oldColumnCounts > totalColumnsLength) {
+      // 这里是要判断所有列，所以cols和metrics都要遍历
       for (let i = 0; i < cols.length; i++) {
         if (cols[i].widthChanged) {
+          // 如果atLeastOneColumnChanged为true，说明是删除了一列或多列并且有至少一列是改动过宽度的情况
+          // 但是可能是手动加载数据的，所以可能是删了两列，新增了一列这样，下面不能全局进行判断 column.width和column.widthChanged都为undefined的时候还是要计算数据的
+          atLeastOneColumnChanged = true
+          break
+        }
+      }
+      for (let i = 0; i < metrics.length; i++) {
+        if (metrics[i].widthChanged) {
           // 如果atLeastOneColumnChanged为true，说明是删除了一列或多列并且有至少一列是改动过宽度的情况
           // 但是可能是手动加载数据的，所以可能是删了两列，新增了一列这样，下面不能全局进行判断 column.width和column.widthChanged都为undefined的时候还是要计算数据的
           atLeastOneColumnChanged = true
@@ -523,7 +509,6 @@ function getTableColumns (props: IChartProps) {
           cols[index].oldColumnCounts = totalColumnsLength
           // 更改全局数据中该column的width
           tempWidgetProps.cols = cols
-          onSetNeedUpdateDataParams(true)
           onSetWidgetProps(tempWidgetProps)
         }
       }
@@ -542,12 +527,9 @@ function getTableColumns (props: IChartProps) {
         tempWidgetProps.cols = cols
         // 更新 “上一次的列数”为当前column的数量
         cols[index].oldColumnCounts = totalColumnsLength
-        onSetNeedUpdateDataParams(true)
         onSetWidgetProps(tempWidgetProps)
       }
     }
-    // column.width = getDataColumnWidth(name, columnConfigItem, format, data)
-    // column.width = Math.max(+column.width, computeCellWidth(headerConfigItem && headerConfigItem.style, headerText))
 
     mapTableHeaderConfig[name] = headerConfigItem
     column.onCell = (record) => ({
@@ -588,17 +570,21 @@ function getTableColumns (props: IChartProps) {
     findChildConfig(headerConfig, 'headerName', 'children', name, (config) => {
       headerConfigItem = config
     })
+    // columnsConfig默认是空数组，当在 “表格数据设置” 弹框中设置之后就不再为空了
     const columnConfigItem = columnsConfig.find((cfg) => cfg.columnName === name)
-    if (columnConfigItem) {
-      column.sorter = columnConfigItem.sort
-      column.width = columnConfigItem.width
-      column.widthChanged = columnConfigItem.widthChanged
-    }
-    // // 对列进行初始列宽的设置
-    // column.width = TOTAL_COLUMN_WIDTH / totalColumnsLength
+
     // 如果至少有一列已经调整了列宽，删除一列或多列时，其余列宽不动
     let atLeastOneColumnChanged = false
-    if (column.oldColumnCounts <= totalColumnsLength) {
+    if (column.oldColumnCounts > totalColumnsLength) {
+      // 这里是要判断所有列，所以cols和metrics都要遍历
+      for (let i = 0; i < cols.length; i++) {
+        if (cols[i].widthChanged) {
+          // 如果atLeastOneColumnChanged为true，说明是删除了一列或多列并且有至少一列是改动过宽度的情况
+          // 但是可能是手动加载数据的，所以可能是删了两列，新增了一列这样，下面不能全局进行判断 column.width和column.widthChanged都为undefined的时候还是要计算数据的
+          atLeastOneColumnChanged = true
+          break
+        }
+      }
       for (let i = 0; i < metrics.length; i++) {
         if (metrics[i].widthChanged) {
           // 如果atLeastOneColumnChanged为true，说明是删除了一列或多列并且有至少一列是改动过宽度的情况
@@ -626,7 +612,6 @@ function getTableColumns (props: IChartProps) {
           metrics[index].oldColumnCounts = totalColumnsLength
           // 更改全局数据中该column的width
           tempWidgetProps.metrics = metrics
-          onSetNeedUpdateDataParams(true)
           onSetWidgetProps(tempWidgetProps)
         }
       }
@@ -645,12 +630,10 @@ function getTableColumns (props: IChartProps) {
         tempWidgetProps.metrics = metrics
         // 更新 “上一次的列数”为当前column的数量
         metrics[index].oldColumnCounts = totalColumnsLength
-        onSetNeedUpdateDataParams(true)
         onSetWidgetProps(tempWidgetProps)
       }
     }
-    // column.width = getDataColumnWidth(expression, columnConfigItem, format, data)
-    // column.width = Math.max(+column.width, computeCellWidth(headerConfigItem && headerConfigItem.style, headerText))
+
     mapTableHeaderConfig[name] = headerConfigItem
     column.onCell = (record) => ({
       config: columnConfigItem,

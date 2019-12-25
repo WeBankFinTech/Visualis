@@ -166,9 +166,6 @@ export interface IWidgetProps {
   selectedItems?: number[]
   onSelectChartsItems?: (selectedItems: number[]) => void
   onSetWidgetProps: (widgetProps: IWidgetProps) => void
-  onSetNeedUpdateDataParams: (value: boolean) => void
-  widthChangedInInput: boolean
-  onSetWidthChangedInInput: (value: boolean) => void
   // onHideDrillPanel?: (swtich: boolean) => void
 }
 

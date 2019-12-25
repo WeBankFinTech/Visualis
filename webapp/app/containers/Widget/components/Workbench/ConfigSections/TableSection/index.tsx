@@ -25,7 +25,6 @@ interface ITableSectionProps {
   dataParams: IDataParams
   config: ITableConfig
   onChange: (prop: string, value: any) => void
-  onSetWidthChangedInInput: (value: boolean) => void
 }
 
 interface ITableSectionStates {
@@ -114,6 +113,7 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
   }
 
   private getValidColumnConfig = (props: ITableSectionProps, validColumns: IDataParamSource[]) => {
+    // 这个config是从styleParams中的基础配置
     const { config } = props
 
     const validColumnConfig = produce(config.columnsConfig, (draft) => {
@@ -121,6 +121,7 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
       // 这个validColumns里的数据就是显示在表格数据设置弹框里的各列的数据
       validColumns.forEach((column) => {
         const existedConfig = draft.find((item) => item.columnName === column.name)
+        // column里的width这些才是最新的，因为validColumns是根据最新的dataParams拿到的数据，而最新的cols和metrics数据在最新的dataParams里
         if (existedConfig) {
           config.push({
             ...existedConfig,
@@ -301,7 +302,7 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
   }
 
   public render () {
-    const { config, onSetWidthChangedInInput } = this.props
+    const { config } = this.props
     const {
       leftFixedColumns, rightFixedColumns, headerFixed, bordered, size,
       autoMergeCell, withPaging, pageSize, withNoAggregators } = config
@@ -447,7 +448,6 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
             config={validColumnConfig}
             onCancel={this.closeColumnConfig}
             onSave={this.saveColumnConfig}
-            onSetWidthChangedInInput={onSetWidthChangedInInput}
           />
         </React.Suspense>
       </div>

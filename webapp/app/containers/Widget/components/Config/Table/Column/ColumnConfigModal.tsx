@@ -23,7 +23,6 @@ interface IColumnStyleConfigProps {
   config: ITableColumnConfig[]
   onCancel: () => void
   onSave: (config: ITableColumnConfig[]) => void
-  onSetWidthChangedInInput: (value: boolean) => void
 }
 
 interface IColumnStyleConfigStates {
@@ -93,10 +92,7 @@ export class ColumnStyleConfig extends React.PureComponent<IColumnStyleConfigPro
       const selectedColumn = draft.find(({ columnName }) => columnName === selectedColumnName)
       set(selectedColumn, propPath, value)
       // 如果是更改了列宽之后，要改这个widthChanged值为true
-      if (propPath === 'width') {
-        set(selectedColumn, 'widthChanged', true)
-        this.props.onSetWidthChangedInInput(true)
-      }
+      if (propPath === 'width') set(selectedColumn, 'widthChanged', true)
       return draft
     })
     this.setState({
@@ -108,7 +104,9 @@ export class ColumnStyleConfig extends React.PureComponent<IColumnStyleConfigPro
     this.props.onCancel()
   }
 
+  // 点击 表格数据设置 弹框下方的保存按钮
   private save = () => {
+    // 调用TableSection传来的onSave
     this.props.onSave(this.state.localConfig)
   }
 
