@@ -5,7 +5,6 @@ import { IDataParams } from '../../OperatingPanel'
 import { IDataParamSource } from '../../Dropbox'
 import { getFieldAlias } from 'containers/Widget/components/Config/Field'
 import { decodeMetricName, getAggregatorLocale } from 'containers/Widget/components/util'
-
 import {
   ITableConfig, ITableHeaderConfig, ITableColumnConfig,
   TableCellStyleTypes, DefaultTableCellStyle } from 'containers/Widget/components/Config/Table'

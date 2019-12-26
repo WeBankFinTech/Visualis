@@ -212,6 +212,7 @@ export class ColumnStyleConfig extends React.PureComponent<IColumnStyleConfigPro
     }
     const { style, visualType, sort, conditionStyles, showAsPercent, width } = localConfig.find((c) => c.columnName === selectedColumnName)
     const { fontSize, fontFamily, fontWeight, fontColor, fontStyle, backgroundColor, justifyContent } = style
+
     return (
       <Modal
         title="表格数据设置"

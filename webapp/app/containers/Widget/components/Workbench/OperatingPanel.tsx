@@ -261,6 +261,16 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       })
     }
 
+    if (!originalWidgetProps && selectedView && needUpdate) {
+      // 此时可能是新建widget页面，originalWidgetProps为null，但也需要改动dataParams里的cols和metrics属性，不然在新建widget页面中，表格数据设置弹框中的width这些为undefined，因为dataParams里不设置的话，dataParams里就没有cols和metrics的width值，传到ColumnConfigModal.tsx中的localConfig里也没有width值
+      const { dataParams } = this.state
+      const { cols, metrics } = widgetProps
+
+      dataParams.cols.items = cols
+      dataParams.metrics.items = metrics
+      this.setState({dataParams})
+    }
+
     if ((originalWidgetProps && selectedView) && (originalWidgetProps !== this.props.originalWidgetProps || selectedView !== this.props.selectedView || needUpdate)) {
       const { rows, secondaryMetrics, filters, color, label, size, xAxis, tip, chartStyles, mode, selectedChart } = originalWidgetProps
       const { cols, metrics } = widgetProps
@@ -268,7 +278,6 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       const { dataParams } = this.state
       const model = selectedView.model
       const currentWidgetlibs = widgetlibs[mode || 'pivot'] // FIXME 兼容 0.3.0-beta.1 之前版本
-      // 在这里，从originalWidgetProps拿到的cols、rows、metrics等，放进dataParams中
       dataParams.cols.items = []
       cols.forEach((c) => {
         const modelColumn = model[c.name]
