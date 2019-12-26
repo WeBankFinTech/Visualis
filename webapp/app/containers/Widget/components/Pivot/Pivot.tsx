@@ -326,7 +326,9 @@ export class Pivot extends React.PureComponent<IPivotProps, IPivotStates> {
       flatColKeys = colKey.reduce((arr, keys) => arr.concat(keys.join(String.fromCharCode(0))), [])
     } else {
       cols.forEach((c) => {
-        colKey.push(record[c.name])
+        // 后台返回的数据中，可能会因为区分就在名字上加个 'T.'
+        const name = record[c.name] ? record[c.name] : record['T.' + c.name]
+        colKey.push(name)
       })
       flatColKeys = [colKey.join(String.fromCharCode(0))]
     }
