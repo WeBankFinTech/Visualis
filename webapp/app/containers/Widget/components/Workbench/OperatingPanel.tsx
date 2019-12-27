@@ -233,36 +233,42 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     }
 
     // 只要widgetProps.cols和widgetProps.metrics里有任何一列的width,widthChanged,alreadySetWidth,oldColumnCounts这四个属性中的任意一个变化了之后，就要更新dataParams
+    // needUpdate为true的情况是指，在 图表驱动表格 下，有任何一个维度列或者指标列的width,widthChanged,alreadySetWidth,oldColumnCounts四个值中的至少一个改变了
     let needUpdate = false
-    if (widgetProps.cols && dataParams && dataParams.cols && dataParams.cols.items && typeof dataParams.cols.items.length === 'number') {
-      widgetProps.cols.forEach((col) => {
-        for (let i = 0; i < dataParams.cols.items.length; i++) {
-          const tempCol = dataParams.cols.items[i]
-          if (col.name === tempCol.name) {
-            if (col.width !== tempCol.width || col.widthChanged !== tempCol.widthChanged || col.alreadySetWidth !== tempCol.alreadySetWidth || col.oldColumnCounts !== tempCol.oldColumnCounts) {
-              needUpdate = true
-              break
+    // 判断当前是在 图表驱动-表格 下 this.state.styleParams && this.state.styleParams.table
+    if (this.state.styleParams && this.state.styleParams.table) {
+      // 如果widgetProps（下一个状态）和dataParams（当前状态）中的cols和metrics在列宽相关的属性上有区别，在下面就要更新（通过将needUpdate设为true）
+      if (widgetProps.cols && dataParams && dataParams.cols && dataParams.cols.items && typeof dataParams.cols.items.length === 'number') {
+        widgetProps.cols.forEach((col) => {
+          for (let i = 0; i < dataParams.cols.items.length; i++) {
+            const tempCol = dataParams.cols.items[i]
+            if (col.name === tempCol.name) {
+              if (col.width !== tempCol.width || col.widthChanged !== tempCol.widthChanged || col.alreadySetWidth !== tempCol.alreadySetWidth || col.oldColumnCounts !== tempCol.oldColumnCounts) {
+                needUpdate = true
+                break
+              }
             }
           }
-        }
-      })
-    }
-    if (widgetProps.metrics && dataParams && dataParams.metrics && dataParams.metrics.items && typeof dataParams.metrics.items.length === 'number') {
-      widgetProps.metrics.forEach((col) => {
-        for (let i = 0; i < dataParams.metrics.items.length; i++) {
-          const tempMetric = dataParams.metrics.items[i]
-          if (col.name === tempMetric.name) {
-            if (col.width !== tempMetric.width || col.widthChanged !== tempMetric.widthChanged || col.alreadySetWidth !== tempMetric.alreadySetWidth || col.oldColumnCounts !== tempMetric.oldColumnCounts) {
-              needUpdate = true
-              break
+        })
+      }
+      if (widgetProps.metrics && dataParams && dataParams.metrics && dataParams.metrics.items && typeof dataParams.metrics.items.length === 'number') {
+        widgetProps.metrics.forEach((col) => {
+          for (let i = 0; i < dataParams.metrics.items.length; i++) {
+            const tempMetric = dataParams.metrics.items[i]
+            if (col.name === tempMetric.name) {
+              if (col.width !== tempMetric.width || col.widthChanged !== tempMetric.widthChanged || col.alreadySetWidth !== tempMetric.alreadySetWidth || col.oldColumnCounts !== tempMetric.oldColumnCounts) {
+                needUpdate = true
+                break
+              }
             }
           }
-        }
-      })
+        })
+      }
     }
 
-    if (!originalWidgetProps && selectedView && needUpdate) {
-      // 此时可能是新建widget页面，originalWidgetProps为null，但也需要改动dataParams里的cols和metrics属性，不然在新建widget页面中，表格数据设置弹框中的width这些为undefined，因为dataParams里不设置的话，dataParams里就没有cols和metrics的width值，传到ColumnConfigModal.tsx中的localConfig里也没有width值
+      // 此时可能是新建widget页面，originalWidgetProps为null；也可能是从其他图表切换到图表驱动表格时，Object.keys(this.state.styleParams)[0] !== Object.keys(originalWidgetProps.chartStyles)[0]。需要改动dataParams里的cols和metrics属性，不然在新建widget页面中，表格数据设置弹框中的width这些为undefined，因为dataParams里不设置的话，dataParams里就没有cols和metrics的width值，传到ColumnConfigModal.tsx中的localConfig里也没有width值
+    if ((!originalWidgetProps || originalWidgetProps && this.state.styleParams && Object.keys(this.state.styleParams)[0] !== Object.keys(originalWidgetProps.chartStyles)[0]) && selectedView && needUpdate) {
+      // needUpdate如果为true是说在图表驱动的表格下，有任何一个维度列或者指标列的width,widthChanged,alreadySetWidth,oldColumnCounts四个值中的至少一个改变了
       const { dataParams } = this.state
       const { cols, metrics } = widgetProps
 
@@ -271,7 +277,10 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       this.setState({dataParams})
     }
 
-    if ((originalWidgetProps && selectedView) && (originalWidgetProps !== this.props.originalWidgetProps || selectedView !== this.props.selectedView || needUpdate)) {
+    if ((originalWidgetProps && selectedView && this.state.styleParams) && (originalWidgetProps !== this.props.originalWidgetProps || selectedView !== this.props.selectedView || needUpdate)) {
+      // 初始的时候有一次默认值的设置，那时候originalWidgetProps不为空但this.props.originalWidgetProps为null，所以在第一次this.props.originalWidgetProps为null时不进行Object.keys(this.state.styleParams)[0] !== Object.keys(originalWidgetProps.chartStyles)[0]的判断
+      if (this.props.originalWidgetProps && Object.keys(this.state.styleParams)[0] !== Object.keys(originalWidgetProps.chartStyles)[0]) return
+      // Object.keys(this.state.styleParams)[0] === Object.keys(originalWidgetProps.chartStyles)[0] 是保证当前操作的图表的类型和originalWidgetProps里对应的图表类型是一致的，比如从透视驱动表格切到图表驱动表格后，originalWidgetProps.chartStyles里是pivot，但是this.state.styleParams里是table，这个时候就不需要执行这个if里的逻辑了，因为下面是用originalWidgetProps来更新的，执行的话就会出现透视驱动表格切换到图表驱动表格然后拖拽字段后自动切回透视驱动的bug
       const { rows, secondaryMetrics, filters, color, label, size, xAxis, tip, chartStyles, mode, selectedChart } = originalWidgetProps
       const { cols, metrics } = widgetProps
 

@@ -192,7 +192,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     if(views && views.length && viewId && !this.state.selectedViewId) {
       this.setState({ selectedViewId: Number(viewId) }, () => this.viewSelect(Number(viewId)))
     }
-
+    // 这里的currentWidget就是当前的widget的数据，流程是，最开始currentWidget和this.props.currentWidget都为null，加载完数据后，currentWidget变为非空对象，然后这时候更新state，下一次之后，currentWidget和this.props.currentWidget就都为相同的非空对象了，而且以后不会再变了，所以下面if里的逻辑按理说只会执行一次，所以传到operatingPanel里的originalWidgetProps也不会变了
     if (currentWidget && (currentWidget !== this.props.currentWidget)) {
       const { controls, cache, expired, computed, autoLoadData, cols, rows, ...rest } = JSON.parse(currentWidget.config)
       const updatedCols = cols.map((col) => widgetDimensionMigrationRecorder(col))
