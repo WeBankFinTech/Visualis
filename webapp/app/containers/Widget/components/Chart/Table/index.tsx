@@ -471,6 +471,9 @@ function getTableColumns (props: IChartProps) {
 
     // columnsConfig默认是空数组，当在 “表格数据设置” 弹框中设置之后就不再为空了
     const columnConfigItem = columnsConfig.find((cfg) => cfg.columnName === name)
+    if (columnConfigItem) {
+      column.sorter = columnConfigItem.sort
+    }
 
     // 如果至少有一列已经调整了列宽，删除一列或多列时，其余列宽不动
     let atLeastOneColumnChanged = false
@@ -574,6 +577,9 @@ function getTableColumns (props: IChartProps) {
     })
     // columnsConfig默认是空数组，当在 “表格数据设置” 弹框中设置之后就不再为空了
     const columnConfigItem = columnsConfig.find((cfg) => cfg.columnName === name)
+    if (columnConfigItem) {
+      column.sorter = columnConfigItem.sort
+    }
 
     // 如果至少有一列已经调整了列宽，删除一列或多列时，其余列宽不动
     let atLeastOneColumnChanged = false
