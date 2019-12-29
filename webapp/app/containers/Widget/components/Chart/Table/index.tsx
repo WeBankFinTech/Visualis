@@ -344,7 +344,7 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
    this.state.selectedRow.some((sr) => this.isSameObj(sr, record, true)) ? Styles.selectedRow : Styles.unSelectedRow
 
   public render () {
-    const { data, chartStyles } = this.props
+    const { data, chartStyles, cols, rows, metrics } = this.props
     const { headerFixed, bordered, withPaging, size } = chartStyles.table
     const { tablePagination, tableColumns, tableBodyHeight, mapTableHeaderConfig } = this.state
 
@@ -365,8 +365,10 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
       ...this.basePagination,
       ...tablePagination
     }
+    // 如果cols和rows和metrics此时都为空，说明不可能有数据，props中的data可能是残留的没更新的数据，所以要加个这样的判断，如果cols和rows和metrics此时都为空，则不显示分页组件
+    const emptyData = cols && cols.length === 0 && rows && rows.length === 0 && cols && cols.length === 0
     // 不显示总条数的分页
-    const paginationWithoutTotal = withPaging && tablePagination.total === -1 ? (
+    const paginationWithoutTotal = withPaging && tablePagination.total === -1 && !emptyData ? (
       <PaginationWithoutTotal
         dataLength={data.length}
         size="small"
