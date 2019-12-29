@@ -183,11 +183,18 @@ export function* getViewData (action: ViewActionType) {
       data: requestParams
     })
     yield put(viewDataLoaded())
-    const { resultList } = asyncData.payload
-    asyncData.payload.resultList = (resultList && resultList.slice(0, 600)) || []
-    resolve(asyncData.payload)
+    // asyncData.payload可能为""
+    if (asyncData.payload) {
+      const { resultList } = asyncData.payload
+      asyncData.payload.resultList = (resultList && resultList.slice(0, 600)) || []
+      resolve(asyncData.payload)
+    } else {
+      resolve({})
+    }
   } catch (err) {
-    const { response } = err as AxiosError
+    let { response } = err as AxiosError
+    // 增加为空时的处理
+    if (!response) response = {data: {}}
     const { data } = response as AxiosResponse<IDavinciResponse<any>>
     yield put(loadViewDataFail(err))
     reject(data.header)
