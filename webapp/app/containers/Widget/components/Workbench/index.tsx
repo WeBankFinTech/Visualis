@@ -433,7 +433,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     }
     if (id) {
       onEditWidget({...widget, id}, () => {
-        message.success('修改成功')
+        message.success('保存成功')
         const editSignDashboard = sessionStorage.getItem('editWidgetFromDashboard')
         const editSignDisplay = sessionStorage.getItem('editWidgetFromDisplay')
         if (editSignDashboard) {
@@ -450,7 +450,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       })
     } else {
       onAddWidget(widget, () => {
-        message.success('添加成功')
+        message.success('保存成功')
         this.props.router.replace(`/project/${params.pid}/widgets`)
       })
     }
