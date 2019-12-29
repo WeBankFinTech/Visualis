@@ -402,7 +402,7 @@ export class Display extends React.Component<IDisplayProps, IDisplayStates> {
     let previewStyle = null
     if (display) {
       const { scale } = this.state
-      const slideParams = JSON.parse(slide.config).slideParams
+      const slideParams = slide ? JSON.parse(slide.config).slideParams : {}
       previewStyle = this.getPreviewStyle(slideParams)
       const slideStyle = this.getSlideStyle(slideParams, scale)
       const layerItems =  Array.isArray(widgets) ? layers.map((layer) => {

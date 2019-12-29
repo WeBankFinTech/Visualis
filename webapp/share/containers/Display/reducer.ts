@@ -43,9 +43,9 @@ function displayReducer (state = initialState, { type, payload }) {
         .set('title', payload.display.name)
         .set('display', payload.display)
         .set('slide', payload.slide)
-        .set('layers', payload.slide.relations)
+        .set('layers', payload.slide ? payload.slide.relations : [])
         .set('widgets', payload.widgets)
-        .set('layersInfo', payload.slide.relations.reduce((obj, layer) => {
+        .set('layersInfo', payload.slide ? payload.slide.relations.reduce((obj, layer) => {
           obj[layer.id] = (layer.type === GraphTypes.Chart) ? {
             status: DashboardItemStatus.Initial,
             datasource: { resultList: [] },
@@ -65,7 +65,7 @@ function displayReducer (state = initialState, { type, payload }) {
             loading: false
           }
           return obj
-        }, {}))
+        }, {}) : [])
     case ActionTypes.LOAD_SHARE_DISPLAY_FAILURE:
       return state
         .set('display', null)
