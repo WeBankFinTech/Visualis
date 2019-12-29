@@ -210,8 +210,10 @@ export class ColumnStyleConfig extends React.PureComponent<IColumnStyleConfigPro
     if (localConfig.length <= 0) {
       return (<div />)
     }
-    const { style, visualType, sort, conditionStyles, showAsPercent, width } = localConfig.find((c) => c.columnName === selectedColumnName)
+    let { style, visualType, sort, conditionStyles, showAsPercent, width } = localConfig.find((c) => c.columnName === selectedColumnName)
     const { fontSize, fontFamily, fontWeight, fontColor, fontStyle, backgroundColor, justifyContent } = style
+    // 在配置框中，只显示整数的width值，所以这里的取整只是显示上取整，实际存的width值可能是有小数的
+    if (typeof width === 'number') width = Math.ceil(width)
 
     return (
       <Modal
