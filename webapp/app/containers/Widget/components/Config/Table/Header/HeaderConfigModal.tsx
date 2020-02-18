@@ -4,7 +4,7 @@ import { uuid } from 'utils/util'
 import { fontWeightOptions, fontStyleOptions, fontFamilyOptions, fontSizeOptions, DefaultTableCellStyle } from '../constants'
 import { ITableHeaderConfig } from './types'
 
-import { Icon, Row, Col, Modal, Input, Button, Radio, Select, Table, message, Tooltip } from 'antd'
+import { Icon, Row, Col, Modal, Input, Button, Radio, Select, Table, message, Tooltip, Checkbox } from 'antd'
 const ButtonGroup = Button.Group
 const RadioGroup = Radio.Group
 const RadioButton = Radio.Button
@@ -200,7 +200,25 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
     const cb = (cursorConfig: ITableHeaderConfig) => {
       const isTarget = key === cursorConfig.key
       if (isTarget) {
+        // isTarget是用来判断现在是点的表格的哪一列
         cursorConfig.style[propName] = value
+        if (propName === 'hide') {
+          // 先要进行判断，除了该列，其他所有列至少有一列没有被隐藏，否则给与用户提示：“至少要显示一列数据”
+          let atLeastDisplayOneColumn = false
+          for(let i = 0; i < localConfig.length; i++) {
+            if (key !== localConfig[i].key) {
+              if (!localConfig[i].hide) {
+                atLeastDisplayOneColumn = true
+                break
+              }
+            }
+          }
+          if (atLeastDisplayOneColumn) {
+            cursorConfig['hide'] = cursorConfig['hide'] ? false : true
+          } else {
+            message.warning('至少要显示一列数据！')
+          }
+        }
       }
       return isTarget
     }
@@ -301,6 +319,21 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
           defaultValue={currentEditingHeaderName}
           onPressEnter={this.saveEditingHeaderName}
         />
+      )
+    }
+  }, {
+    title: '是否隐藏',
+    dataIndex: 'hide',
+    key: 'hide',
+    width: 80,
+    render: (_, record: ITableHeaderConfig) => {
+      const { hide } = record
+      return (
+        <Row type="flex" justify="center">
+          <Col>
+            <Checkbox checked={hide} onChange={this.propChange(record, 'hide')}></Checkbox>
+          </Col>
+        </Row>
       )
     }
   }, {

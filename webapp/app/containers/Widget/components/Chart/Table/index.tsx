@@ -383,6 +383,14 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
 
     // 设置表格的总宽度
     style.width = tableWidth
+    // 因为有些列要隐藏,并且是纯数据上的隐藏.所以在这里做一个判断,只显示hide属性不为true的
+    const displayColumns = []
+    adjustedTableColumns.forEach((columnItem) => {
+      if (mapTableHeaderConfig && mapTableHeaderConfig[columnItem['key']] && !mapTableHeaderConfig[columnItem['key']].hide) {
+        // mapTableHeaderConfig是表头配置的各列数据，只有hide不为true的要展示
+        displayColumns.push(columnItem)
+      }
+    })
     return (
       <>
         <AntTable
@@ -394,7 +402,7 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
           rowKey={this.getRowKey}
           components={tableComponents}
           // 列的配置
-          columns={adjustedTableColumns}
+          columns={displayColumns}
           pagination={withPaging && tablePagination.total !== -1 ? paginationConfig : false}
           scroll={scroll}
           bordered={bordered}
