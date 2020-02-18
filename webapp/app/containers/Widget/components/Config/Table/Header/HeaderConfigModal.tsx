@@ -38,6 +38,23 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
   public constructor (props: IHeaderConfigModalProps) {
     super(props)
     const localConfig = fromJS(props.config).toJS()
+    // 如果是第一次进来的时候，localConfig里的每一个元素的seq属性都是undefined，这时候采用默认的排序
+    // 如果是新增了维度或指标，说明loaclConfig里至少有一项是undefined，这时候采用默认的排序
+    // 如果是删除了维度或指标，保持seq这个排序
+    // 所以，只有当localConfig里的所有项都有seq属性，才采用seq的这个排序
+    let seqCount = 0
+    localConfig.forEach((item) => {
+      if (item.seq) seqCount++
+    })
+    if (seqCount === localConfig.length) {
+      // localConfig里的各项按照seq的值来排序
+      localConfig.sort(function (x, y) {return x.seq - y.seq})
+    } else {
+      // 否则清空所有seq值
+      localConfig.forEach((item, index) => {
+        delete localConfig[index].seq
+      })
+    }
     const [mapHeader, mapHeaderParent] = this.getMapHeaderKeyAndConfig(localConfig)
     this.state = {
       localConfig,
@@ -51,6 +68,23 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
   public componentWillReceiveProps (nextProps: IHeaderConfigModalProps) {
     if (nextProps.config === this.props.config) { return }
     const localConfig = fromJS(nextProps.config).toJS()
+    // 如果是第一次进来的时候，localConfig里的每一个元素的seq属性都是undefined，这时候采用默认的排序
+    // 如果是新增了维度或指标，说明loaclConfig里至少有一项是undefined，这时候采用默认的排序
+    // 如果是删除了维度或指标，保持seq这个排序
+    // 所以，只有当localConfig里的所有项都有seq属性，才采用seq的这个排序
+    let seqCount = 0
+    localConfig.forEach((item) => {
+      if (item.seq) seqCount++
+    })
+    if (seqCount === localConfig.length) {
+      // localConfig里的各项按照seq的值来排序
+      localConfig.sort(function (x, y) {return x.seq - y.seq})
+    } else {
+      // 否则清空所有seq值
+      localConfig.forEach((item, index) => {
+        delete localConfig[index].seq
+      })
+    }
     const [mapHeader, mapHeaderParent] = this.getMapHeaderKeyAndConfig(localConfig)
     this.setState({
       localConfig,
@@ -228,6 +262,51 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
     })
   }
 
+  // 交换数组两个元素的位置
+  private swapArray = (arr, index1, index2) => {
+    // arr[index1] = arr.splice(index2, 1, arr[index1])[0];
+
+    // 更换两项元素的seq值
+    const tempSeq = arr[index1].seq
+    arr[index1].seq = arr[index2].seq
+    arr[index2].seq = tempSeq
+    // 更换两项元素，这个切换本身是不会保存在数据中的，只是用于立即在页面上显示效果，真正的持久化的数据是各列的seq值，打开表头设置弹框时，根据seq值排序各列
+    const tempItem = arr[index1]
+    arr[index1] = arr[index2]
+    arr[index2] = tempItem
+
+    return arr;
+ }
+
+  private goUpOrDown = (key, direction) => (e) => {
+    const { localConfig } = this.state
+    if (localConfig.length && !localConfig[0].seq) {
+      // 如果localConfig里面的seq是undefined的话，则给一个初始的顺序
+      localConfig.forEach((item, index) => {
+        localConfig[index].seq = index + 1
+      })
+    }
+    const cb = (cursorConfig: ITableHeaderConfig) => {
+      const isTarget = key === cursorConfig.key
+      if (isTarget) {
+        // 记录当前是哪一行要往上移一行
+        let index = 0
+        for (let i = 0; i < localConfig.length; i++) {
+          if (key === localConfig[i].key) {
+            index = i
+            break
+          }
+        }
+        this.swapArray(localConfig, direction === 'up' ? index - 1 : index + 1, index)
+      }
+      return isTarget
+    }
+    localConfig.some((config) => this.traverseHeaderConfig(config, null, cb))
+    this.setState({
+      localConfig: [...localConfig]
+    })
+  }
+
   private editHeaderName = (key: string) => () => {
     const { localConfig } = this.state
     localConfig.some((config) => (
@@ -320,6 +399,46 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
           onPressEnter={this.saveEditingHeaderName}
         />
       )
+    }
+  }, {
+    title: '上移',
+    dataIndex: 'up',
+    key: 'up',
+    width: 60,
+    render: (_, record: ITableHeaderConfig) => {
+      const { localConfig } = this.state
+      const { key } = record
+      if (localConfig && localConfig.length && key !== localConfig[0].key) {
+        // 说明此时不是首行
+        return (
+          <Row type="flex" justify="center">
+            <Col>
+              <Icon type="arrow-up" style={{fontSize: '18px', cursor: 'pointer'}} onClick={this.goUpOrDown(key, 'up')} />
+            </Col>
+          </Row>
+        )
+      }
+      return null
+    }
+  }, {
+    title: '下移',
+    dataIndex: 'down',
+    key: 'down',
+    width: 60,
+    render: (_, record: ITableHeaderConfig) => {
+      const { localConfig } = this.state
+      const { key } = record
+      if (localConfig && localConfig.length && key !== localConfig[localConfig.length - 1].key) {
+        // 说明此时不是最后一行
+        return (
+          <Row type="flex" justify="center">
+            <Col>
+              <Icon type="arrow-down" style={{fontSize: '18px', cursor: 'pointer'}} onClick={this.goUpOrDown(key, 'down')} />
+            </Col>
+          </Row>
+        )
+      }
+      return null
     }
   }, {
     title: '是否隐藏',
