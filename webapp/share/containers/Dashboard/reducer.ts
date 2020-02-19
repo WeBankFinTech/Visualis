@@ -27,6 +27,9 @@ import {
   LOAD_SHARE_RESULTSET,
   LOAD_SHARE_RESULTSET_SUCCESS,
   LOAD_SHARE_RESULTSET_FAILURE,
+  EXECUTE_QUERY,
+  GET_RESULT_SUCCESS,
+  GET_RESULT_FAILURE,
   LOAD_WIDGET_CSV,
   LOAD_WIDGET_CSV_SUCCESS,
   LOAD_WIDGET_CSV_FAILURE,
@@ -218,6 +221,29 @@ function shareReducer (state = initialState, { type, payload }) {
         }
       })
     case LOAD_SHARE_RESULTSET:
+      console.log('reducer LOAD_SHARE_RESULTSET')
+      return state.set('itemsInfo', {
+        ...itemsInfo,
+        [payload.itemId]: {
+          ...itemsInfo[payload.itemId],
+          selectedItems: [],
+          loading: true,
+          errorMessage: '',
+          queryConditions: {
+            ...itemsInfo[payload.itemId].queryConditions,
+            tempFilters: payload.requestParams.tempFilters,
+            linkageFilters: payload.requestParams.linkageFilters,
+            globalFilters: payload.requestParams.globalFilters,
+            variables: payload.requestParams.variables,
+            linkageVariables: payload.requestParams.linkageVariables,
+            globalVariables: payload.requestParams.globalVariables,
+            pagination: payload.requestParams.pagination,
+            nativeQuery: payload.requestParams.nativeQuery
+          }
+        }
+      })
+    case EXECUTE_QUERY:
+      console.log('reducer EXECUTE_QUERY')
       return state.set('itemsInfo', {
         ...itemsInfo,
         [payload.itemId]: {
@@ -288,6 +314,30 @@ function shareReducer (state = initialState, { type, payload }) {
         }
       })
     case LOAD_SHARE_RESULTSET_FAILURE:
+      return state.set('itemsInfo', {
+        ...itemsInfo,
+        [payload.itemId]: {
+          ...itemsInfo[payload.itemId],
+          status: DashboardItemStatus.Error,
+          loading: false,
+          errorMessage: payload.errorMessage
+        }
+      })
+    case GET_RESULT_SUCCESS:
+      console.log('reducer GET_RESULT_SUCCESS payload: ', payload)
+      fieldGroupedSort(payload.resultset.resultList, payload.requestParams.customOrders)
+      return state.set('itemsInfo', {
+        ...itemsInfo,
+        [payload.itemId]: {
+          ...itemsInfo[payload.itemId],
+          status: DashboardItemStatus.Fulfilled,
+          loading: false,
+          datasource: payload.resultset || { resultList: [] },
+          renderType: payload.renderType
+        }
+      })
+    case GET_RESULT_FAILURE:
+      console.log('reducer GET_RESULT_FAILURE payload: ', payload)
       return state.set('itemsInfo', {
         ...itemsInfo,
         [payload.itemId]: {

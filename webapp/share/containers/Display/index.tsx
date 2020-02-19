@@ -32,6 +32,7 @@ import saga from './sagas'
 
 import { FieldSortTypes } from 'containers/Widget/components/Config/Sort'
 import { widgetDimensionMigrationRecorder } from 'utils/migrationRecorders'
+import { message } from 'antd'
 
 import Login from '../../components/Login/index'
 import LayerItem from 'app/containers/Display/components/LayerItem'
@@ -43,7 +44,7 @@ const mainStyles = require('app/containers/Main/Main.less')
 const styles = require('app/containers/Display/Display.less')
 
 import ShareDisplayActions from './actions'
-const { loadDisplay, loadLayerData } = ShareDisplayActions
+const { loadDisplay, loadLayerData, executeQuery, getProgress, getResult } = ShareDisplayActions
 import {
   makeSelectTitle,
   makeSelectDisplay,
@@ -81,6 +82,24 @@ interface IDisplayProps extends RouteComponentProps<{}, {}> {
   }
   onLoadDisplay: (token, resolve, reject) => void
   onLoadLayerData: (
+    renderType: RenderType,
+    layerId: number,
+    dataToken: string,
+    requestParams: IDataRequestParams
+  ) => void
+  onExecuteQuery: (
+    renderType: RenderType,
+    layerId: number,
+    dataToken: string,
+    requestParams: IDataRequestParams,
+    resolve: (data) => void
+  ) => void
+  onGetProgress: (
+    execId: string,
+    resolve: (data) => void
+  ) => void
+  onGetResult: (
+    execId: string,
     renderType: RenderType,
     layerId: number,
     dataToken: string,
@@ -165,7 +184,8 @@ export class Display extends React.Component<IDisplayProps, IDisplayStates> {
     const {
       widgets,
       layersInfo,
-      onLoadLayerData
+      onLoadLayerData,
+      onExecuteQuery
     } = this.props
 
     const widget = widgets.find((w) => w.id === widgetId)
@@ -287,12 +307,41 @@ export class Display extends React.Component<IDisplayProps, IDisplayStates> {
       requestParams.orders = requestParams.orders.concat(tempOrders)
     }
 
-    onLoadLayerData(
-      renderType,
-      itemId,
-      widget.dataToken,
-      requestParams
-    )
+    // onLoadLayerData(
+    //   renderType,
+    //   itemId,
+    //   widget.dataToken,
+    //   requestParams
+    // )
+    onExecuteQuery(renderType, itemId, widget.dataToken, requestParams, (result) => {
+      const { execId } = result
+      this.executeQuery(execId, renderType, itemId, requestParams, this)
+    })
+  }
+
+  private executeQuery(execId, renderType, itemId, requestParams, that) {
+    console.log(3)
+    const { onGetProgress, onGetResult } = that.props
+    onGetProgress(execId, (result) => {
+      console.log(4)
+      const { progress, status } = result
+      if (status === 'fail') {
+        console.log('fail')
+        // 提示 查询失败（显示表格头，就和现在的暂无数据保持一致的交互，只是提示换成“查询失败”）
+        return message.error('查询失败！')
+      } else if (status === 'Succeed' && progress === 1) {
+        console.log('Succeed')
+        // 查询成功，调用 结果集接口，status为success时，progress一定为1
+        onGetResult(execId, renderType, itemId, requestParams, (result) => {
+          // 拿到结果干嘛
+        })
+      } else {
+        console.log('Runninf')
+        // 说明还在运行中
+        // 三秒后再请求一次进度查询接口
+        setTimeout(that.executeQuery, 3000, execId, renderType, itemId, requestParams, that)
+      }
+    })
   }
 
   private getPreviewStyle = (slideParams) => {
@@ -469,7 +518,10 @@ const mapStateToProps = createStructuredSelector({
 export function mapDispatchToProps (dispatch) {
   return {
     onLoadDisplay: (token, resolve, reject) => dispatch(loadDisplay(token, resolve, reject)),
-    onLoadLayerData: (renderType, layerId, dataToken, requestParams) => dispatch(loadLayerData(renderType, layerId, dataToken, requestParams))
+    onLoadLayerData: (renderType, layerId, dataToken, requestParams) => dispatch(loadLayerData(renderType, layerId, dataToken, requestParams)),
+    onExecuteQuery: (renderType, layerId, dataToken, requestParams, resolve) => dispatch(executeQuery(renderType, layerId, dataToken, requestParams, resolve)),
+    onGetProgress: (execId, resolve) => dispatch(getProgress(execId, resolve)),
+    onGetResult: (execId, renderType, layerId, dataToken, requestParams, resolve) => dispatch(getResult(execId, renderType, layerId, dataToken, requestParams, resolve))
   }
 }
 

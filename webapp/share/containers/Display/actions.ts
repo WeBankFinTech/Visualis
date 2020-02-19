@@ -80,7 +80,94 @@ export const ShareDisplayActions = {
         error
       }
     }
-  }
+  },
+  executeQuery (renderType, layerId, dataToken, requestParams, resolve) {
+    return {
+      type: ActionTypes.EXECUTE_QUERY,
+      payload: {
+        renderType,
+        layerId,
+        dataToken,
+        requestParams,
+        resolve
+      }
+    }
+  },
+  executeQueryLoaded (renderType, layerId, data, requestParams) {
+    return {
+      type: ActionTypes.EXECUTE_QUERY_SUCCESS,
+      payload: {
+        renderType,
+        layerId,
+        data,
+        requestParams
+      }
+    }
+  },
+  loadExecuteQueryFail (error) {
+    return {
+      type: ActionTypes.EXECUTE_QUERY_FAILURE,
+      payload: {
+        error
+      }
+    }
+  },
+
+  getProgress (execId, resolve) {
+    return {
+      type: ActionTypes.GET_PROGRESS,
+      payload: {
+        execId,
+        resolve
+      }
+    }
+  },
+  getProgressLoaded () {
+    return {
+      type: ActionTypes.GET_PROGRESS_SUCCESS,
+    }
+  },
+  loadGetProgressFail (error) {
+    return {
+      type: ActionTypes.GET_PROGRESS_FAILURE,
+      payload: {
+        error
+      }
+    }
+  },
+
+  getResult (execId, renderType, layerId, dataToken, requestParams, resolve) {
+    return {
+      type: ActionTypes.GET_RESULT,
+      payload: {
+        execId,
+        renderType,
+        layerId,
+        dataToken,
+        requestParams,
+        resolve
+      }
+    }
+  },
+  getResultLoaded (renderType, layerId, data, requestParams) {
+    return {
+      type: ActionTypes.GET_RESULT_SUCCESS,
+      payload: {
+        renderType,
+        layerId,
+        data,
+        requestParams
+      }
+    }
+  },
+  loadGetResultFail (error) {
+    return {
+      type: ActionTypes.GET_RESULT_FAILURE,
+      payload: {
+        error
+      }
+    }
+  },
 }
 
 const mockAction = returnType(ShareDisplayActions)

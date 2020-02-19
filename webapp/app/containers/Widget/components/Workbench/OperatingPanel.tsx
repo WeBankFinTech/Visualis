@@ -98,6 +98,17 @@ interface IOperatingPanelProps {
     resolve: (data) => void,
     reject: (error) => void
   ) => void
+  // widget页面 提交查询数据接口
+  onExecuteQuery: (
+    viewId: number,
+    requestParams: IDataRequestParams,
+    resolve: (data) => void,
+    reject: (error) => void
+  ) => void
+  // widget页面 进度查询接口
+  onGetProgress: (execId: string, resolve: (data) => void, reject: (error) => void) => void
+  // widget页面 获取结果集接口
+  onGetResult: (execId: string, resolve: (data) => void, reject: (error) => void) => void
   onSetQueryData: (data: object) => void
   onLoadDistinctValue: (viewId: number, params: Partial<IDistinctValueReqeustParams>) => void,
   onBeofreDropColunm: (view: IView, resolve: () => void) => void
@@ -871,6 +882,99 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     })
   }
 
+  private executeQuery(dataParams, execId, updatedPagination, selectedCharts, renderType, orders, that) {
+    const { cols, rows, metrics, secondaryMetrics, filters, color, label, size, xAxis, tip, yAxis } = dataParams
+    const { onSetWidgetProps, onGetProgress, onGetResult, selectedView } = that.props
+    const { mode, chartModeSelectedChart } = that.state
+    onGetProgress(execId, (result) => {
+      const { progress, status } = result
+      if (status === 'fail') {
+        // TODOS：提示 查询失败（显示表格头，就和现在的暂无数据保持一致的交互，只是提示换成“查询失败”）
+        return message.error('查询失败！')
+      } else if (status === 'Succeed' && progress === 1) {
+        // 查询成功，调用 结果集接口，status为success时，progress一定为1
+        onGetResult(execId, (result) => {
+          // 后续一样，执行数据显示的逻辑
+          const { resultList: data, pageNo, pageSize, totalCount } = result
+          updatedPagination = !updatedPagination.withPaging ? updatedPagination : {
+            ...updatedPagination,
+            pageNo,
+            pageSize,
+            totalCount
+          }
+          const mergedParams = that.getChartDataConfig(selectedCharts)
+          const mergedDataParams = mergedParams.dataParams
+          const mergedStyleParams = mergedParams.styleParams
+          onSetWidgetProps({
+            cols: cols.items.map((item) => ({
+              ...item,
+              field: item.field || getDefaultFieldConfig(),
+              format: item.format || getDefaultFieldFormatConfig(),
+              sort: item.sort
+            })),
+            rows: rows.items.map((item) => ({
+              ...item,
+              field: item.field || getDefaultFieldConfig(),
+              format: item.format || getDefaultFieldFormatConfig(),
+              sort: item.sort
+            })),
+            metrics: metrics.items.map((item) => ({
+              ...item,
+              agg: item.agg || 'sum',
+              chart: item.chart || getPivot(),
+              field: item.field || getDefaultFieldConfig(),
+              format: item.format || getDefaultFieldFormatConfig()
+            })),
+            ...secondaryMetrics && {
+              secondaryMetrics: secondaryMetrics.items.map((item) => ({
+                ...item,
+                agg: item.agg || 'sum',
+                chart: item.chart || getPivot(),
+                field: item.field || getDefaultFieldConfig(),
+                format: item.format || getDefaultFieldFormatConfig()
+              }))
+            },
+            filters: filters.items.map(({name, type, config}) => ({ name, type, config })),
+            ...color && {color},
+            ...label && {label},
+            ...size && {size},
+            ...xAxis && {xAxis},
+            ...tip && {tip},
+            ...yAxis && {yAxis},
+            chartStyles: mergedStyleParams,
+            selectedChart: mode === 'pivot' ? chartModeSelectedChart.id : selectedCharts[0].id,
+            data,
+            pagination: updatedPagination,
+            dimetionAxis: that.getDimetionAxis(selectedCharts),
+            renderType: renderType || 'rerender',
+            orders,
+            mode,
+            model: selectedView.model
+          })
+          that.setState({
+            chartModeSelectedChart: mode === 'pivot' ? chartModeSelectedChart : selectedCharts[0],
+            pagination: updatedPagination,
+            styleParams: mergedStyleParams
+          }, () => {
+            const mergedParams = that.getChartDataConfig(selectedCharts)
+            const mergedDataParams = mergedParams.dataParams
+            that.setState({
+              dataParams: mergedDataParams,
+            })
+          })
+        }, (err) => {
+        })
+      } else {
+        // 说明还在运行中
+        // 更新进度条
+        // 三秒后再请求一次进度查询接口
+        setTimeout(that.executeQuery, 3000, dataParams, execId, updatedPagination, selectedCharts, renderType, orders, that)
+      }
+    }, (err) => {
+    })
+  }
+
+  // 点击手动查询按钮
   private forceSetWidgetProps = () => {
     const { dataParams, styleParams, pagination } = this.state
     this.setWidgetProps(dataParams, styleParams, {
@@ -891,7 +995,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     }
   ) => {
     const { cols, rows, metrics, secondaryMetrics, filters, color, label, size, xAxis, tip, yAxis } = dataParams
-    const { selectedView, onLoadData, onSetWidgetProps, onSetQueryData } = this.props
+    const { selectedView, onLoadData, onExecuteQuery, onSetWidgetProps, onSetQueryData } = this.props
     const { mode, chartModeSelectedChart, pagination } = this.state
     let renderType
     let updatedPagination
@@ -1050,91 +1154,13 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     if (needRequest) {
       this.lastRequestParamString = requestParamString
       onSetQueryData(requestParams)
-      onLoadData(selectedView.id, requestParams, (result) => {
-        const { resultList: data, pageNo, pageSize, totalCount } = result
-        updatedPagination = !updatedPagination.withPaging ? updatedPagination : {
-          ...updatedPagination,
-          pageNo,
-          pageSize,
-          totalCount
-        }
-        const mergedParams = this.getChartDataConfig(selectedCharts)
-        const mergedDataParams = mergedParams.dataParams
-        const mergedStyleParams = mergedParams.styleParams
-        onSetWidgetProps({
-          cols: cols.items.map((item) => ({
-            ...item,
-            field: item.field || getDefaultFieldConfig(),
-            format: item.format || getDefaultFieldFormatConfig(),
-            sort: item.sort
-          })),
-          rows: rows.items.map((item) => ({
-            ...item,
-            field: item.field || getDefaultFieldConfig(),
-            format: item.format || getDefaultFieldFormatConfig(),
-            sort: item.sort
-          })),
-          metrics: metrics.items.map((item) => ({
-            ...item,
-            agg: item.agg || 'sum',
-            chart: item.chart || getPivot(),
-            field: item.field || getDefaultFieldConfig(),
-            format: item.format || getDefaultFieldFormatConfig()
-          })),
-          ...secondaryMetrics && {
-            secondaryMetrics: secondaryMetrics.items.map((item) => ({
-              ...item,
-              agg: item.agg || 'sum',
-              chart: item.chart || getPivot(),
-              field: item.field || getDefaultFieldConfig(),
-              format: item.format || getDefaultFieldFormatConfig()
-            }))
-          },
-          filters: filters.items.map(({name, type, config}) => ({ name, type, config })),
-          ...color && {color},
-          ...label && {label},
-          ...size && {size},
-          ...xAxis && {xAxis},
-          ...tip && {tip},
-          ...yAxis && {yAxis},
-          chartStyles: mergedStyleParams,
-          selectedChart: mode === 'pivot' ? chartModeSelectedChart.id : selectedCharts[0].id,
-          data,
-          pagination: updatedPagination,
-          dimetionAxis: this.getDimetionAxis(selectedCharts),
-          renderType: renderType || 'rerender',
-          orders,
-          mode,
-          model: selectedView.model
-        })
-        this.setState({
-          chartModeSelectedChart: mode === 'pivot' ? chartModeSelectedChart : selectedCharts[0],
-          pagination: updatedPagination,
-          styleParams: mergedStyleParams
-        }, () => {
-          const mergedParams = this.getChartDataConfig(selectedCharts)
-          const mergedDataParams = mergedParams.dataParams
-          this.setState({
-            dataParams: mergedDataParams,
-          })
-        })
-      }, (error) => {
-        notification.destroy()
-        notification.error({
-          message: '执行失败',
-          description: (
-            <Tooltip
-              placement="bottom"
-              trigger="click"
-              title={error.msg}
-              overlayClassName={styles.errorMessage}
-            >
-              <a>点击查看错误信息</a>
-            </Tooltip>
-          ),
-          duration: null
-        })
-      })
+
+      // 执行查询数据接口
+      onExecuteQuery(selectedView.id, requestParams, (result) => {
+        const { execId } = result
+        // 每隔三秒执行一次查询进度接口
+        this.executeQuery(dataParams, execId, updatedPagination, selectedCharts, renderType, orders, this)
+      }, (error) => {})
     } else {
       const mergedParams = this.getChartDataConfig(selectedCharts)
       const mergedDataParams = mergedParams.dataParams
@@ -2184,6 +2210,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
           </div>
           {
             queryMode === WorkbenchQueryMode.Manually && (
+              // widget编辑页面里，中间的配置栏，手动查询时会显示的查询按钮
               <div className={styles.manualQuery} onClick={this.forceSetWidgetProps}>
                 <Icon type="caret-right" />查询
               </div>

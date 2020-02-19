@@ -53,6 +53,9 @@ import {
   getDashboard,
   getWidget,
   getResultset,
+  executeQuery,
+  getProgress,
+  getResult,
   setIndividualDashboard,
   loadWidgetCsv,
   loadSelectOptions,
@@ -139,6 +142,24 @@ interface IDashboardProps {
     dashboardItemId: number,
     dataToken: string,
     requestParams: IDataRequestParams
+  ) => void,
+  onExecuteQuery: (
+    renderType: RenderType,
+    dashboardItemId: number,
+    dataToken: string,
+    requestParams: IDataRequestParams,
+    resolve: (data) => void
+  ) => void,
+  onGetProgress: (
+    execId: string,
+    resolve: (data) => void
+  ) => void,
+  onGetResult: (
+    execId: string,
+    renderType: RenderType,
+    dashboardItemId: number,
+    requestParams: IDataRequestParams,
+    resolve: (data) => void
   ) => void,
   onSetIndividualDashboard: (id, shareInfo) => void,
   onLoadWidgetCsv: (
@@ -323,7 +344,166 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
   }
 
   private getChartData = (renderType: RenderType, itemId: number, widgetId: number, queryConditions?: Partial<IQueryConditions>) => {
-    this.getData(this.props.onLoadResultset, renderType, itemId, widgetId, queryConditions)
+    // 先处理数据
+    const {
+      currentItemsInfo,
+      widgets,
+      onExecuteQuery
+    } = this.props
+
+    const widget = widgets.find((w) => w.id === widgetId)
+    const widgetConfig: IWidgetConfig = JSON.parse(widget.config)
+    const { cols, rows, metrics, secondaryMetrics, filters, color, label, size, xAxis, tip, orders, cache, expired } = widgetConfig
+    const updatedCols = cols.map((col) => widgetDimensionMigrationRecorder(col))
+    const updatedRows = rows.map((row) => widgetDimensionMigrationRecorder(row))
+    const customOrders = updatedCols.concat(updatedRows)
+      .filter(({ sort }) => sort && sort.sortType === FieldSortTypes.Custom)
+      .map(({ name, sort }) => ({ name, list: sort[FieldSortTypes.Custom].sortList }))
+
+    const cachedQueryConditions = currentItemsInfo[itemId].queryConditions
+
+    let tempFilters
+    let linkageFilters
+    let globalFilters
+    let tempOrders
+    let variables
+    let linkageVariables
+    let globalVariables
+    let drillStatus
+    let pagination
+    let nativeQuery
+
+    if (queryConditions) {
+      tempFilters = queryConditions.tempFilters !== void 0 ? queryConditions.tempFilters : cachedQueryConditions.tempFilters
+      linkageFilters = queryConditions.linkageFilters !== void 0 ? queryConditions.linkageFilters : cachedQueryConditions.linkageFilters
+      globalFilters = queryConditions.globalFilters !== void 0 ? queryConditions.globalFilters : cachedQueryConditions.globalFilters
+      tempOrders = queryConditions.orders !== void 0 ? queryConditions.orders : cachedQueryConditions.orders
+      variables = queryConditions.variables || cachedQueryConditions.variables
+      linkageVariables = queryConditions.linkageVariables || cachedQueryConditions.linkageVariables
+      globalVariables = queryConditions.globalVariables || cachedQueryConditions.globalVariables
+      drillStatus = queryConditions.drillStatus || void 0
+      pagination = queryConditions.pagination || cachedQueryConditions.pagination
+      nativeQuery = queryConditions.nativeQuery || cachedQueryConditions.nativeQuery
+    } else {
+      tempFilters = cachedQueryConditions.tempFilters
+      linkageFilters = cachedQueryConditions.linkageFilters
+      globalFilters = cachedQueryConditions.globalFilters
+      tempOrders = cachedQueryConditions.orders
+      variables = cachedQueryConditions.variables
+      linkageVariables = cachedQueryConditions.linkageVariables
+      globalVariables = cachedQueryConditions.globalVariables
+      pagination = cachedQueryConditions.pagination
+      nativeQuery = cachedQueryConditions.nativeQuery
+    }
+    let groups = cols.concat(rows).filter((g) => g.name !== '指标名称').map((g) => g.name)
+    let aggregators =  metrics.map((m) => ({
+      column: decodeMetricName(m.name),
+      func: m.agg
+    }))
+
+    if (secondaryMetrics && secondaryMetrics.length) {
+      aggregators = aggregators.concat(secondaryMetrics.map((second) => ({
+        column: decodeMetricName(second.name),
+        func: second.agg
+      })))
+    }
+
+    if (color) {
+      groups = groups.concat(color.items.map((c) => c.name))
+    }
+    if (label) {
+      groups = groups.concat(label.items
+        .filter((l) => l.type === 'category')
+        .map((l) => l.name))
+      aggregators = aggregators.concat(label.items
+        .filter((l) => l.type === 'value')
+        .map((l) => ({
+          column: decodeMetricName(l.name),
+          func: l.agg
+        })))
+    }
+    if (size) {
+      aggregators = aggregators.concat(size.items
+        .map((s) => ({
+          column: decodeMetricName(s.name),
+          func: s.agg
+        })))
+    }
+    if (xAxis) {
+      aggregators = aggregators.concat(xAxis.items
+        .map((l) => ({
+          column: decodeMetricName(l.name),
+          func: l.agg
+        })))
+    }
+    if (tip) {
+      aggregators = aggregators.concat(tip.items
+        .map((t) => ({
+          column: decodeMetricName(t.name),
+          func: t.agg
+        })))
+    }
+    
+    const requestParamsFilters = filters.reduce((a, b) => {
+      return a.concat(b.config.sqlModel)
+    }, [])
+
+    const requestParams = {
+      groups: drillStatus && drillStatus.groups ? drillStatus.groups : groups,
+      aggregators,
+      filters: drillStatus && drillStatus.filter ? drillStatus.filter.sqls : requestParamsFilters,
+      tempFilters,
+      linkageFilters,
+      globalFilters,
+      variables,
+      linkageVariables,
+      globalVariables,
+      orders,
+      cache,
+      expired,
+      flush: renderType === 'flush',
+      pagination,
+      nativeQuery,
+      customOrders
+    }
+
+    if (tempOrders) {
+      requestParams.orders = requestParams.orders.concat(tempOrders)
+    }
+
+    console.log(1)
+    onExecuteQuery(renderType, itemId, widget.dataToken, requestParams, (result) => {
+      console.log(2)
+      const { execId } = result
+      console.log('this: ', this)
+      this.executeQuery(execId, renderType, itemId, requestParams, this)
+    })
+    // this.getData(this.props.onLoadResultset, renderType, itemId, widgetId, queryConditions)
+  }
+
+  private executeQuery(execId, renderType, itemId, requestParams, that) {
+    console.log(3)
+    const { onGetProgress, onGetResult } = that.props
+    onGetProgress(execId, (result) => {
+      console.log(4)
+      const { progress, status } = result
+      if (status === 'fail') {
+        console.log('fail')
+        // 提示 查询失败（显示表格头，就和现在的暂无数据保持一致的交互，只是提示换成“查询失败”）
+        return message.error('查询失败！')
+      } else if (status === 'Succeed' && progress === 1) {
+        console.log('Succeed')
+        // 查询成功，调用 结果集接口，status为success时，progress一定为1
+        onGetResult(execId, renderType, itemId, requestParams, (result) => {
+          // 拿到结果干嘛
+        })
+      } else {
+        console.log('Runninf')
+        // 说明还在运行中
+        // 三秒后再请求一次进度查询接口
+        setTimeout(that.executeQuery, 3000, execId, renderType, itemId, requestParams, that)
+      }
+    })
   }
 
   private initPolling = (token) => {
@@ -386,6 +566,7 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
     widgetId: number,
     queryConditions?: Partial<IQueryConditions>
   ) => {
+    // 先执行以下逻辑
     const {
       currentItemsInfo,
       widgets
@@ -513,6 +694,7 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
       requestParams.orders = requestParams.orders.concat(tempOrders)
     }
 
+    // 处理完数据之后，最后处理回调函数
     callback(
       renderType,
       itemId,
@@ -1154,6 +1336,12 @@ export function mapDispatchToProps (dispatch) {
     onLoadDashboard: (token, reject) => dispatch(getDashboard(token, reject)),
     onLoadWidget: (token, resolve, reject) => dispatch(getWidget(token, resolve, reject)),
     onLoadResultset: (renderType, itemid, dataToken, requestParams) => dispatch(getResultset(renderType, itemid, dataToken, requestParams)),
+    // widget页面 提交查询数据接口
+    onExecuteQuery: (renderType, itemid, dataToken, requestParams, resolve) => dispatch(executeQuery(renderType, itemid, dataToken, requestParams, resolve)),
+    // widget页面 进度查询接口
+    onGetProgress: (execId, resolve) => dispatch(getProgress(execId, resolve)),
+    // widget页面 获取结果集接口
+    onGetResult: (execId, renderType, itemid, requestParams, resolve) => dispatch(getResult(execId, renderType, itemid, requestParams, resolve)),
     onSetIndividualDashboard: (widgetId, token) => dispatch(setIndividualDashboard(widgetId, token)),
     onLoadWidgetCsv: (itemId, requestParams, dataToken) => dispatch(loadWidgetCsv(itemId, requestParams, dataToken)),
     onLoadSelectOptions: (controlKey, dataToken, paramsOrOptions, itemId) => dispatch(loadSelectOptions(controlKey, dataToken, paramsOrOptions, itemId)),

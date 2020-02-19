@@ -29,7 +29,10 @@ import {
   LOAD_SELECT_OPTIONS,
   LOAD_DOWNLOAD_LIST,
   DOWNLOAD_FILE,
-  INITIATE_DOWNLOAD_TASK
+  INITIATE_DOWNLOAD_TASK,
+  EXECUTE_QUERY,
+  GET_PROGRESS,
+  GET_RESULT
 } from './constants'
 import {
   dashboardGetted,
@@ -46,7 +49,13 @@ import {
   fileDownloaded,
   downloadFileFail,
   DownloadTaskInitiated,
-  initiateDownloadTaskFail
+  initiateDownloadTaskFail,
+  executeQuerySuccess,
+  executeQueryFail,
+  getProgressSuccess,
+  getProgressFail,
+  getResultSuccess,
+  getResultFail
 } from './actions'
 
 import request from '../../../app/utils/request'
@@ -84,6 +93,7 @@ export function* getWidget (action) {
   }
 }
 
+// dashboard share页里，获取widget数据
 export function* getResultset (action) {
   const { payload } = action
   const { renderType, itemId, dataToken, requestParams } = payload
@@ -120,6 +130,89 @@ export function* getResultset (action) {
   }
 }
 
+export function* executeQuery (action) {
+  const { payload } = action
+  const { renderType, itemId, dataToken, requestParams, resolve } = payload
+  const {
+    filters,
+    tempFilters,
+    linkageFilters,
+    globalFilters,
+    variables,
+    linkageVariables,
+    globalVariables,
+    pagination,
+    ...rest
+  } = requestParams
+  const { pageSize, pageNo } = pagination || { pageSize: 0, pageNo: 0 }
+
+  try {
+    const asyncData = yield call(request, {
+      method: 'post',
+      url: `${api.share}/data/${dataToken}`,
+      data: {
+        ...omit(rest, 'customOrders'),
+        filters: filters.concat(tempFilters).concat(linkageFilters).concat(globalFilters),
+        params: variables.concat(linkageVariables).concat(globalVariables),
+        pageSize,
+        pageNo
+      }
+    })
+    yield put(executeQuerySuccess(renderType, itemId, requestParams, asyncData.payload))
+    // asyncData.payload可能为""
+    if (asyncData.payload) {
+      resolve(asyncData.payload)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    yield put(executeQueryFail(itemId, getErrorMessage(err)))
+  }
+}
+
+export function* getProgress (action) {
+  const { payload } = action
+  const { execId, resolve } = payload
+  try {
+    const asyncData = yield call(request, {
+      method: 'post',
+      url: `${api.view}/${execId}/getprogress`,
+      data: {}
+    })
+    yield put(getProgressSuccess())
+    // asyncData.payload可能为""
+    if (asyncData.payload) {
+      resolve(asyncData.payload)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    yield put(getProgressFail(getErrorMessage(err)))
+  }
+}
+
+export function* getResult (action) {
+  const { payload } = action
+  const { execId, renderType, itemId, requestParams, resolve } = payload
+  try {
+    const asyncData = yield call(request, {
+      method: 'post',
+      url: `${api.view}/${execId}/getresult`,
+      data: {}
+    })
+    // asyncData.payload可能为""
+    if (asyncData.payload) {
+      const { resultList } = asyncData.payload
+      asyncData.payload.resultList = (resultList && resultList.slice(0, 600)) || []
+      resolve(asyncData.payload)
+    } else {
+      resolve({})
+    }
+    yield put(getResultSuccess(renderType, itemId, requestParams, asyncData.payload))
+  } catch (err) {
+    yield put(getResultFail(itemId, getErrorMessage(err)))
+  }
+}
 export function* getWidgetCsv (action) {
   const { itemId, requestParams, token } = action.payload
   const { filters, tempFilters, linkageFilters, globalFilters, variables, linkageVariables, globalVariables, ...rest } = requestParams
@@ -241,6 +334,9 @@ export default function* rootDashboardSaga (): IterableIterator<any> {
     takeLatest(LOAD_SHARE_DASHBOARD, getDashboard),
     takeEvery(LOAD_SHARE_WIDGET, getWidget),
     takeEvery(LOAD_SHARE_RESULTSET, getResultset),
+    takeEvery(EXECUTE_QUERY, executeQuery),
+    takeEvery(GET_PROGRESS, getProgress),
+    takeEvery(GET_RESULT, getResult),
     takeLatest(LOAD_WIDGET_CSV, getWidgetCsv),
     takeEvery(LOAD_SELECT_OPTIONS, getSelectOptions),
     takeLatest(LOAD_DOWNLOAD_LIST, getDownloadList),

@@ -75,7 +75,7 @@ const styles = require('./Display.less')
 import { IWidgetConfig, RenderType } from '../Widget/components/Widget'
 import { decodeMetricName } from '../Widget/components/util'
 import { ViewActions } from '../View/actions'
-const { loadViewDataFromVizItem, loadViewsDetail } = ViewActions // @TODO global filter in Display
+const { loadViewDataFromVizItem, loadViewExecuteQuery, loadViewGetProgress, loadViewGetResult ,loadViewsDetail } = ViewActions // @TODO global filter in Display
 import { makeSelectWidgets } from '../Widget/selectors'
 import { makeSelectFormedViews } from '../View/selectors'
 import { GRID_ITEM_MARGIN, DEFAULT_BASELINE_COLOR, DEFAULT_SPLITER, MAX_LAYER_COUNT } from 'app/globalConstants'
@@ -148,8 +148,30 @@ interface IEditorProps extends RouteComponentProps<{}, IParams> {
     renderType: RenderType,
     layerItemId: number,
     viewId: number,
-    requestParams: IDataRequestParams
+    requestParams: IDataRequestParams,
+    statistic: any
   ) => void
+  onViewExecuteQuery: (
+    renderType: RenderType,
+    dashboardItemId: number,
+    viewId: number,
+    requestParams: IDataRequestParams,
+    statistic: any,
+    resolve: (data) => void
+  ) => void
+  onViewGetProgress: (
+    execId: string,
+    resolve: (data) => void
+    ) => void
+  onViewGetResult: (
+    execId: string,
+    renderType: RenderType,
+    dashboardItemId: number,
+    viewId: number,
+    requestParams: IDataRequestParams,
+    statistic: any,
+    resolve: (data) => void
+    ) => void
   onLoadViewsDetail: (viewIds: number[], resolve: () => void) => void
 
   onShowEditorBaselines: (baselines: IBaseline[]) => void
@@ -284,7 +306,8 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
     const {
       currentLayersInfo,
       widgets,
-      onLoadViewDataFromVizItem
+      // onLoadViewDataFromVizItem
+      onViewExecuteQuery
     } = this.props
 
     const widget = widgets.find((w) => w.id === widgetId)
@@ -407,12 +430,38 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
       requestParams.orders = requestParams.orders.concat(tempOrders)
     }
 
-    onLoadViewDataFromVizItem(
-      renderType,
-      itemId,
-      widget.viewId,
-      requestParams
-    )
+    // onLoadViewDataFromVizItem(
+    //   renderType,
+    //   itemId,
+    //   widget.viewId,
+    //   requestParams
+    // )
+    
+    // 本身这里源代码就少一个statistic参数，可能没啥用，先随便赋个{}
+    const statistic = {}
+    onViewExecuteQuery(renderType, itemId, widget.viewId, requestParams, statistic,  (result) => {
+      const { execId } = result
+      this.executeQuery(execId, renderType, itemId, widget.viewId, requestParams, statistic, this)
+    })
+  }
+
+  private executeQuery(execId, renderType, itemId, viewId, requestParams, statistic, that) {
+    const { onViewGetProgress, onViewGetResult } = that.props
+    onViewGetProgress(execId, (result) => {
+      const { progress, status } = result
+      if (status === 'fail') {
+        // 提示 查询失败（显示表格头，就和现在的暂无数据保持一致的交互，只是提示换成“查询失败”）
+        return message.error('查询失败！')
+      } else if (status === 'Succeed' && progress === 1) {
+        // 查询成功，调用 结果集接口，status为success时，progress一定为1
+        onViewGetResult(execId, renderType, itemId, viewId, requestParams, statistic, (result) => {
+        })
+      } else {
+        // 说明还在运行中
+        // 三秒后再请求一次进度查询接口
+        setTimeout(that.executeQuery, 3000, execId, renderType, itemId, viewId, requestParams, statistic, that)
+      }
+    })
   }
 
   private updateCurrentLocalLayers = (
@@ -978,7 +1027,11 @@ function mapDispatchToProps (dispatch) {
     onEditCurrentDisplay: (display, resolve?) => dispatch(DisplayActions.editCurrentDisplay(display, resolve)),
     onEditCurrentSlide: (displayId, slide, resolve?) => dispatch(DisplayActions.editCurrentSlide(displayId, slide, resolve)),
     onUploadCurrentSlideCover: (cover, resolve) => dispatch(DisplayActions.uploadCurrentSlideCover(cover, resolve)),
-    onLoadViewDataFromVizItem: (renderType, itemId, viewId, requestParams) => dispatch(loadViewDataFromVizItem(renderType, itemId, viewId, requestParams, 'display')),
+    onLoadViewDataFromVizItem: (renderType, itemId, viewId, requestParams, statistic) => dispatch(loadViewDataFromVizItem(renderType, itemId, viewId, requestParams, 'display', statistic)),
+    onViewExecuteQuery: (renderType, itemId, viewId, requestParams, statistic, resolve) => dispatch(loadViewExecuteQuery(renderType, itemId, viewId, requestParams, 'display', statistic, resolve)),
+    onViewGetProgress: (execId, resolve) => dispatch(loadViewGetProgress(execId, resolve)),
+    onViewGetResult: (execId, renderType, itemId, viewId, requestParams, statistic, resolve) => dispatch(loadViewGetResult(execId, renderType, itemId, viewId, requestParams, 'display', statistic, resolve)),
+
     onLoadViewsDetail: (viewIds, resolve) => dispatch(loadViewsDetail(viewIds, resolve)),
     onSelectLayer: ({ id, selected, exclusive }) => dispatch(DisplayActions.selectLayer({ id, selected, exclusive })),
     onClearLayersSelection: () => dispatch(DisplayActions.clearLayersSelection()),

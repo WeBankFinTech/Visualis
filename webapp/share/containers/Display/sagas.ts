@@ -91,9 +91,106 @@ export function* getData (action: ShareDisplayActionType) {
   }
 }
 
+export function* executeQuery (action: ShareDisplayActionType) {
+  if (action.type !== ActionTypes.EXECUTE_QUERY) { return }
+
+  const { renderType, layerId, dataToken, requestParams, resolve } = action.payload
+  console.log('renderType: ', renderType)
+  console.log('layerId: ', layerId)
+  console.log('dataToken: ', dataToken)
+  console.log('requestParams: ', requestParams)
+  const {
+    filters,
+    tempFilters,
+    linkageFilters,
+    globalFilters,
+    variables,
+    linkageVariables,
+    globalVariables,
+    pagination,
+    ...rest
+  } = requestParams
+  const { pageSize, pageNo } = pagination || { pageSize: 0, pageNo: 0 }
+  const { executeQueryLoaded, loadExecuteQUeryFail } = ShareDisplayActions
+
+  try {
+    const asyncData = yield call(request, {
+      method: 'post',
+      url: `${api.share}/data/${dataToken}`,
+      data: {
+        ...omit(rest, 'customOrders'),
+        filters: filters.concat(tempFilters).concat(linkageFilters).concat(globalFilters),
+        params: variables.concat(linkageVariables).concat(globalVariables),
+        pageSize,
+        pageNo
+      }
+    })
+    yield put(executeQueryLoaded(renderType, layerId, asyncData.payload, requestParams))
+    // asyncData.payload可能为""
+    if (asyncData.payload) {
+      resolve(asyncData.payload)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    yield put(loadExecuteQUeryFail(err))
+  }
+}
+
+export function* getProgress (action: ShareDisplayActionType) {
+  if (action.type !== ActionTypes.GET_PROGRESS) { return }
+
+  const { execId, resolve } = action.payload
+  const { getProgressLoaded, loadGetProgressFail } = ShareDisplayActions
+
+  try {
+    const asyncData = yield call(request, {
+      method: 'post',
+      url: `${api.view}/${execId}/getprogress`,
+      data: {}
+    })
+    yield put(getProgressLoaded())
+    // asyncData.payload可能为""
+    if (asyncData.payload) {
+      resolve(asyncData.payload)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    yield put(loadGetProgressFail(err))
+  }
+}
+
+export function* getResult (action: ShareDisplayActionType) {
+  if (action.type !== ActionTypes.GET_RESULT) { return }
+  const { execId, renderType, layerId, requestParams, resolve } = action.payload
+  const { layerDataLoaded, loadLayerDataFail } = ShareDisplayActions
+
+  try {
+    const asyncData = yield call(request, {
+      method: 'post',
+      url: `${api.view}/${execId}/getresult`,
+      data: {}
+    })
+    yield put(layerDataLoaded(renderType, layerId, asyncData.payload, requestParams))
+    // asyncData.payload可能为""
+    if (asyncData.payload) {
+      const { resultList } = asyncData.payload
+      asyncData.payload.resultList = (resultList && resultList.slice(0, 600)) || []
+      resolve(asyncData.payload)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    yield put(loadLayerDataFail(err))
+  }
+}
 export default function* rootDisplaySaga (): IterableIterator<any> {
   yield [
     takeLatest(ActionTypes.LOAD_SHARE_DISPLAY, getDisplay),
-    takeEvery(ActionTypes.LOAD_LAYER_DATA, getData)
+    takeEvery(ActionTypes.LOAD_LAYER_DATA, getData),
+    takeEvery(ActionTypes.EXECUTE_QUERY, executeQuery),
+    takeEvery(ActionTypes.GET_PROGRESS, getProgress),
+    takeEvery(ActionTypes.GET_RESULT, getResult)
   ]
 }

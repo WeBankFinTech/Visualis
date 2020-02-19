@@ -82,6 +82,15 @@ function displayReducer (state = initialState, { type, payload }) {
             loading: true
           }
         })
+    case ActionTypes.EXECUTE_QUERY:
+      return state
+        .set('layersInfo', {
+          ...layersInfo,
+          [payload.layerId]: {
+            ...layersInfo[payload.layerId],
+            loading: true
+          }
+        })
     case ActionTypes.LOAD_LAYER_DATA_SUCCESS:
       fieldGroupedSort(payload.data.resultList, payload.requestParams.customOrders)
       return state
@@ -96,6 +105,29 @@ function displayReducer (state = initialState, { type, payload }) {
           }
         })
     case ActionTypes.LOAD_LAYER_DATA_FAILURE:
+      return state
+        .set('loadings', {
+          ...layersInfo,
+          [payload.layerId]: {
+            ...layersInfo[payload.layerId],
+            status: DashboardItemStatus.Error,
+            loading: false
+          }
+        })
+    case ActionTypes.GET_RESULT_SUCCESS:
+      fieldGroupedSort(payload.data.resultList, payload.requestParams.customOrders)
+      return state
+        .set('layersInfo', {
+          ...layersInfo,
+          [payload.layerId]: {
+            ...layersInfo[payload.layerId],
+            status: DashboardItemStatus.Fulfilled,
+            loading: false,
+            datasource: payload.data,
+            renderType: payload.renderType
+          }
+        })
+    case ActionTypes.GET_RESULT_FAILURE:
       return state
         .set('loadings', {
           ...layersInfo,
