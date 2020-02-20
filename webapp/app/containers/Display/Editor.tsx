@@ -223,6 +223,7 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
   }
 
   public componentWillUnmount () {
+    this.timeout.forEach(item => clearTimeout(item))
     this.props.onResetDisplayState()
   }
 
@@ -445,6 +446,8 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
     })
   }
 
+  private timeout = []
+
   private executeQuery(execId, renderType, itemId, viewId, requestParams, statistic, that) {
     const { onViewGetProgress, onViewGetResult } = that.props
     onViewGetProgress(execId, (result) => {
@@ -459,7 +462,8 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
       } else {
         // 说明还在运行中
         // 三秒后再请求一次进度查询接口
-        setTimeout(that.executeQuery, 3000, execId, renderType, itemId, viewId, requestParams, statistic, that)
+        const t = setTimeout(that.executeQuery, 3000, execId, renderType, itemId, viewId, requestParams, statistic, that)
+        this.timeout.push(t)
       }
     })
   }

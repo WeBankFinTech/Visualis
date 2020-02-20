@@ -314,6 +314,7 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
   }
 
   public componentWillUnmount () {
+    this.timeout.forEach(item => clearTimeout(item))
     window.removeEventListener('resize', this.onWindowResize, false)
     if (this.downloadListPollingTimer) {
       clearInterval(this.downloadListPollingTimer)
@@ -481,6 +482,8 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
     // this.getData(this.props.onLoadResultset, renderType, itemId, widgetId, queryConditions)
   }
 
+  private timeout = []
+
   private executeQuery(execId, renderType, itemId, requestParams, that) {
     console.log(3)
     const { onGetProgress, onGetResult } = that.props
@@ -501,7 +504,8 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
         console.log('Runninf')
         // 说明还在运行中
         // 三秒后再请求一次进度查询接口
-        setTimeout(that.executeQuery, 3000, execId, renderType, itemId, requestParams, that)
+        const t = setTimeout(that.executeQuery, 3000, execId, renderType, itemId, requestParams, that)
+        this.timeout.push(t)
       }
     })
   }

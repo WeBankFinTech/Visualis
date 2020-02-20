@@ -469,6 +469,7 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
   }
 
   public componentWillUnmount () {
+    this.timeout.forEach(item => clearTimeout(item))
     statistic.setDurations({
       end_time: statistic.getCurrentDateTime()
     }, (data) => {
@@ -643,6 +644,9 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
       this.executeQuery(execId, renderType, itemId, widget.viewId, requestParams, {...requestParams, widget}, this)
     })
   }
+
+  private timeout = []
+
   private executeQuery(execId, renderType, itemId, viewId, requestParams, statistic, that) {
     const { onViewGetProgress, onViewGetResult } = that.props
     onViewGetProgress(execId, (result) => {
@@ -657,7 +661,8 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
       } else {
         // 说明还在运行中
         // 三秒后再请求一次进度查询接口
-        setTimeout(that.executeQuery, 3000, execId, renderType, itemId, viewId, requestParams, statistic, that)
+        const t = setTimeout(that.executeQuery, 3000, execId, renderType, itemId, viewId, requestParams, statistic, that)
+        this.timeout.push(t)
       }
     })
   }

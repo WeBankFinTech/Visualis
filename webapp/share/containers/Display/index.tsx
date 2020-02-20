@@ -138,6 +138,10 @@ export class Display extends React.Component<IDisplayProps, IDisplayStates> {
     })
   }
 
+  public componentWillUnmount () {
+    this.timeout.forEach(item => clearTimeout(item))
+  }
+
   public componentWillReceiveProps (nextProps: IDisplayProps) {
     const { slide, layers, layersInfo } = nextProps
     const { scale } = this.state
@@ -319,6 +323,8 @@ export class Display extends React.Component<IDisplayProps, IDisplayStates> {
     })
   }
 
+  private timeout = []
+
   private executeQuery(execId, renderType, itemId, requestParams, that) {
     console.log(3)
     const { onGetProgress, onGetResult } = that.props
@@ -339,7 +345,8 @@ export class Display extends React.Component<IDisplayProps, IDisplayStates> {
         console.log('Runninf')
         // 说明还在运行中
         // 三秒后再请求一次进度查询接口
-        setTimeout(that.executeQuery, 3000, execId, renderType, itemId, requestParams, that)
+        const t = setTimeout(that.executeQuery, 3000, execId, renderType, itemId, requestParams, that)
+        this.timeout.push(t)
       }
     })
   }

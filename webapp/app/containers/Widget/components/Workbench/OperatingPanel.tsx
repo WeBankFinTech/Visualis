@@ -399,6 +399,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
   }
 
   public componentWillUnmount () {
+    this.timeout.forEach(item => clearTimeout(item))
     notification.destroy()
   }
 
@@ -882,6 +883,8 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     })
   }
 
+  private timeout = []
+
   private executeQuery(dataParams, execId, updatedPagination, selectedCharts, renderType, orders, that) {
     const { cols, rows, metrics, secondaryMetrics, filters, color, label, size, xAxis, tip, yAxis } = dataParams
     const { onSetWidgetProps, onGetProgress, onGetResult, selectedView } = that.props
@@ -968,7 +971,8 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         // 说明还在运行中
         // 更新进度条
         // 三秒后再请求一次进度查询接口
-        setTimeout(that.executeQuery, 3000, dataParams, execId, updatedPagination, selectedCharts, renderType, orders, that)
+        const t = setTimeout(that.executeQuery, 3000, dataParams, execId, updatedPagination, selectedCharts, renderType, orders, that)
+        this.timeout.push(t)
       }
     }, (err) => {
     })
