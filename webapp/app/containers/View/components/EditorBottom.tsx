@@ -63,6 +63,11 @@ export const EditorBottom = (props: IEditorBottomProps) => {
           下一步
         </Button>
       </Tooltip>
+      <Tooltip title={nextDisabled ? '执行后直接保存可用' : ''}>
+        <Button onClick={stepChange(onStepChange, 2)} disabled={nextDisabled}>
+          直接保存
+        </Button>
+      </Tooltip>
     </Col>
   </Row>
   )
