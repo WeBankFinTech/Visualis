@@ -186,24 +186,14 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     })
     const routeParams = this.getParams();
     const viewId = routeParams[0] ? routeParams[0].split('=')[1] : '';
-    const isWaterMask = routeParams[1] ? routeParams[1].split('=')[1] : '';
-    const username = routeParams[2] ? routeParams[2].split('=')[1] : '';
     if (viewId) {
       sessionStorage.setItem('viewId', viewId);
-    }
-    if (isWaterMask) {
-      localStorage.setItem('isWaterMask', isWaterMask);
-      localStorage.setItem('username', username);
     }
   }
 
   public componentDidMount () {
     this.props.onHideNavigator()
     const routeParams = this.getParams();
-    const isWaterMask = routeParams[1] ? routeParams[1].split('=')[1] : '';
-    if (isWaterMask) {
-      localStorage.setItem('isWaterMask', isWaterMask);
-    }
   }
 
   public componentWillReceiveProps (nextProps: IWorkbenchProps) {

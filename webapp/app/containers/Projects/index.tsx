@@ -5,7 +5,7 @@ import { Row, Col, Tooltip, Popconfirm, Icon, Modal, Button, Pagination } from '
 import { WrappedFormUtils } from 'antd/lib/form/Form'
 const styles = require('../Organizations/Project.less')
 import { InjectedRouter } from 'react-router/lib/Router'
-import { addProject, deleteProject, editProject, loadProjects, loadProjectDetail,
+import { addProject, deleteProject, editProject, loadProjects, getBaseInfo, loadProjectDetail,
   transferProject, searchProject, unStarProject, getProjectStarUser, loadCollectProjects, clickCollectProjects } from './actions'
 import { compose } from 'redux'
 import { makeSelectLoginUser } from '../App/selectors'
@@ -41,6 +41,7 @@ interface IProjectsProps {
   onTransferProject: (id: number, orgId: number) => any
   onEditProject: (project: any, resolve: () => any) => any
   onLoadProjects: () => any
+  onGetBaseInfo: (resolve) => any
   onAddProject: (project: any, resolve: () => any) => any
   onLoadOrganizations: () => any
   onLoadCollectProjects: () => any
@@ -158,18 +159,11 @@ export class Projects extends React.PureComponent<IProjectsProps, IProjectsState
     this.props.onLoadProjects()
     this.props.onLoadOrganizations()
     this.props.onLoadCollectProjects()
+    this.props.onGetBaseInfo(result => {
+      const { userInfo } = result
+      if (userInfo && userInfo.basic) localStorage.setItem('username', userInfo.basic.username)
+    })
     // historyStack.init()
-  }
-
-  public componentDidMount() {
-    const search = location.hash.split('?')[1] || '';
-    const params = search.split('&');
-    const isWaterMaster =params[0] ? params[0].split('=')[1] : '';
-    const username = params[1] ? params[1].split('=')[1] : '';
-    if (isWaterMaster) {
-      localStorage.setItem('isWaterMask', isWaterMaster)
-      localStorage.setItem('username', username)
-    }
   }
 
   public componentWillReceiveProps (nextProps) {
@@ -1045,6 +1039,7 @@ const mapStateToProps = createStructuredSelector({
 export function mapDispatchToProps (dispatch) {
   return {
     onLoadProjects: () => dispatch(loadProjects()),
+    onGetBaseInfo: (resolve) => dispatch(getBaseInfo(resolve)),
     onStarProject: (id, resolve) => dispatch(unStarProject(id, resolve)),
     onGetProjectStarUser: (id) => dispatch(getProjectStarUser(id)),
     onLoadProjectDetail: (id) => dispatch(loadProjectDetail(id)),

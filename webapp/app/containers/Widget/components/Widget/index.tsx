@@ -185,7 +185,6 @@ export interface IWidgetWrapperProps extends IWidgetProps {
 export interface IWidgetWrapperStates {
   width: number
   height: number
-  isShow: boolean
   getProgressPercent: number
 }
 
@@ -202,7 +201,6 @@ export class Widget extends React.Component<
     this.state = {
       width: 0,
       height: 0,
-      isShow: true,
       getProgressPercent: -1
     }
   }
@@ -235,7 +233,7 @@ export class Widget extends React.Component<
 
   public render () {
     const { loading, empty, mode } = this.props
-    const { isShow, width, height, getProgressPercent } = this.state
+    const { width, height, getProgressPercent } = this.state
     const isWaterMask = localStorage.getItem('isWaterMask') === 'true';
     const username = localStorage.getItem('username');
     const widgetProps = { width, height, ...this.props }
@@ -258,7 +256,7 @@ export class Widget extends React.Component<
 
     return (
       <div className={styles.wrapper} ref={this.container} id="widget" style={{overflow: 'auto'}}>
-        {isShow && isWaterMask &&  <WaterMask {...waterMaskProps} />}
+        <WaterMask {...waterMaskProps} />
         {widgetContent}
         {loading}
         {/* 表格暂无数据时的提示，有了进度条就不需要了 */}
