@@ -383,16 +383,32 @@ export class Table extends React.PureComponent<IChartProps, ITableStates> {
 
     // 设置表格的总宽度
     style.width = tableWidth
-    // 因为有些列要隐藏,并且是纯数据上的隐藏.所以在这里做一个判断,只显示hide属性不为true的
-    for (let i = adjustedTableColumns.length - 1; i >= 0; i--) {
-      // mapTableHeaderConfig[columnItem['key']]要打开过表头设置弹框，才会有值
-      if (mapTableHeaderConfig && mapTableHeaderConfig[adjustedTableColumns[i]['key']]) adjustedTableColumns[i].seq = mapTableHeaderConfig[adjustedTableColumns[i]['key']].seq
-      if (mapTableHeaderConfig && mapTableHeaderConfig[adjustedTableColumns[i]['key']] && mapTableHeaderConfig[adjustedTableColumns[i]['key']].hide) {
-        // mapTableHeaderConfig是表头配置的各列数据，是hide的要隐藏
-        adjustedTableColumns.splice(i, 1)
+
+    if (adjustedTableColumns && adjustedTableColumns.length) {
+      // 先要进行判断
+      // 如果现在全都没有seq属性，说明是没有在表头设置中排过序，这里不需要换顺序
+      // 如果有一部分没有seq属性，说明是新增了一些，这时候不需要换顺序，这里不需要换顺序
+      // 如果有seq属性的字段的数量和seq的最大值不同，说明可能是删除了字段，这里不需要换顺序，采用默认顺序
+      // 所以，当所有项的seq属性都有值时，才需要换顺序
+      let seqCount = 0
+      let maxSeq = 0
+      adjustedTableColumns.forEach((item, index) => {
+        // mapTableHeaderConfig[columnItem['key']]要打开过表头设置弹框，才会有值
+        if (mapTableHeaderConfig && mapTableHeaderConfig[adjustedTableColumns[index]['key']]) adjustedTableColumns[index].seq = mapTableHeaderConfig[adjustedTableColumns[index]['key']].seq
+        if (adjustedTableColumns[index].seq) seqCount++
+        if (adjustedTableColumns[index].seq > maxSeq) maxSeq = adjustedTableColumns[index].seq
+      })
+      const needSort = seqCount === adjustedTableColumns.length && seqCount === maxSeq
+      if (needSort) adjustedTableColumns.sort(function(x, y) {return x.seq - y.seq})
+
+      // 因为有些列要隐藏,并且是纯数据上的隐藏.所以在这里做一个判断,只显示hide属性不为true的
+      for (let i = adjustedTableColumns.length - 1; i >= 0; i--) {
+        if (mapTableHeaderConfig && mapTableHeaderConfig[adjustedTableColumns[i]['key']] && mapTableHeaderConfig[adjustedTableColumns[i]['key']].hide) {
+          // mapTableHeaderConfig是表头配置的各列数据，是hide的要隐藏
+          adjustedTableColumns.splice(i, 1)
+        }
       }
     }
-    if (adjustedTableColumns && adjustedTableColumns.length && adjustedTableColumns[0].seq) adjustedTableColumns.sort(function(x, y) {return x.seq - y.seq})
     return (
       <>
         <AntTable

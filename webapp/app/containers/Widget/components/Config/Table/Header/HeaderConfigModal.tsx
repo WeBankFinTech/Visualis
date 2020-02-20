@@ -19,6 +19,7 @@ import stylesConfig from '../styles.less'
 interface IHeaderConfigModalProps {
   visible: boolean
   config: ITableHeaderConfig[]
+  validColumns: IDataParamSource[]
   onCancel: () => void
   onSave: (config: ITableHeaderConfig[]) => void
 }
@@ -37,16 +38,19 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
 
   public constructor (props: IHeaderConfigModalProps) {
     super(props)
-    const localConfig = fromJS(props.config).toJS()
+    let localConfig = fromJS(props.config).toJS()
+    const { validColumns } = props
     // 如果是第一次进来的时候，localConfig里的每一个元素的seq属性都是undefined，这时候采用默认的排序
     // 如果是新增了维度或指标，说明loaclConfig里至少有一项是undefined，这时候采用默认的排序
-    // 如果是删除了维度或指标，保持seq这个排序
-    // 所以，只有当localConfig里的所有项都有seq属性，才采用seq的这个排序
+    // 如果是删除了维度或指标，说明有seq属性的字段数量和seq的最大值很可能不同（除非删除最后一项，删除最后一项时保持seq的顺序也没uanxu）
+    // 所以，只有当localConfig里的所有项都有seq属性，并且有seq属性的字段数量和seq最大值相等，才采用seq的这个排序
     let seqCount = 0
+    let maxSeq = 0
     localConfig.forEach((item) => {
       if (item.seq) seqCount++
+      if (item.seq > maxSeq) maxSeq = item.seq
     })
-    if (seqCount === localConfig.length) {
+    if (seqCount === localConfig.length && seqCount === maxSeq) {
       // localConfig里的各项按照seq的值来排序
       localConfig.sort(function (x, y) {return x.seq - y.seq})
     } else {
@@ -54,6 +58,17 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
       localConfig.forEach((item, index) => {
         delete localConfig[index].seq
       })
+      // 并且按照validColumns里的顺序进行排序(即原始的按照指标维度拖拽框里的顺序排序)
+      const tempArr = []
+      validColumns.forEach((item) => {
+        for (let i = 0; i < localConfig.length; i++) {
+          if (item.name === localConfig[i].headerName) {
+            tempArr.push(localConfig[i])
+            break
+          }
+        }
+      })
+      localConfig = tempArr
     }
     const [mapHeader, mapHeaderParent] = this.getMapHeaderKeyAndConfig(localConfig)
     this.state = {
@@ -67,16 +82,19 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
 
   public componentWillReceiveProps (nextProps: IHeaderConfigModalProps) {
     if (nextProps.config === this.props.config) { return }
-    const localConfig = fromJS(nextProps.config).toJS()
+    let localConfig = fromJS(nextProps.config).toJS()
+    const { validColumns } = nextProps
     // 如果是第一次进来的时候，localConfig里的每一个元素的seq属性都是undefined，这时候采用默认的排序
     // 如果是新增了维度或指标，说明loaclConfig里至少有一项是undefined，这时候采用默认的排序
-    // 如果是删除了维度或指标，保持seq这个排序
-    // 所以，只有当localConfig里的所有项都有seq属性，才采用seq的这个排序
+    // 如果是删除了维度或指标，说明有seq属性的字段数量和seq的最大值很可能不同（除非删除最后一项，删除最后一项时保持seq的顺序也没uanxu）
+    // 所以，只有当localConfig里的所有项都有seq属性，并且有seq属性的字段数量和seq最大值相等，才采用seq的这个排序
     let seqCount = 0
+    let maxSeq = 0
     localConfig.forEach((item) => {
       if (item.seq) seqCount++
+      if (item.seq > maxSeq) maxSeq = item.seq
     })
-    if (seqCount === localConfig.length) {
+    if (seqCount === localConfig.length && seqCount === maxSeq) {
       // localConfig里的各项按照seq的值来排序
       localConfig.sort(function (x, y) {return x.seq - y.seq})
     } else {
@@ -84,6 +102,17 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
       localConfig.forEach((item, index) => {
         delete localConfig[index].seq
       })
+      // 并且按照validColumns里的顺序进行排序(即原始的按照指标维度拖拽框里的顺序排序)
+      const tempArr = []
+      validColumns.forEach((item) => {
+        for (let i = 0; i < localConfig.length; i++) {
+          if (item.name === localConfig[i].headerName) {
+            tempArr.push(localConfig[i])
+            break
+          }
+        }
+      })
+      localConfig = tempArr
     }
     const [mapHeader, mapHeaderParent] = this.getMapHeaderKeyAndConfig(localConfig)
     this.setState({

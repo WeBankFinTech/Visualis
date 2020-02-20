@@ -439,6 +439,7 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
           <HeaderConfigModal
             visible={headerConfigModalVisible}
             config={validHeaderConfig}
+            validColumns={validColumns}
             onCancel={this.closeHeaderConfig}
             onSave={this.saveHeaderConfig}
           />
