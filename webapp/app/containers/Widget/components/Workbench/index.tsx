@@ -156,6 +156,16 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     }
   }
 
+  private widgetRef = null
+
+  private changeGetProgressPercent = (percent) => {
+    this.widgetRef.changePercent(percent)
+  }
+
+  onRef = (ref) => {
+    this.widgetRef = ref
+  }
+
   private placeholder = {
     name: '请输入Widget名称',
     description: '请输入描述…'
@@ -643,6 +653,8 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
                 onSetQueryData={this.setQueryData}
                 onLoadDistinctValue={onLoadViewDistinctValue}
                 onBeofreDropColunm={onBeofreDropColunm}
+                // 改动查询数据的进度
+                changeGetProgressPercent={this.changeGetProgressPercent}
               />
               <div className={styles.viewPanel}>
                 <div className={styles.widgetBlock}>
@@ -654,6 +666,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
                     editing={true}
                     onPaginationChange={this.paginationChange}
                     onChartStylesChange={this.chartStylesChange}
+                    onRef={this.onRef}
                   />
                 </div>
               </div>

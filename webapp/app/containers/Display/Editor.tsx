@@ -463,7 +463,7 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
         // 说明还在运行中
         // 三秒后再请求一次进度查询接口
         const t = setTimeout(that.executeQuery, 3000, execId, renderType, itemId, viewId, requestParams, statistic, that)
-        this.timeout.push(t)
+        that.timeout.push(t)
       }
     })
   }

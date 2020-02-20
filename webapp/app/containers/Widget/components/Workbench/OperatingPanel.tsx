@@ -112,6 +112,7 @@ interface IOperatingPanelProps {
   onSetQueryData: (data: object) => void
   onLoadDistinctValue: (viewId: number, params: Partial<IDistinctValueReqeustParams>) => void,
   onBeofreDropColunm: (view: IView, resolve: () => void) => void
+  changeGetProgressPercent: (percent: number) => void
 }
 
 interface IOperatingPanelStates {
@@ -965,16 +966,20 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
               dataParams: mergedDataParams,
             })
           })
+          that.props.changeGetProgressPercent(progress)
         }, (err) => {
+          that.props.changeGetProgressPercent(-1)
         })
       } else {
         // 说明还在运行中
         // 更新进度条
+        that.props.changeGetProgressPercent(progress)
         // 三秒后再请求一次进度查询接口
         const t = setTimeout(that.executeQuery, 3000, dataParams, execId, updatedPagination, selectedCharts, renderType, orders, that)
-        this.timeout.push(t)
+        that.timeout.push(t)
       }
     }, (err) => {
+      that.props.changeGetProgressPercent(-1)
     })
   }
 

@@ -2,7 +2,8 @@ import React, { createRef } from 'react'
 import classnames from 'classnames'
 import Pivot from '../Pivot'
 import Chart from '../Chart'
-import { Icon } from 'antd'
+import { Icon, Progress } from 'antd'
+import widgetStyles from './style.less'
 import {
   AggregatorType,
   DragType,
@@ -185,6 +186,7 @@ export interface IWidgetWrapperStates {
   width: number
   height: number
   isShow: boolean
+  getProgressPercent: number
 }
 
 export class Widget extends React.Component<
@@ -200,13 +202,19 @@ export class Widget extends React.Component<
     this.state = {
       width: 0,
       height: 0,
-      isShow: true
+      isShow: true,
+      getProgressPercent: -1
     }
+  }
+
+  private changePercent = (percent) => {
+    this.setState({getProgressPercent: percent})
   }
 
   private container = createRef<HTMLDivElement>()
 
   public componentDidMount () {
+    if (typeof this.props.onRef === 'function') this.props.onRef(this)
     this.getContainerSize()
   }
 
@@ -227,7 +235,7 @@ export class Widget extends React.Component<
 
   public render () {
     const { loading, empty, mode } = this.props
-    const { isShow, width, height } = this.state
+    const { isShow, width, height, getProgressPercent } = this.state
     const isWaterMask = localStorage.getItem('isWaterMask') === 'true';
     const username = localStorage.getItem('username');
     const widgetProps = { width, height, ...this.props }
@@ -253,7 +261,14 @@ export class Widget extends React.Component<
         {isShow && isWaterMask &&  <WaterMask {...waterMaskProps} />}
         {widgetContent}
         {loading}
-        {empty}
+        {/* 表格暂无数据时的提示，有了进度条就不需要了 */}
+        {/* {empty} */}
+        {
+          getProgressPercent * 100 > -1 && getProgressPercent * 100 < 100 ? 
+          <div className={widgetStyles.mask}>
+            <Progress type='circle' percent={getProgressPercent * 100}></Progress>
+          </div> : null
+        }
       </div>
     )
   }
