@@ -70,6 +70,8 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
       })
       localConfig = tempArr
     }
+    // 保存一个初始的localConfig，如果后面改变了顺序但是点击取消按钮，应该还原localConfig的顺序
+    if (localConfig && localConfig.length) this.initLocalConfig = JSON.parse(JSON.stringify(localConfig))
     const [mapHeader, mapHeaderParent] = this.getMapHeaderKeyAndConfig(localConfig)
     this.state = {
       localConfig,
@@ -79,6 +81,8 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
       currentSelectedKeys: []
     }
   }
+
+  private initLocalConfig = []
 
   public componentWillReceiveProps (nextProps: IHeaderConfigModalProps) {
     if (nextProps.config === this.props.config) { return }
@@ -114,6 +118,8 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
       })
       localConfig = tempArr
     }
+    // 点击弹框的保存后，会触发一次compontWillReceiveProps，可能是更新了顺序了，所以这里也要更新initLocalConfig
+    if (localConfig && localConfig.length) this.initLocalConfig = JSON.parse(JSON.stringify(localConfig))
     const [mapHeader, mapHeaderParent] = this.getMapHeaderKeyAndConfig(localConfig)
     this.setState({
       localConfig,
@@ -237,7 +243,20 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
   }
 
   private cancel = () => {
-    this.props.onCancel()
+    const { localConfig } = this.state
+    // 因为可能改变了顺序，所以取消时要还原顺序(在表头设置中，localConfig的长度应该不会变)
+    const temp = []
+    this.initLocalConfig.forEach((item) => {
+      for (let i = 0; i < localConfig.length; i++) {
+        if (item.key === localConfig[i].key) {
+          temp.push(localConfig[i])
+          break
+        }
+      }
+    })
+    this.setState({
+      localConfig: temp
+    }, () => this.props.onCancel())
   }
 
   private save = () => {
@@ -299,7 +318,9 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
     const tempSeq = arr[index1].seq
     arr[index1].seq = arr[index2].seq
     arr[index2].seq = tempSeq
+
     // 更换两项元素，这个切换本身是不会保存在数据中的，只是用于立即在页面上显示效果，真正的持久化的数据是各列的seq值，打开表头设置弹框时，根据seq值排序各列
+    // 但因为这个操作直接改变了localConfig里的数据（可以在子组件中直接改变父组件中的对象中的属性），所以这个改变即时不保存，在关闭弹框后也还是会保留，而上面的seq属性就不会
     const tempItem = arr[index1]
     arr[index1] = arr[index2]
     arr[index2] = tempItem
@@ -648,12 +669,12 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
               <Button type="primary" onClick={this.mergeColumns}>合并</Button>
             </Col>
             <Col span={19}>
-              <Row gutter={8} type="flex" justify="end" align="middle">
+              {/* <Row gutter={8} type="flex" justify="end" align="middle">
                 <ButtonGroup>
                   <Button onClick={this.moveUp}><Icon type="arrow-up" />上移</Button>
                   <Button onClick={this.moveDown}>下移<Icon type="arrow-down" /></Button>
                 </ButtonGroup>
-              </Row>
+              </Row> */}
             </Col>
             <Col span={1}>
               <Row type="flex" justify="end">

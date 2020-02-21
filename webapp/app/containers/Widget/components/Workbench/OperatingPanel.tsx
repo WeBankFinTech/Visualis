@@ -394,6 +394,8 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         styleParams: chartStyles,
         showColsAndRows: !!rows.length
       }, () => {
+        // 这里需要widgetProps.chartStyles.table.headerConfig而不是originalWidgetProps.chartStyles.table.headerCon而不是
+        chartStyles.table.headerConfig = widgetProps.chartStyles.table.headerConfig
         this.setWidgetProps(mergedDataParams, chartStyles)
       })
     }
