@@ -250,8 +250,12 @@ export class Widget extends React.Component<
         )
     }
 
+    let waterMaskWidth = 0
+    if (this.container &&  this.container.current && this.container.current.childNodes[1] && this.container.current.childNodes[1].style.width) waterMaskWidth = parseInt(this.container.current.childNodes[1].style.width)
+
     const waterMaskProps = {
       text: `由DataSphere Studio生成，仅供内部参考，严禁对外分享-${username}`,
+      waterMaskWidth
     }
 
     return (
