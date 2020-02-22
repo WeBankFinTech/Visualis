@@ -23,8 +23,10 @@ import React from 'react'
 import { Row, Col, Button, InputNumber, Tooltip } from 'antd'
 
 import Styles from '../View.less'
+import { IView } from '../types'
 
 export interface IEditorBottomProps {
+  view: IView
   sqlLimit: number
   loading: boolean
   nextDisabled: boolean
@@ -38,7 +40,7 @@ const stepChange = (onStepChange: IEditorBottomProps['onStepChange'], step: numb
 }
 
 export const EditorBottom = (props: IEditorBottomProps) => {
-  const { sqlLimit, loading, nextDisabled, onSetSqlLimit, onExecuteSql, onStepChange } = props
+  const { view, sqlLimit, loading, nextDisabled, onSetSqlLimit, onExecuteSql, onStepChange } = props
 
   return (
     <Row className={Styles.bottom} type="flex" align="middle" justify="start">
@@ -63,8 +65,8 @@ export const EditorBottom = (props: IEditorBottomProps) => {
           下一步
         </Button>
       </Tooltip>
-      <Tooltip title={nextDisabled ? '执行后直接保存可用' : ''}>
-        <Button onClick={stepChange(onStepChange, 2)} disabled={nextDisabled}>
+      <Tooltip title={nextDisabled ? '请输入名称,选择数据源并输入sql' : ''} style={{marginLeft: '0'}}>
+        <Button onClick={stepChange(onStepChange, 2)} disabled={!(view.name && view.sourceId && view.sql)} style={{marginLeft: '16px'}}>
           直接保存
         </Button>
       </Tooltip>
