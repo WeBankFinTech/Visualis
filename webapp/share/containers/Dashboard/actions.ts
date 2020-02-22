@@ -139,7 +139,7 @@ export function getResultsetFail (itemId, errorMessage) {
     }
   }
 }
-export function executeQuery (renderType, itemId, dataToken, requestParams, resolve) {
+export function executeQuery (renderType, itemId, dataToken, requestParams, resolve, reject) {
   return {
     type: EXECUTE_QUERY,
     payload: {
@@ -147,7 +147,8 @@ export function executeQuery (renderType, itemId, dataToken, requestParams, reso
       itemId,
       dataToken,
       requestParams,
-      resolve
+      resolve,
+      reject
     }
   }
 }
@@ -174,12 +175,13 @@ export function executeQueryFail (itemId, errorMessage) {
   }
 }
 
-export function getProgress (execId, resolve) {
+export function getProgress (execId, resolve, reject) {
   return {
     type: GET_PROGRESS,
     payload: {
       execId,
-      resolve
+      resolve,
+      reject
     }
   }
 }
@@ -199,7 +201,7 @@ export function getProgressFail (errorMessage) {
   }
 }
 
-export function getResult (execId, renderType, itemId, requestParams, resolve) {
+export function getResult (execId, renderType, itemId, requestParams, resolve, reject) {
   return {
     type: GET_RESULT,
     payload: {
@@ -207,7 +209,8 @@ export function getResult (execId, renderType, itemId, requestParams, resolve) {
       renderType,
       itemId,
       requestParams,
-      resolve
+      resolve,
+      reject
     }
   }
 }

@@ -148,18 +148,21 @@ interface IDashboardProps {
     dashboardItemId: number,
     dataToken: string,
     requestParams: IDataRequestParams,
-    resolve: (data) => void
-  ) => void,
+    resolve: (data) => void,
+    reject: (data) => void
+    ) => void,
   onGetProgress: (
     execId: string,
-    resolve: (data) => void
-  ) => void,
+    resolve: (data) => void,
+    reject: (data) => void
+    ) => void,
   onGetResult: (
     execId: string,
     renderType: RenderType,
     dashboardItemId: number,
     requestParams: IDataRequestParams,
-    resolve: (data) => void
+    resolve: (data) => void,
+    reject: (data) => void
   ) => void,
   onSetIndividualDashboard: (id, shareInfo) => void,
   onLoadWidgetCsv: (
@@ -195,6 +198,7 @@ interface IDashboardStates {
   controlTokenMapping: {
     [key: string]: string
   }
+  executeQueryFailed: boolean
 }
 
 export class Share extends React.Component<IDashboardProps, IDashboardStates> {
@@ -213,7 +217,8 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
 
       headlessBrowserRenderSign: false,
 
-      controlTokenMapping: {}
+      controlTokenMapping: {},
+      executeQueryFailed: false
     }
   }
 
@@ -472,12 +477,13 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
       requestParams.orders = requestParams.orders.concat(tempOrders)
     }
 
-    console.log(1)
+    this.setState({executeQueryFailed: false})
     onExecuteQuery(renderType, itemId, widget.dataToken, requestParams, (result) => {
-      console.log(2)
       const { execId } = result
-      console.log('this: ', this)
       this.executeQuery(execId, renderType, itemId, requestParams, this)
+    }, () => {
+      this.setState({executeQueryFailed: true})
+      return message.error('查询失败！')
     })
     // this.getData(this.props.onLoadResultset, renderType, itemId, widgetId, queryConditions)
   }
@@ -485,28 +491,30 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
   private timeout = []
 
   private executeQuery(execId, renderType, itemId, requestParams, that) {
-    console.log(3)
     const { onGetProgress, onGetResult } = that.props
     onGetProgress(execId, (result) => {
-      console.log(4)
       const { progress, status } = result
-      if (status === 'fail') {
-        console.log('fail')
+      if (status === 'Failed') {
         // 提示 查询失败（显示表格头，就和现在的暂无数据保持一致的交互，只是提示换成“查询失败”）
+        that.setState({executeQueryFailed: true})
         return message.error('查询失败！')
       } else if (status === 'Succeed' && progress === 1) {
-        console.log('Succeed')
         // 查询成功，调用 结果集接口，status为success时，progress一定为1
         onGetResult(execId, renderType, itemId, requestParams, (result) => {
           // 拿到结果干嘛
+        }, () => {
+          that.setState({executeQueryFailed: true})
+          return message.error('查询失败！')
         })
       } else {
-        console.log('Runninf')
         // 说明还在运行中
         // 三秒后再请求一次进度查询接口
         const t = setTimeout(that.executeQuery, 3000, execId, renderType, itemId, requestParams, that)
         that.timeout.push(t)
       }
+    }, () => {
+      that.setState({executeQueryFailed: true})
+      return message.error('查询失败！')
     })
   }
 
@@ -1163,7 +1171,8 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
       views,
       interactingStatus,
       allowFullScreen,
-      headlessBrowserRenderSign
+      headlessBrowserRenderSign,
+      executeQueryFailed
     } = this.state
 
     let grids = null
@@ -1226,6 +1235,7 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
               container="share"
               selectedItems={selectedItems || []}
               onSelectChartsItems={this.selectChartsItems}
+              executeQueryFailed={executeQueryFailed}
             />
           </div>
         ))
@@ -1341,11 +1351,11 @@ export function mapDispatchToProps (dispatch) {
     onLoadWidget: (token, resolve, reject) => dispatch(getWidget(token, resolve, reject)),
     onLoadResultset: (renderType, itemid, dataToken, requestParams) => dispatch(getResultset(renderType, itemid, dataToken, requestParams)),
     // widget页面 提交查询数据接口
-    onExecuteQuery: (renderType, itemid, dataToken, requestParams, resolve) => dispatch(executeQuery(renderType, itemid, dataToken, requestParams, resolve)),
+    onExecuteQuery: (renderType, itemid, dataToken, requestParams, resolve, reject) => dispatch(executeQuery(renderType, itemid, dataToken, requestParams, resolve, reject)),
     // widget页面 进度查询接口
-    onGetProgress: (execId, resolve) => dispatch(getProgress(execId, resolve)),
+    onGetProgress: (execId, resolve, reject) => dispatch(getProgress(execId, resolve, reject)),
     // widget页面 获取结果集接口
-    onGetResult: (execId, renderType, itemid, requestParams, resolve) => dispatch(getResult(execId, renderType, itemid, requestParams, resolve)),
+    onGetResult: (execId, renderType, itemid, requestParams, resolve, reject) => dispatch(getResult(execId, renderType, itemid, requestParams, resolve, reject)),
     onSetIndividualDashboard: (widgetId, token) => dispatch(setIndividualDashboard(widgetId, token)),
     onLoadWidgetCsv: (itemId, requestParams, dataToken) => dispatch(loadWidgetCsv(itemId, requestParams, dataToken)),
     onLoadSelectOptions: (controlKey, dataToken, paramsOrOptions, itemId) => dispatch(loadSelectOptions(controlKey, dataToken, paramsOrOptions, itemId)),

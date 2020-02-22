@@ -89,6 +89,7 @@ interface IDashboardItemProps {
   onGetControlOptions: OnGetControlOptions
   monitoredSyncDataAction?: () => any
   monitoredSearchDataAction?: () => any
+  executeQueryFailed?: boolean
 }
 
 interface IDashboardItemStates {
@@ -1045,6 +1046,7 @@ export class DashboardItem extends React.PureComponent<IDashboardItemProps, IDas
               whichDataDrillBrushed={this.state.whichDataDrillBrushed}
               onSelectChartsItems={this.selectChartsItems}
               selectedItems={this.props.selectedItems}
+              executeQueryFailed={this.props.executeQueryFailed}
             //  onHideDrillPanel={this.onHideDrillPanel}
             />
             {dataDrillHistory}

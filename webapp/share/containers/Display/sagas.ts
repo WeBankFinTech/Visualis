@@ -94,11 +94,7 @@ export function* getData (action: ShareDisplayActionType) {
 export function* executeQuery (action: ShareDisplayActionType) {
   if (action.type !== ActionTypes.EXECUTE_QUERY) { return }
 
-  const { renderType, layerId, dataToken, requestParams, resolve } = action.payload
-  console.log('renderType: ', renderType)
-  console.log('layerId: ', layerId)
-  console.log('dataToken: ', dataToken)
-  console.log('requestParams: ', requestParams)
+  const { renderType, layerId, dataToken, requestParams, resolve, reject } = action.payload
   const {
     filters,
     tempFilters,
@@ -134,13 +130,14 @@ export function* executeQuery (action: ShareDisplayActionType) {
     }
   } catch (err) {
     yield put(loadExecuteQUeryFail(err))
+    reject(err)
   }
 }
 
 export function* getProgress (action: ShareDisplayActionType) {
   if (action.type !== ActionTypes.GET_PROGRESS) { return }
 
-  const { execId, resolve } = action.payload
+  const { execId, resolve, reject } = action.payload
   const { getProgressLoaded, loadGetProgressFail } = ShareDisplayActions
 
   try {
@@ -158,13 +155,14 @@ export function* getProgress (action: ShareDisplayActionType) {
     }
   } catch (err) {
     yield put(loadGetProgressFail(err))
+    reject(err)
   }
 }
 
 export function* getResult (action: ShareDisplayActionType) {
   if (action.type !== ActionTypes.GET_RESULT) { return }
-  const { execId, renderType, layerId, requestParams, resolve } = action.payload
-  const { layerDataLoaded, loadLayerDataFail } = ShareDisplayActions
+  const { execId, renderType, layerId, requestParams, resolve, reject } = action.payload
+  const { getResultLoaded, loadGetResultFail } = ShareDisplayActions
 
   try {
     const asyncData = yield call(request, {
@@ -172,7 +170,7 @@ export function* getResult (action: ShareDisplayActionType) {
       url: `${api.view}/${execId}/getresult`,
       data: {}
     })
-    yield put(layerDataLoaded(renderType, layerId, asyncData.payload, requestParams))
+    yield put(getResultLoaded(renderType, layerId, asyncData.payload, requestParams))
     // asyncData.payload可能为""
     if (asyncData.payload) {
       const { resultList } = asyncData.payload
@@ -182,7 +180,8 @@ export function* getResult (action: ShareDisplayActionType) {
       resolve({})
     }
   } catch (err) {
-    yield put(loadLayerDataFail(err))
+    yield put(loadGetResultFail(err))
+    reject(err)
   }
 }
 export default function* rootDisplaySaga (): IterableIterator<any> {

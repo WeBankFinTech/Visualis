@@ -388,7 +388,7 @@ export function* getViewDataFromVizItem (action: ViewActionType) {
 }
 export function* viewExecuteQuery (action: ViewActionType) {
   if (action.type !== ActionTypes.VIEW_EXECUTE_QUERY) { return }
-  const { renderType, itemId, viewId, requestParams, vizType, cancelTokenSource, resolve } = action.payload
+  const { renderType, itemId, viewId, requestParams, vizType, cancelTokenSource, resolve, reject } = action.payload
   const { viewExecuteQueryLoaded, loadViewExecuteQueyFail } = ViewActions
   const {
     filters,
@@ -425,12 +425,13 @@ export function* viewExecuteQuery (action: ViewActionType) {
     }
   } catch (err) {
     yield put(loadViewExecuteQueyFail(itemId, vizType, getErrorMessage(err)))
+    reject(err)
   }
 }
 
 export function* viewGetProgress (action: ViewActionType) {
   if (action.type !== ActionTypes.VIEW_GET_PROGRESS) { return }
-  const { execId, resolve } = action.payload
+  const { execId, resolve, reject } = action.payload
   const { viewGetProgressLoaded, loadViewGetProgressFail } = ViewActions
 
   try {
@@ -448,12 +449,13 @@ export function* viewGetProgress (action: ViewActionType) {
     }
   } catch (err) {
     yield put(loadViewGetProgressFail(getErrorMessage(err)))
+    reject(err)
   }
 }
 
 export function* viewGetResult (action: ViewActionType) {
   if (action.type !== ActionTypes.VIEW_GET_RESULT) { return }
-  const { execId, renderType, itemId, viewId, requestParams, vizType, cancelTokenSource, resolve } = action.payload
+  const { execId, renderType, itemId, viewId, requestParams, vizType, cancelTokenSource, resolve, reject } = action.payload
   const { viewGetResultLoaded, loadViewGetResultFail } = ViewActions
   const {
     filters,
@@ -492,6 +494,7 @@ export function* viewGetResult (action: ViewActionType) {
     }
   } catch (err) {
     yield put(loadViewGetResultFail(itemId, vizType, getErrorMessage(err)))
+    reject(err)
   }
 }
 /** */

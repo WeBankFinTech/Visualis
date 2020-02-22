@@ -540,7 +540,8 @@ export const ViewActions = {
     requestParams: IDataRequestParams,
     vizType: 'dashboard' | 'display',
     statistic,
-    resolve
+    resolve,
+    reject
   ) {
     return {
       type: ActionTypes.VIEW_EXECUTE_QUERY,
@@ -551,7 +552,8 @@ export const ViewActions = {
         requestParams,
         vizType,
         cancelTokenSource: CancelToken.source(),
-        resolve
+        resolve,
+        reject
       },
       statistic
     }
@@ -589,13 +591,15 @@ export const ViewActions = {
 
   loadViewGetProgress (
     execId,
-    resolve
+    resolve,
+    reject
   ) {
     return {
       type: ActionTypes.GET_PROGRESS,
       payload: {
         execId,
-        resolve
+        resolve,
+        reject
       },
     }
   },
@@ -621,7 +625,8 @@ export const ViewActions = {
     requestParams: IDataRequestParams,
     vizType: 'dashboard' | 'display',
     statistic,
-    resolve
+    resolve,
+    reject
   ) {
     return {
       type: ActionTypes.VIEW_GET_RESULT,
@@ -633,7 +638,8 @@ export const ViewActions = {
         requestParams,
         vizType,
         cancelTokenSource: CancelToken.source(),
-        resolve
+        resolve,
+        reject
       },
       statistic
     }

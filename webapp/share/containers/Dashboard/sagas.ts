@@ -132,7 +132,7 @@ export function* getResultset (action) {
 
 export function* executeQuery (action) {
   const { payload } = action
-  const { renderType, itemId, dataToken, requestParams, resolve } = payload
+  const { renderType, itemId, dataToken, requestParams, resolve, reject } = payload
   const {
     filters,
     tempFilters,
@@ -167,12 +167,13 @@ export function* executeQuery (action) {
     }
   } catch (err) {
     yield put(executeQueryFail(itemId, getErrorMessage(err)))
+    reject(err)
   }
 }
 
 export function* getProgress (action) {
   const { payload } = action
-  const { execId, resolve } = payload
+  const { execId, resolve, reject } = payload
   try {
     const asyncData = yield call(request, {
       method: 'post',
@@ -188,12 +189,13 @@ export function* getProgress (action) {
     }
   } catch (err) {
     yield put(getProgressFail(getErrorMessage(err)))
+    reject(err)
   }
 }
 
 export function* getResult (action) {
   const { payload } = action
-  const { execId, renderType, itemId, requestParams, resolve } = payload
+  const { execId, renderType, itemId, requestParams, resolve, reject } = payload
   try {
     const asyncData = yield call(request, {
       method: 'post',
@@ -211,6 +213,7 @@ export function* getResult (action) {
     yield put(getResultSuccess(renderType, itemId, requestParams, asyncData.payload))
   } catch (err) {
     yield put(getResultFail(itemId, getErrorMessage(err)))
+    reject(err)
   }
 }
 export function* getWidgetCsv (action) {

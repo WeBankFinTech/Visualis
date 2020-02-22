@@ -230,11 +230,13 @@ interface IGridProps {
     viewId: number,
     requestParams: IDataRequestParams,
     statistic: any,
-    resolve: (data) => void
+    resolve: (data) => void,
+    reject: (data) => void
   ) => void
   onViewGetProgress: (
     execId: string,
-    resolve: (data) => void
+    resolve: (data) => void,
+    reject: (data) => void
     ) => void
   onViewGetResult: (
     execId: string,
@@ -243,7 +245,8 @@ interface IGridProps {
     viewId: number,
     requestParams: IDataRequestParams,
     statistic: any,
-    resolve: (data) => void
+    resolve: (data) => void,
+    reject: (data) => void
     ) => void
   onLoadViewsDetail: (viewIds: number[], resolve: () => void) => void
   onInitiateDownloadTask: (id: number, type: DownloadTypes, downloadParams?: IDataDownloadParams[], itemId?: number) => void
@@ -283,6 +286,7 @@ interface IGridStates {
   dashboardSharePanelAuthorized: boolean
   nextMenuTitle: string
   drillPathSettingVisible: boolean
+  executeQueryFailed: boolean
 }
 
 interface IDashboardItemForm extends AntdFormType {
@@ -327,7 +331,8 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
 
       dashboardSharePanelAuthorized: false,
 
-      nextMenuTitle: ''
+      nextMenuTitle: '',
+      executeQueryFailed: false
     }
 
   }
@@ -638,10 +643,14 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
     if (tempOrders) {
       requestParams.orders = requestParams.orders.concat(tempOrders)
     }
+    this.setState({executeQueryFailed: false})
 
     onViewExecuteQuery(renderType, itemId, widget.viewId, requestParams, {...requestParams, widget}, (result) => {
       const { execId } = result
       this.executeQuery(execId, renderType, itemId, widget.viewId, requestParams, {...requestParams, widget}, this)
+    }, () => {
+      this.setState({executeQueryFailed: true})
+      return message.error('查询失败！')
     })
   }
 
@@ -651,12 +660,16 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
     const { onViewGetProgress, onViewGetResult } = that.props
     onViewGetProgress(execId, (result) => {
       const { progress, status } = result
-      if (status === 'fail') {
+      if (status === 'Failed') {
         // 提示 查询失败（显示表格头，就和现在的暂无数据保持一致的交互，只是提示换成“查询失败”）
+        that.setState({executeQueryFailed: true})
         return message.error('查询失败！')
       } else if (status === 'Succeed' && progress === 1) {
         // 查询成功，调用 结果集接口，status为success时，progress一定为1
         onViewGetResult(execId, renderType, itemId, viewId, requestParams, statistic, (result) => {
+        }, () => {
+          that.setState({executeQueryFailed: true})
+          return message.error('查询失败！')
         })
       } else {
         // 说明还在运行中
@@ -664,6 +677,9 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
         const t = setTimeout(that.executeQuery, 3000, execId, renderType, itemId, viewId, requestParams, statistic, that)
         that.timeout.push(t)
       }
+    }, () => {
+      that.setState({executeQueryFailed: true})
+      return message.error('查询失败！')
     })
   }
 
@@ -1682,7 +1698,8 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
       globalFilterConfigVisible,
       allowFullScreen,
       dashboardSharePanelAuthorized,
-      drillPathSettingVisible
+      drillPathSettingVisible,
+      executeQueryFailed
     } = this.state
     let dashboardType: number
     if (currentDashboard) {
@@ -1803,6 +1820,7 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
               monitoredSyncDataAction={this.props.onMonitoredSyncDataAction}
               monitoredSearchDataAction={this.props.onMonitoredSearchDataAction}
               ref={(f) => this[`dashboardItem${id}`] = f}
+              executeQueryFailed={executeQueryFailed}
             />
           </div>
         ))
@@ -2034,9 +2052,9 @@ export function mapDispatchToProps (dispatch) {
     onEditDashboardItems: (portalId, items) => dispatch(editDashboardItems(portalId, items)),
     onDeleteDashboardItem: (id, resolve) => dispatch(deleteDashboardItem(id, resolve)),
     onLoadDataFromItem: (renderType, itemId, viewId, requestParams, statistic) => dispatch(loadViewDataFromVizItem(renderType, itemId, viewId, requestParams, 'dashboard', statistic)),
-    onViewExecuteQuery: (renderType, itemId, viewId, requestParams, statistic, resolve) => dispatch(loadViewExecuteQuery(renderType, itemId, viewId, requestParams, 'dashboard', statistic, resolve)),
-    onViewGetProgress: (execId, resolve) => dispatch(loadViewGetProgress(execId, resolve)),
-    onViewGetResult: (execId, renderType, itemId, viewId, requestParams, statistic, resolve) => dispatch(loadViewGetResult(execId, renderType, itemId, viewId, requestParams, 'dashboard', statistic, resolve)),
+    onViewExecuteQuery: (renderType, itemId, viewId, requestParams, statistic, resolve, reject) => dispatch(loadViewExecuteQuery(renderType, itemId, viewId, requestParams, 'dashboard', statistic, resolve, reject)),
+    onViewGetProgress: (execId, resolve, reject) => dispatch(loadViewGetProgress(execId, resolve, reject)),
+    onViewGetResult: (execId, renderType, itemId, viewId, requestParams, statistic, resolve, reject) => dispatch(loadViewGetResult(execId, renderType, itemId, viewId, requestParams, 'dashboard', statistic, resolve, reject)),
     onLoadViewsDetail: (viewIds, resolve) => dispatch(loadViewsDetail(viewIds, resolve)),
     onClearCurrentDashboard: () => dispatch(clearCurrentDashboard()),
     onInitiateDownloadTask: (id, type, downloadParams?, itemId?) => dispatch(initiateDownloadTask(id, type, downloadParams, itemId)),

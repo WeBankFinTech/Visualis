@@ -92,19 +92,23 @@ interface IDisplayProps extends RouteComponentProps<{}, {}> {
     layerId: number,
     dataToken: string,
     requestParams: IDataRequestParams,
-    resolve: (data) => void
+    resolve: (data) => void,
+    reject: (data) => void
   ) => void
   onGetProgress: (
     execId: string,
-    resolve: (data) => void
-  ) => void
+    resolve: (data) => void,
+    reject: (data) => void
+    ) => void
   onGetResult: (
     execId: string,
     renderType: RenderType,
     layerId: number,
     dataToken: string,
-    requestParams: IDataRequestParams
-  ) => void
+    requestParams: IDataRequestParams,
+    resolve: (data) => void,
+    reject: (data) => void
+    ) => void
 }
 
 interface IDisplayStates {
@@ -112,6 +116,7 @@ interface IDisplayStates {
   showLogin: boolean
   shareInfo: string
   headlessBrowserRenderSign: boolean
+  executeQueryFailed: boolean
 }
 
 export class Display extends React.Component<IDisplayProps, IDisplayStates> {
@@ -126,6 +131,7 @@ export class Display extends React.Component<IDisplayProps, IDisplayStates> {
       showLogin: false,
       shareInfo: '',
       headlessBrowserRenderSign: false,
+      executeQueryFailed: false
     }
   }
 
@@ -317,37 +323,42 @@ export class Display extends React.Component<IDisplayProps, IDisplayStates> {
     //   widget.dataToken,
     //   requestParams
     // )
+    this.setState({executeQueryFailed: false})
     onExecuteQuery(renderType, itemId, widget.dataToken, requestParams, (result) => {
       const { execId } = result
-      this.executeQuery(execId, renderType, itemId, requestParams, this)
+      this.executeQuery(execId, renderType, itemId, widget.dataToken, requestParams, this)
+    }, () => {
+      this.setState({executeQueryFailed: true})
+      return message.error('查询失败！')
     })
   }
 
   private timeout = []
 
-  private executeQuery(execId, renderType, itemId, requestParams, that) {
-    console.log(3)
+  private executeQuery(execId, renderType, itemId, dataToken, requestParams, that) {
     const { onGetProgress, onGetResult } = that.props
     onGetProgress(execId, (result) => {
-      console.log(4)
       const { progress, status } = result
-      if (status === 'fail') {
-        console.log('fail')
+      if (status === 'Failed') {
         // 提示 查询失败（显示表格头，就和现在的暂无数据保持一致的交互，只是提示换成“查询失败”）
+        that.setState({executeQueryFailed: true})
         return message.error('查询失败！')
       } else if (status === 'Succeed' && progress === 1) {
-        console.log('Succeed')
         // 查询成功，调用 结果集接口，status为success时，progress一定为1
-        onGetResult(execId, renderType, itemId, requestParams, (result) => {
-          // 拿到结果干嘛
+        onGetResult(execId, renderType, itemId, dataToken, requestParams, (result) => {
+        }, () => {
+          that.setState({executeQueryFailed: true})
+          return message.error('查询失败！')
         })
       } else {
-        console.log('Runninf')
         // 说明还在运行中
         // 三秒后再请求一次进度查询接口
-        const t = setTimeout(that.executeQuery, 3000, execId, renderType, itemId, requestParams, that)
+        const t = setTimeout(that.executeQuery, 3000, execId, renderType, itemId, dataToken, requestParams, that)
         that.timeout.push(t)
       }
+    }, () => {
+      that.setState({executeQueryFailed: true})
+      return message.error('查询失败！')
     })
   }
 
@@ -449,7 +460,8 @@ export class Display extends React.Component<IDisplayProps, IDisplayStates> {
       scale,
       showLogin,
       shareInfo,
-      headlessBrowserRenderSign
+      headlessBrowserRenderSign,
+      executeQueryFailed
     } = this.state
 
     const loginPanel = showLogin ? <Login shareInfo={shareInfo} legitimateUser={this.handleLegitimateUser} /> : null
@@ -483,6 +495,7 @@ export class Display extends React.Component<IDisplayProps, IDisplayStates> {
             interactId={interactId}
             renderType={renderType}
             onGetChartData={this.getChartData}
+            executeQueryFailed={executeQueryFailed}
           />
         )
       }) : null
@@ -526,9 +539,9 @@ export function mapDispatchToProps (dispatch) {
   return {
     onLoadDisplay: (token, resolve, reject) => dispatch(loadDisplay(token, resolve, reject)),
     onLoadLayerData: (renderType, layerId, dataToken, requestParams) => dispatch(loadLayerData(renderType, layerId, dataToken, requestParams)),
-    onExecuteQuery: (renderType, layerId, dataToken, requestParams, resolve) => dispatch(executeQuery(renderType, layerId, dataToken, requestParams, resolve)),
-    onGetProgress: (execId, resolve) => dispatch(getProgress(execId, resolve)),
-    onGetResult: (execId, renderType, layerId, dataToken, requestParams, resolve) => dispatch(getResult(execId, renderType, layerId, dataToken, requestParams, resolve))
+    onExecuteQuery: (renderType, layerId, dataToken, requestParams, resolve, reject) => dispatch(executeQuery(renderType, layerId, dataToken, requestParams, resolve, reject)),
+    onGetProgress: (execId, resolve, reject) => dispatch(getProgress(execId, resolve, reject)),
+    onGetResult: (execId, renderType, layerId, dataToken, requestParams, resolve, reject) => dispatch(getResult(execId, renderType, layerId, dataToken, requestParams, resolve, reject))
   }
 }
 

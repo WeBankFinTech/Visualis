@@ -81,7 +81,7 @@ export const ShareDisplayActions = {
       }
     }
   },
-  executeQuery (renderType, layerId, dataToken, requestParams, resolve) {
+  executeQuery (renderType, layerId, dataToken, requestParams, resolve, reject) {
     return {
       type: ActionTypes.EXECUTE_QUERY,
       payload: {
@@ -89,7 +89,8 @@ export const ShareDisplayActions = {
         layerId,
         dataToken,
         requestParams,
-        resolve
+        resolve,
+        reject
       }
     }
   },
@@ -113,12 +114,13 @@ export const ShareDisplayActions = {
     }
   },
 
-  getProgress (execId, resolve) {
+  getProgress (execId, resolve, reject) {
     return {
       type: ActionTypes.GET_PROGRESS,
       payload: {
         execId,
-        resolve
+        resolve,
+        reject
       }
     }
   },
@@ -136,7 +138,7 @@ export const ShareDisplayActions = {
     }
   },
 
-  getResult (execId, renderType, layerId, dataToken, requestParams, resolve) {
+  getResult (execId, renderType, layerId, dataToken, requestParams, resolve, reject) {
     return {
       type: ActionTypes.GET_RESULT,
       payload: {
@@ -145,7 +147,8 @@ export const ShareDisplayActions = {
         layerId,
         dataToken,
         requestParams,
-        resolve
+        resolve,
+        reject
       }
     }
   },

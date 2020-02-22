@@ -894,8 +894,10 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     const { mode, chartModeSelectedChart } = that.state
     onGetProgress(execId, (result) => {
       const { progress, status } = result
-      if (status === 'fail') {
-        // TODOS：提示 查询失败（显示表格头，就和现在的暂无数据保持一致的交互，只是提示换成“查询失败”）
+      if (status === 'Failed') {
+        // 提示 查询失败（显示表格头，就和现在的暂无数据保持一致的交互，只是提示换成“查询失败”）
+        // -2表示查询失败
+        that.props.changeGetProgressPercent(-2)
         return message.error('查询失败！')
       } else if (status === 'Succeed' && progress === 1) {
         // 查询成功，调用 结果集接口，status为success时，progress一定为1
@@ -970,7 +972,9 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
           })
           that.props.changeGetProgressPercent(progress)
         }, (err) => {
-          that.props.changeGetProgressPercent(-1)
+          // -2表示查询失败
+          that.props.changeGetProgressPercent(-2)
+          return message.error('查询失败！')
         })
       } else {
         // 说明还在运行中
@@ -981,7 +985,9 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         that.timeout.push(t)
       }
     }, (err) => {
-      that.props.changeGetProgressPercent(-1)
+      // -2表示查询失败
+      that.props.changeGetProgressPercent(-2)
+      return message.error('查询失败！')
     })
   }
 
@@ -1171,7 +1177,10 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         const { execId } = result
         // 每隔三秒执行一次查询进度接口
         this.executeQuery(dataParams, execId, updatedPagination, selectedCharts, renderType, orders, this)
-      }, (error) => {})
+      }, () => {
+        this.props.changeGetProgressPercent(-2)
+        return message.error('查询失败！')
+      })
     } else {
       const mergedParams = this.getChartDataConfig(selectedCharts)
       const mergedDataParams = mergedParams.dataParams

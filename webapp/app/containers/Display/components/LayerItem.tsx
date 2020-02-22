@@ -57,6 +57,7 @@ interface ILayerItemProps {
   onResizeLayer?: (itemId: number, deltaSize: IDeltaSize) => void
   onResizeLayerStop?: (itemId: number, deltaSize: IDeltaSize) => void
   onEditWidget?: (itemId: number, widgetId: number) => void
+  executeQueryFailed: boolean
 }
 
 interface ILayerItemStates {
@@ -334,7 +335,8 @@ export class LayerItem extends React.PureComponent<ILayerItemProps, ILayerItemSt
       renderType,
       interactId,
       onCheckTableInteract,
-      onDoTableInteract
+      onDoTableInteract,
+      executeQueryFailed
     } = this.props
     const {
       layerParams,
@@ -375,6 +377,7 @@ export class LayerItem extends React.PureComponent<ILayerItemProps, ILayerItemSt
             renderType={renderType}
             model={model}
             onPaginationChange={this.paginationChange}
+            executeQueryFailed={executeQueryFailed}
           />)
         )}
       </div>

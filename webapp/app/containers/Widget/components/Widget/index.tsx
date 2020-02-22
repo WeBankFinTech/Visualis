@@ -168,6 +168,7 @@ export interface IWidgetProps {
   onSelectChartsItems?: (selectedItems: number[]) => void
   onSetWidgetProps: (widgetProps: IWidgetProps) => void
   // onHideDrillPanel?: (swtich: boolean) => void
+  executeQueryFailed?: boolean
 }
 
 export interface IWidgetConfig extends IWidgetProps {
@@ -232,9 +233,8 @@ export class Widget extends React.Component<
   }
 
   public render () {
-    const { loading, empty, mode } = this.props
+    const { loading, empty, mode, executeQueryFailed } = this.props
     const { width, height, getProgressPercent } = this.state
-    const isWaterMask = localStorage.getItem('isWaterMask') === 'true';
     const username = localStorage.getItem('username');
     const widgetProps = { width, height, ...this.props }
 
@@ -269,6 +269,14 @@ export class Widget extends React.Component<
           getProgressPercent * 100 > -1 && getProgressPercent * 100 < 100 ? 
           <div className={widgetStyles.mask}>
             <Progress type='circle' percent={getProgressPercent * 100}></Progress>
+          </div> : null
+        }
+        {
+          // -2表示是查询失败后设置的getProgressPercent
+          // executeQueryFailed是查询失败的另一个明显标时 dashboard和display的编辑、分享页里如果查询失败会传进来
+          getProgressPercent === -2 || executeQueryFailed ? 
+          <div className={widgetStyles.mask} style={{fontSize: '28px', fontWeight: 'bold'}}>
+            查询失败
           </div> : null
         }
       </div>
