@@ -101,21 +101,24 @@ export default function (chartProps: IChartProps, drillOptions?: any) {
             if (!dataArr[index]) {
               dataArr.push([g[`${m.agg}(${decodedMetricName})`]])
             } else {
-              // similarCount是有多少个和该值相差只有10以内的数量，数量*15再去加上默认distance，就是这个数据的实际distance
-              let similarCount = 0
-              dataArr[index].forEach((item) => {
-                if (Math.abs(g[`${m.agg}(${decodedMetricName})`] - item) <= 10) similarCount++
-              })
-              if (labelOption.label && labelOption.label.normal) {
-                // 必须要创建一个新的对象，不然直接更改labelOption会污染到其他线的labelOption
-                tempLabelOption = JSON.parse(JSON.stringify(labelOption))
-                tempLabelOption.label.normal.distance += similarCount * 15
+              // 一条线只需要计算一次
+              if (!tempLabelOption) {
+                // similarCount是有多少个和该值相差只有10以内的数量，数量*15再去加上默认distance，就是这个数据的实际distance
+                let similarCount = 0
+                dataArr[index].forEach((item) => {
+                  if (Math.abs(g[`${m.agg}(${decodedMetricName})`] - item) <= 10) similarCount++
+                })
+                if (labelOption.label && labelOption.label.normal) {
+                  // 必须要创建一个新的对象，不然直接更改labelOption会污染到其他线的labelOption
+                  tempLabelOption = JSON.parse(JSON.stringify(labelOption))
+                  tempLabelOption.label.normal.distance += similarCount * 15
+                }
+                if (labelOption.label && labelOption.label.emphasis) {
+                  tempLabelOption = JSON.parse(JSON.stringify(labelOption))
+                  tempLabelOption.label.emphasis.distance += similarCount * 15
+                }
+                dataArr[index].push(g[`${m.agg}(${decodedMetricName})`])
               }
-              if (labelOption.label && labelOption.label.emphasis) {
-                tempLabelOption = JSON.parse(JSON.stringify(labelOption))
-                tempLabelOption.label.emphasis.distance += similarCount * 15
-              }
-              dataArr[index].push(g[`${m.agg}(${decodedMetricName})`])
             }
             const itemStyleObj =
               selectedItems &&
@@ -176,21 +179,24 @@ export default function (chartProps: IChartProps, drillOptions?: any) {
           if (!dataArr[index]) {
             dataArr.push([g[`${m.agg}(${decodedMetricName})`]])
           } else {
-            // similarCount是有多少个和该值相差只有10以内的数量，数量*15再去加上默认distance，就是这个数据的实际distance
-            let similarCount = 0
-            dataArr[index].forEach((item) => {
-              if (Math.abs(g[`${m.agg}(${decodedMetricName})`] - item) <= 10) similarCount++
-            })
-            if (labelOption.label && labelOption.label.normal) {
-              // 必须要创建一个新的对象，不然直接更改labelOption会污染到其他线的labelOption
-              tempLabelOption = JSON.parse(JSON.stringify(labelOption))
-              tempLabelOption.label.normal.distance += similarCount * 15
+            // 一条线只需要计算一次
+            if (!tempLabelOption) {
+              // similarCount是有多少个和该值相差只有10以内的数量，数量*15再去加上默认distance，就是这个数据的实际distance
+              let similarCount = 0
+              dataArr[index].forEach((item) => {
+                if (Math.abs(g[`${m.agg}(${decodedMetricName})`] - item) <= 10) similarCount++
+              })
+              if (labelOption.label && labelOption.label.normal) {
+                // 必须要创建一个新的对象，不然直接更改labelOption会污染到其他线的labelOption
+                tempLabelOption = JSON.parse(JSON.stringify(labelOption))
+                tempLabelOption.label.normal.distance += similarCount * 15
+              }
+              if (labelOption.label && labelOption.label.emphasis) {
+                tempLabelOption = JSON.parse(JSON.stringify(labelOption))
+                tempLabelOption.label.emphasis.distance += similarCount * 15
+              }
+              dataArr[index].push(g[`${m.agg}(${decodedMetricName})`])
             }
-            if (labelOption.label && labelOption.label.emphasis) {
-              tempLabelOption = JSON.parse(JSON.stringify(labelOption))
-              tempLabelOption.label.emphasis.distance += similarCount * 15
-            }
-            dataArr[index].push(g[`${m.agg}(${decodedMetricName})`])
           }
           const itemStyleObj =
             selectedItems &&
