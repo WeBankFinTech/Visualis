@@ -78,6 +78,7 @@ export default function (chartProps: IChartProps, drillOptions?: any) {
 
   const series = []
   const seriesData = []
+  const dataArr = []
 
   metrics.forEach((m, i) => {
     const decodedMetricName = decodeMetricName(m.name)
@@ -86,12 +87,36 @@ export default function (chartProps: IChartProps, drillOptions?: any) {
     )}] ${decodedMetricName}`
     if (color.items.length) {
       Object.entries(grouped).forEach(([k, v]: [string, any[]]) => {
+        let tempLabelOption = null
         const serieObj = {
           id: `${m.name}${DEFAULT_SPLITER}${DEFAULT_SPLITER}${k}`,
           name: `${k} ${localeMetricName}`,
           type: 'line',
           sampling: 'average',
           data: v.map((g, index) => {
+            // 每次还原distance默认值
+            if (labelOption.label && labelOption.label.normal) labelOption.label.normal.distance = 15
+            if (labelOption.label && labelOption.label.emphasis) labelOption.label.emphasis.distance = 15
+            // dataArr应该是[[1,2],[3,4]]这样的数据结构
+            if (!dataArr[index]) {
+              dataArr.push([g[`${m.agg}(${decodedMetricName})`]])
+            } else {
+              // similarCount是有多少个和该值相差只有10以内的数量，数量*15再去加上默认distance，就是这个数据的实际distance
+              let similarCount = 0
+              dataArr[index].forEach((item) => {
+                if (Math.abs(g[`${m.agg}(${decodedMetricName})`] - item) <= 10) similarCount++
+              })
+              if (labelOption.label && labelOption.label.normal) {
+                // 必须要创建一个新的对象，不然直接更改labelOption会污染到其他线的labelOption
+                tempLabelOption = JSON.parse(JSON.stringify(labelOption))
+                tempLabelOption.label.normal.distance += similarCount * 15
+              }
+              if (labelOption.label && labelOption.label.emphasis) {
+                tempLabelOption = JSON.parse(JSON.stringify(labelOption))
+                tempLabelOption.label.emphasis.distance += similarCount * 15
+              }
+              dataArr[index].push(g[`${m.agg}(${decodedMetricName})`])
+            }
             const itemStyleObj =
               selectedItems &&
               selectedItems.length &&
@@ -131,18 +156,42 @@ export default function (chartProps: IChartProps, drillOptions?: any) {
           },
           smooth,
           step,
-          ...labelOption
+          label: tempLabelOption ? tempLabelOption.label : labelOption.label
         }
         series.push(serieObj)
         seriesData.push(grouped[k])
       })
     } else {
+      let tempLabelOption = null
       const serieObj = {
         id: m.name,
         name: decodedMetricName,
         type: 'line',
         sampling: 'average',
         data: data.map((g, index) => {
+          // 每次还原distance默认值
+          if (labelOption.label && labelOption.label.normal) labelOption.label.normal.distance = 15
+          if (labelOption.label && labelOption.label.emphasis) labelOption.label.emphasis.distance = 15
+          // dataArr应该是[[1,2],[3,4]]这样的数据结构
+          if (!dataArr[index]) {
+            dataArr.push([g[`${m.agg}(${decodedMetricName})`]])
+          } else {
+            // similarCount是有多少个和该值相差只有10以内的数量，数量*15再去加上默认distance，就是这个数据的实际distance
+            let similarCount = 0
+            dataArr[index].forEach((item) => {
+              if (Math.abs(g[`${m.agg}(${decodedMetricName})`] - item) <= 10) similarCount++
+            })
+            if (labelOption.label && labelOption.label.normal) {
+              // 必须要创建一个新的对象，不然直接更改labelOption会污染到其他线的labelOption
+              tempLabelOption = JSON.parse(JSON.stringify(labelOption))
+              tempLabelOption.label.normal.distance += similarCount * 15
+            }
+            if (labelOption.label && labelOption.label.emphasis) {
+              tempLabelOption = JSON.parse(JSON.stringify(labelOption))
+              tempLabelOption.label.emphasis.distance += similarCount * 15
+            }
+            dataArr[index].push(g[`${m.agg}(${decodedMetricName})`])
+          }
           const itemStyleObj =
             selectedItems &&
             selectedItems.length &&
@@ -191,7 +240,7 @@ export default function (chartProps: IChartProps, drillOptions?: any) {
         },
         smooth,
         step,
-        ...labelOption
+        label: tempLabelOption ? tempLabelOption.label : labelOption.label
       }
       series.push(serieObj)
       seriesData.push([...data])
