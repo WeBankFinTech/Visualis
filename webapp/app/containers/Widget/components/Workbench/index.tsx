@@ -239,8 +239,8 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       multiDrag: false
     }
     try {
-      const loginUser = JSON.parse(localStorage.getItem('loginUser'))
-      const currentUserWorkbenchSetting = loginUser ? JSON.parse(localStorage.getItem(`${loginUser.id}_workbench_settings`)) : null
+      const loginUser = localStorage.getItem('username')
+      const currentUserWorkbenchSetting = loginUser ? JSON.parse(localStorage.getItem(`${loginUser}_workbench_settings`)) : null
       if (currentUserWorkbenchSetting) {
         workbenchSettings = currentUserWorkbenchSetting
       }
@@ -528,8 +528,8 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
 
   private saveSettingForm = (values: IWorkbenchSettings) => {
     try {
-      const loginUser = JSON.parse(localStorage.getItem('loginUser'))
-      if (loginUser) localStorage.setItem(`${loginUser.id}_workbench_settings`, JSON.stringify(values))
+      const loginUser = localStorage.getItem('username')
+      if (loginUser) localStorage.setItem(`${loginUser}_workbench_settings`, JSON.stringify(values))
       this.setState({
         settings: values
       })
