@@ -44,7 +44,7 @@ const mainStyles = require('app/containers/Main/Main.less')
 const styles = require('app/containers/Display/Display.less')
 
 import ShareDisplayActions from './actions'
-const { loadDisplay, loadLayerData, executeQuery, getProgress, getResult } = ShareDisplayActions
+const { getBaseInfo, loadDisplay, loadLayerData, executeQuery, getProgress, getResult } = ShareDisplayActions
 import {
   makeSelectTitle,
   makeSelectDisplay,
@@ -109,6 +109,7 @@ interface IDisplayProps extends RouteComponentProps<{}, {}> {
     resolve: (data) => void,
     reject: (data) => void
     ) => void
+    onGetBaseInfo: (resolve) => any
 }
 
 interface IDisplayStates {
@@ -137,6 +138,10 @@ export class Display extends React.Component<IDisplayProps, IDisplayStates> {
 
   public componentWillMount () {
     const { shareInfo } = this.props.location.query
+    this.props.onGetBaseInfo(result => {
+      const { userInfo } = result
+      if (userInfo && userInfo.basic) localStorage.setItem('username', userInfo.basic.username)
+    })
     this.setState({
       shareInfo
     }, () => {
@@ -538,6 +543,7 @@ const mapStateToProps = createStructuredSelector({
 export function mapDispatchToProps (dispatch) {
   return {
     onLoadDisplay: (token, resolve, reject) => dispatch(loadDisplay(token, resolve, reject)),
+    onGetBaseInfo: (resolve) => dispatch(getBaseInfo(resolve)),
     onLoadLayerData: (renderType, layerId, dataToken, requestParams) => dispatch(loadLayerData(renderType, layerId, dataToken, requestParams)),
     onExecuteQuery: (renderType, layerId, dataToken, requestParams, resolve, reject) => dispatch(executeQuery(renderType, layerId, dataToken, requestParams, resolve, reject)),
     onGetProgress: (execId, resolve, reject) => dispatch(getProgress(execId, resolve, reject)),

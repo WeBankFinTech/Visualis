@@ -99,6 +99,7 @@ import { IQueryConditions, IDataRequestParams, QueryVariable, IDataDownloadParam
 import { getShareClientId } from '../../util'
 import { IDownloadRecord, DownloadTypes } from 'app/containers/App/types'
 import { IFormedView } from 'app/containers/View/types'
+import { getBaseInfo } from './actions'
 
 const ResponsiveReactGridLayout = WidthProvider(Responsive)
 
@@ -137,6 +138,7 @@ interface IDashboardProps {
   downloadList: IDownloadRecord[]
   onLoadDashboard: (shareInfo: any, error: (err) => void) => void,
   onLoadWidget: (aesStr: string, success?: (widget) => void, error?: (err) => void) => void,
+  onGetBaseInfo: (resolve) => any,
   onLoadResultset: (
     renderType: RenderType,
     dashboardItemId: number,
@@ -265,6 +267,10 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
     }
   }
   public componentWillMount () {
+    this.props.onGetBaseInfo(result => {
+      const { userInfo } = result
+      if (userInfo && userInfo.basic) localStorage.setItem('username', userInfo.basic.username)
+    })
     // urlparse
     const qs = this.querystring(location.href.substr(location.href.indexOf('?') + 1))
     this.setState({
@@ -1349,6 +1355,7 @@ export function mapDispatchToProps (dispatch) {
     onLoadViewsDetail: (viewIds, resolve) => dispatch(loadViewsDetail(viewIds, resolve)),
     onLoadDashboard: (token, reject) => dispatch(getDashboard(token, reject)),
     onLoadWidget: (token, resolve, reject) => dispatch(getWidget(token, resolve, reject)),
+    onGetBaseInfo: (resolve) => dispatch(getBaseInfo(resolve)),
     onLoadResultset: (renderType, itemid, dataToken, requestParams) => dispatch(getResultset(renderType, itemid, dataToken, requestParams)),
     // widget页面 提交查询数据接口
     onExecuteQuery: (renderType, itemid, dataToken, requestParams, resolve, reject) => dispatch(executeQuery(renderType, itemid, dataToken, requestParams, resolve, reject)),

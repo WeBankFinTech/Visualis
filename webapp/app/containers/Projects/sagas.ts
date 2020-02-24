@@ -424,7 +424,7 @@ export function* excludeRole ({payload}) {
 export default function* rootProjectSaga (): IterableIterator<any> {
   yield all([
     takeLatest(LOAD_PROJECTS, getProjects as any),
-    takeLatest(GET_BASE_INFO, getBaseInfo as any),
+    takeEvery(GET_BASE_INFO, getBaseInfo as any),
     takeLatest(ADD_PROJECT_ROLE, addProjectRole as any),
     takeEvery(ADD_PROJECT, addProject as any),
     takeEvery(EDIT_PROJECT, editProject as any),

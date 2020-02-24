@@ -171,6 +171,26 @@ export const ShareDisplayActions = {
       }
     }
   },
+  getBaseInfo (resolve) {
+    return {
+      type: ActionTypes.GET_BASE_INFO,
+      payload: {
+        resolve
+      }
+    }
+  },
+  
+  getBaseInfoLoaded () {
+    return {
+      type: ActionTypes.GET_BASE_INFO_SUCCESS
+    }
+  },
+  
+  loadGetBaseInfoFail () {
+    return {
+      type: ActionTypes.GET_BASE_INFO_FAILURE
+    }
+  }
 }
 
 const mockAction = returnType(ShareDisplayActions)

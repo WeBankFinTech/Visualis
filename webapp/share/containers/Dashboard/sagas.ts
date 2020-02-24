@@ -32,7 +32,8 @@ import {
   INITIATE_DOWNLOAD_TASK,
   EXECUTE_QUERY,
   GET_PROGRESS,
-  GET_RESULT
+  GET_RESULT,
+  GET_BASE_INFO
 } from './constants'
 import {
   dashboardGetted,
@@ -55,7 +56,9 @@ import {
   getProgressSuccess,
   getProgressFail,
   getResultSuccess,
-  getResultFail
+  getResultFail,
+  getBaseInfoLoaded,
+  loadGetBaseInfoFail,
 } from './actions'
 
 import request from '../../../app/utils/request'
@@ -90,6 +93,28 @@ export function* getWidget (action) {
   } catch (err) {
     errorHandler(err)
     payload.reject(err)
+  }
+}
+
+// 请求dss的接口 获取用户名等基本信息
+export function* getBaseInfo (action) {
+  const { resolve } = action.payload
+  // 这里比较特殊 是请求dss的接口 地址要换下
+  let url = api.projects
+  url = url.replace('rest_s', 'rest_j')
+  url = url.replace('visualis', 'dss')
+  url = url.replace('projects', 'getBaseInfo')
+  try {
+    const asyncData = yield call(request, url)
+    yield put(getBaseInfoLoaded())
+    if (asyncData.data) {
+      resolve(asyncData.data)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    yield put(loadGetBaseInfoFail())
+    errorHandler(err)
   }
 }
 
@@ -335,6 +360,7 @@ export function* initiateDownloadTask (action): IterableIterator<any> {
 export default function* rootDashboardSaga (): IterableIterator<any> {
   yield [
     takeLatest(LOAD_SHARE_DASHBOARD, getDashboard),
+    takeEvery(GET_BASE_INFO, getBaseInfo as any),
     takeEvery(LOAD_SHARE_WIDGET, getWidget),
     takeEvery(LOAD_SHARE_RESULTSET, getResultset),
     takeEvery(EXECUTE_QUERY, executeQuery),

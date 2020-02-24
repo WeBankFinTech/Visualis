@@ -27,6 +27,9 @@ import {
   LOAD_SHARE_RESULTSET,
   LOAD_SHARE_RESULTSET_SUCCESS,
   LOAD_SHARE_RESULTSET_FAILURE,
+  GET_BASE_INFO,
+  GET_BASE_INFO_SUCCESS,
+  GET_BASE_INFO_FAILURE,
   EXECUTE_QUERY,
   EXECUTE_QUERY_SUCCESS,
   EXECUTE_QUERY_FAILURE,
@@ -460,5 +463,26 @@ export function sendShareParams (params) {
     payload: {
       params
     }
+  }
+}
+
+export function getBaseInfo (resolve) {
+  return {
+    type: GET_BASE_INFO,
+    payload: {
+      resolve
+    }
+  }
+}
+
+export function getBaseInfoLoaded () {
+  return {
+    type: GET_BASE_INFO_SUCCESS
+  }
+}
+
+export function loadGetBaseInfoFail () {
+  return {
+    type: GET_BASE_INFO_FAILURE
   }
 }

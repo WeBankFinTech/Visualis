@@ -37,7 +37,10 @@ enum Types {
   GET_PROGRESS_FAILURE = 'davinci/Share/GET_PROGRESS_FAILURE',
   GET_RESULT = 'davinci/Share/GET_RESULT',
   GET_RESULT_SUCCESS = 'davinci/Share/GET_RESULT_SUCCESS',
-  GET_RESULT_FAILURE = 'davinci/Share/GET_RESULT_FAILURE'
+  GET_RESULT_FAILURE = 'davinci/Share/GET_RESULT_FAILURE',
+  GET_BASE_INFO = 'davinci/Project/GET_BASE_INFO',
+  GET_BASE_INFO_SUCCESS = 'davinci/Project/GET_BASE_INFO_SUCCESS',
+  GET_BASE_INFO_FAILURE = 'davinci/Project/GET_BASE_INFO_FAILURE'
 }
 
 export const ActionTypes = createTypes(Types)

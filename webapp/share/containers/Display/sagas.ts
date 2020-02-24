@@ -27,6 +27,7 @@ import request from 'utils/request'
 import api from 'utils/api'
 import { ActionTypes } from './constants'
 import ShareDisplayActions, { ShareDisplayActionType } from './actions'
+import { errorHandler } from '../../../app/utils/util'
 
 export function* getDisplay (action: ShareDisplayActionType) {
   if (action.type !== ActionTypes.LOAD_SHARE_DISPLAY) { return }
@@ -50,6 +51,28 @@ export function* getDisplay (action: ShareDisplayActionType) {
     yield put(loadDisplayFail(err))
     message.error('获取 Display 信息失败，请刷新重试')
     reject(err)
+  }
+}
+
+export function* getBaseInfo (action) {
+  const { resolve } = action.payload
+  const { getBaseInfoLoaded, loadGetBaseInfoFail } = ShareDisplayActions
+  // 这里比较特殊 是请求dss的接口 地址要换下
+  let url = api.projects
+  url = url.replace('rest_s', 'rest_j')
+  url = url.replace('visualis', 'dss')
+  url = url.replace('projects', 'getBaseInfo')
+  try {
+    const asyncData = yield call(request, url)
+    yield put(getBaseInfoLoaded())
+    if (asyncData.data) {
+      resolve(asyncData.data)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    yield put(loadGetBaseInfoFail())
+    errorHandler(err)
   }
 }
 
@@ -187,6 +210,7 @@ export function* getResult (action: ShareDisplayActionType) {
 export default function* rootDisplaySaga (): IterableIterator<any> {
   yield [
     takeLatest(ActionTypes.LOAD_SHARE_DISPLAY, getDisplay),
+    takeEvery(ActionTypes.GET_BASE_INFO, getBaseInfo as any),
     takeEvery(ActionTypes.LOAD_LAYER_DATA, getData),
     takeEvery(ActionTypes.EXECUTE_QUERY, executeQuery),
     takeEvery(ActionTypes.GET_PROGRESS, getProgress),
