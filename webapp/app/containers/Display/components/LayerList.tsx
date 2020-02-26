@@ -1,7 +1,7 @@
 import React from 'react'
 import { OrderDirection } from './util'
 
-import { Icon, Tooltip, Input, messae } from 'antd'
+import { Icon, Tooltip, Input, message } from 'antd'
 
 const styles = require('../Display.less')
 
@@ -169,16 +169,16 @@ export class LayerList extends React.Component <ILayerListProps, ILayerListState
   }
 
   // 更改标签名
-  private saveTagName = (e, layer) => {
+  private saveTagName = (layer) => (e) => {
     const { onEditDisplayLayers, layers } = this.props
     if (e && e.target && typeof e.target.value === 'string') {
       if (e.target.value === '') {
-        // 不能为空，这时候就更新为原默认值
-        onEditDisplayLayers([layer])
+        // 输入框里的值变回原值
+        e.target.value = layer.name
         return message.error('更改失败，标签名不能为空！')
       } else if (e.target.value.includes(' ')) {
-        // 不能为空，不能包含空格，这时候就更新为原默认值
-        onEditDisplayLayers([layer])
+        // 输入框里的值变回原值
+        e.target.value = layer.name
         return message.error('更改失败，标签名不能包含空格！')
       } else {
         // 判断是否和其他标签重名了
@@ -189,8 +189,8 @@ export class LayerList extends React.Component <ILayerListProps, ILayerListState
           }
         }
         if (isRepeat) {
-          // 不能和其他标签重名，这时候就更新为原默认值
-          onEditDisplayLayers([layer])
+          // 输入框里的值变回原值
+          e.target.value = layer.name
           return message.error('更改失败，不能和其他标签重名！')
         } else {
           // 合理的标签名，更新其值
@@ -249,7 +249,7 @@ export class LayerList extends React.Component <ILayerListProps, ILayerListState
             {
               layer.subType === 21 ? 
               // 说明是标签，需要可以编辑
-              <Input placeholder="标签名,不能有空格" defaultValue={name} maxLength={50} onBlur={(e) => this.saveTagName(e, layer)} onPressEnter={(e) => this.saveTagName(e, layer)} style={{marginLeft: '4px', paddingLeft: '4px'}} /> :
+              <Input placeholder="标签名,不能有空格" defaultValue={name} maxLength={50} onBlur={this.saveTagName(layer)} onPressEnter={this.saveTagName(layer)} style={{marginLeft: '4px', paddingLeft: '4px'}} /> :
               <span title={name}>{name}</span>
             }
           </li>
