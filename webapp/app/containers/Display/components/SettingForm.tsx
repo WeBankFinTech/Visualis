@@ -23,6 +23,7 @@ import debounce from 'lodash/debounce'
 import api from 'utils/api'
 
 import { Form, Row, Col, Input, InputNumber, Radio, Checkbox, Select, Upload, Icon, Popover, Tooltip } from 'antd'
+const { TextArea } = Input
 const FormItem = Form.Item
 const RadioGroup = Radio.Group
 const CheckboxGroup = Checkbox.Group
@@ -255,6 +256,16 @@ export class SettingForm extends React.Component<ISettingFormProps, ISettingForm
   }
 
   private renderInput = (item, formItemChange) => {
+    if (item.title === '文本内容') {
+      // 说明此时是正在编辑 标签 组件的文本内容,需要可以换行的输入框
+      return (
+        <TextArea 
+          rows={8}
+          placeholder={item.tip || item.placeholder || item.name}
+          onPressEnter={formItemChange(item.name)}
+        />
+      )
+    }
     return (
       <Input
         placeholder={item.tip || item.placeholder || item.name}

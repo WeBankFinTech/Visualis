@@ -495,6 +495,7 @@ export class LayerItem extends React.PureComponent<ILayerItemProps, ILayerItemSt
 
     const labelStyle: React.CSSProperties = {
       wordBreak: 'break-all',
+      whiteSpace: 'pre',
       overflow: 'hidden',
       fontWeight,
       fontFamily,

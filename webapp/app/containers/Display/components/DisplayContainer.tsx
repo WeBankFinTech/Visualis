@@ -175,7 +175,8 @@ export class DisplayContainer extends React.Component<IDisplayContainerProps, ID
         onKeyDown(Keys.Right)
         break
       case 'Delete':
-      case 'Backspace':
+      // case 'Backspace':
+      // 要取消掉这个Backspace能删除layerItem的快捷键，不然有时候在输入框里操作时会误操作
         onKeyDown(Keys.Delete)
         break
       case 'c':
