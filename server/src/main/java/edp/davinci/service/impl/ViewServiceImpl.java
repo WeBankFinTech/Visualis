@@ -716,6 +716,7 @@ public class ViewServiceImpl implements ViewService {
                                     excludeColumns);
                         }
                     } else {
+                        buildQuerySql(querySqlList, source, executeParam);
                         if (!CollectionUtils.isEmpty(executeSqlList)) {
                             executeSqlList.forEach(sql -> sqlUtils.execute(sql));
                         }
