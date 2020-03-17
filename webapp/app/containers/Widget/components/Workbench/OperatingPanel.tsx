@@ -112,6 +112,8 @@ interface IOperatingPanelProps {
   onGetProgress: (execId: string, resolve: (data) => void, reject: (error) => void) => void
   // widget页面 获取结果集接口
   onGetResult: (execId: string, resolve: (data) => void, reject: (error) => void) => void
+  // widget页面 进度查询接口
+  onKillExecute: (execId: string, resolve: (data) => void, reject: (error) => void) => void
   onSetQueryData: (data: object) => void
   onLoadDistinctValue: (viewId: number, params: Partial<IDistinctValueReqeustParams>) => void,
   onBeofreDropColunm: (view: IView, resolve: () => void) => void
@@ -411,8 +413,18 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     }
   }
 
+  private execIds = []
+
+  private deleteExecId = (execId) => {
+    const index = this.execIds.indexOf(execId);
+    if (index > -1) this.execIds.splice(index, 1)
+  }
+
   public componentWillUnmount () {
     this.timeout.forEach(item => clearTimeout(item))
+    this.execIds.forEach((execId) => {
+      this.props.onKillExecute(execId, () => {}, () => {})
+    })
     notification.destroy()
   }
 
@@ -908,6 +920,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         // 提示 查询失败（显示表格头，就和现在的暂无数据保持一致的交互，只是提示换成“查询失败”）
         // -2表示查询失败
         that.props.changeGetProgressPercent(-2)
+        that.deleteExecId(execId)
         return message.error('查询失败！')
       } else if (status === 'Succeed' && progress === 1) {
         // 查询成功，调用 结果集接口，status为success时，progress一定为1
@@ -981,9 +994,11 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
             })
           })
           that.props.changeGetProgressPercent(progress)
+          that.deleteExecId(execId)
         }, (err) => {
           // -2表示查询失败
           that.props.changeGetProgressPercent(-2)
+          that.deleteExecId(execId)
           return message.error('查询失败！')
         })
       } else {
@@ -997,6 +1012,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     }, (err) => {
       // -2表示查询失败
       that.props.changeGetProgressPercent(-2)
+      that.deleteExecId(execId)
       return message.error('查询失败！')
     })
   }
@@ -1182,9 +1198,15 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       this.lastRequestParamString = requestParamString
       onSetQueryData(requestParams)
 
+      // 在查询数据之前，清空所有之前的请求
+      this.execIds.forEach((execId) => {
+        this.props.onKillExecute(execId, () => {}, () => {})
+      })
+
       // 执行查询数据接口
       onExecuteQuery(selectedView.id, requestParams, (result) => {
         const { execId } = result
+        this.execIds.push(execId)
         // 每隔三秒执行一次查询进度接口
         this.executeQuery(dataParams, execId, updatedPagination, selectedCharts, renderType, orders, this)
       }, () => {

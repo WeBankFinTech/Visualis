@@ -284,6 +284,34 @@ export function* getResult (action: ViewActionType) {
     reject(data.header)
   }
 }
+
+export function* killExecute (action: ViewActionType) {
+  if (action.type !== ActionTypes.KILL_EXECUTE && action.type !== ActionTypes.VIEW_KILL_EXECUTE) { return }
+  const { execId, resolve, reject } = action.payload
+  const { getProgressLoaded, loadGetProgressFail } = ViewActions
+  try {
+    const asyncData = yield call(request, {
+      method: 'post',
+      url: `${api.view}/${execId}/kill`,
+      data: {}
+    })
+    yield put(getProgressLoaded())
+    // asyncData.payload可能为""
+    if (asyncData.payload) {
+      resolve(asyncData.payload)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    let { response } = err as AxiosError
+    // 增加为空时的处理
+    if (!response) response = {data: {}}
+    const { data } = response as AxiosResponse<IDavinciResponse<any>>
+    yield put(loadGetProgressFail(err))
+    reject(data.header)
+  }
+}
+
 export function* getSelectOptions (action: ViewActionType) {
   if (action.type !== ActionTypes.LOAD_SELECT_OPTIONS) { return }
   const { payload } = action
@@ -554,12 +582,14 @@ export default function* rootViewSaga () {
     takeEvery(ActionTypes.EXECUTE_QUERY, executeQuery),
     takeEvery(ActionTypes.GET_PROGRESS, getProgress),
     takeEvery(ActionTypes.GET_RESULT, getResult),
+    takeEvery(ActionTypes.KILL_EXECUTE, killExecute),
     takeEvery(ActionTypes.LOAD_SELECT_OPTIONS, getSelectOptions),
     takeEvery(ActionTypes.LOAD_VIEW_DISTINCT_VALUE, getViewDistinctValue),
     takeEvery(ActionTypes.LOAD_VIEW_DATA_FROM_VIZ_ITEM, getViewDataFromVizItem),
     takeEvery(ActionTypes.VIEW_EXECUTE_QUERY, viewExecuteQuery),
     takeEvery(ActionTypes.VIEW_GET_PROGRESS, viewGetProgress),
     takeEvery(ActionTypes.VIEW_GET_RESULT, viewGetResult),
+    takeEvery(ActionTypes.VIEW_KILL_EXECUTE, killExecute),
 
     takeEvery(ActionTypes.LOAD_DAC_CHANNELS, getDacChannels),
     takeEvery(ActionTypes.LOAD_DAC_TENANTS, getDacTenants),

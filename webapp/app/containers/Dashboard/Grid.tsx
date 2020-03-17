@@ -92,7 +92,7 @@ import {
   makeSelectCurrentLinkages
 } from './selectors'
 import { ViewActions, ViewActionType } from 'containers/View/actions'
-const { loadViewDataFromVizItem, loadViewExecuteQuery, loadViewGetProgress, loadViewGetResult, loadViewsDetail, loadSelectOptions } = ViewActions
+const { loadViewDataFromVizItem, loadViewExecuteQuery, loadViewGetProgress, loadViewGetResult, loadViewKillExecute, loadViewsDetail, loadSelectOptions } = ViewActions
 import { makeSelectWidgets } from 'containers/Widget/selectors'
 import { makeSelectViews, makeSelectFormedViews } from 'containers/View/selectors'
 import { makeSelectCurrentProject } from 'containers/Projects/selectors'
@@ -245,6 +245,11 @@ interface IGridProps {
     viewId: number,
     requestParams: IDataRequestParams,
     statistic: any,
+    resolve: (data) => void,
+    reject: (data) => void
+    ) => void
+  onViewKillExecute: (
+    execId: string,
     resolve: (data) => void,
     reject: (data) => void
     ) => void
@@ -473,8 +478,18 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
     }
   }
 
+  private execIds = []
+
+  private deleteExecId = (execId) => {
+    const index = this.execIds.indexOf(execId);
+    if (index > -1) this.execIds.splice(index, 1)
+  }
+
   public componentWillUnmount () {
     this.timeout.forEach(item => clearTimeout(item))
+    this.execIds.forEach((execId) => {
+      this.props.onViewKillExecute(execId, () => {}, () => {})
+    })
     statistic.setDurations({
       end_time: statistic.getCurrentDateTime()
     }, (data) => {
@@ -647,6 +662,7 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
 
     onViewExecuteQuery(renderType, itemId, widget.viewId, requestParams, {...requestParams, widget}, (result) => {
       const { execId } = result
+      this.execIds.push(execId)
       this.executeQuery(execId, renderType, itemId, widget.viewId, requestParams, {...requestParams, widget}, this)
     }, () => {
       this.setState({executeQueryFailed: true})
@@ -663,12 +679,15 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
       if (status === 'Failed') {
         // 提示 查询失败（显示表格头，就和现在的暂无数据保持一致的交互，只是提示换成“查询失败”）
         that.setState({executeQueryFailed: true})
+        that.deleteExecId(execId)
         return message.error('查询失败！')
       } else if (status === 'Succeed' && progress === 1) {
         // 查询成功，调用 结果集接口，status为success时，progress一定为1
         onViewGetResult(execId, renderType, itemId, viewId, requestParams, statistic, (result) => {
+          that.deleteExecId(execId)
         }, () => {
           that.setState({executeQueryFailed: true})
+          that.deleteExecId(execId)
           return message.error('查询失败！')
         })
       } else {
@@ -679,6 +698,7 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
       }
     }, () => {
       that.setState({executeQueryFailed: true})
+      that.deleteExecId(execId)
       return message.error('查询失败！')
     })
   }
@@ -2055,6 +2075,8 @@ export function mapDispatchToProps (dispatch) {
     onViewExecuteQuery: (renderType, itemId, viewId, requestParams, statistic, resolve, reject) => dispatch(loadViewExecuteQuery(renderType, itemId, viewId, requestParams, 'dashboard', statistic, resolve, reject)),
     onViewGetProgress: (execId, resolve, reject) => dispatch(loadViewGetProgress(execId, resolve, reject)),
     onViewGetResult: (execId, renderType, itemId, viewId, requestParams, statistic, resolve, reject) => dispatch(loadViewGetResult(execId, renderType, itemId, viewId, requestParams, 'dashboard', statistic, resolve, reject)),
+    onViewKillExecute: (execId, resolve, reject) => dispatch(loadViewKillExecute(execId, resolve, reject)),
+
     onLoadViewsDetail: (viewIds, resolve) => dispatch(loadViewsDetail(viewIds, resolve)),
     onClearCurrentDashboard: () => dispatch(clearCurrentDashboard()),
     onInitiateDownloadTask: (id, type, downloadParams?, itemId?) => dispatch(initiateDownloadTask(id, type, downloadParams, itemId)),

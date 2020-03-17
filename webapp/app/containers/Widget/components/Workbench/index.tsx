@@ -12,7 +12,7 @@ import viewSaga from 'containers/View/sagas'
 import formReducer from 'containers/Dashboard/FormReducer'
 import { hideNavigator } from 'containers/App/actions'
 import { ViewActions } from 'containers/View/actions'
-const { loadViews, loadViewsDetail, loadViewData, executeQuery, getProgress, getResult, loadViewDistinctValue } = ViewActions
+const { loadViews, loadViewsDetail, loadViewData, executeQuery, getProgress, getResult, killExecute, loadViewDistinctValue } = ViewActions
 import { addWidget, editWidget, loadWidgetDetail, clearCurrentWidget, executeComputed } from 'containers/Widget/actions'
 import { makeSelectCurrentWidget, makeSelectLoading, makeSelectDataLoading, makeSelectDistinctColumnValues, makeSelectColumnValueLoading } from 'containers/Widget/selectors'
 import { makeSelectViews, makeSelectFormedViews } from 'containers/View/selectors'
@@ -80,6 +80,8 @@ interface IWorkbenchProps {
   onGetProgress: (execId: string, resolve: (data) => void, reject: (error) => void) => void
   // widget页面 获取结果集接口
   onGetResult: (execId: string, resolve: (data) => void, reject: (error) => void) => void
+  // widget页面 kill查询接口
+  onKillExecute: (execId: string, resolve: (data) => void, reject: (error) => void) => void
   onAddWidget: (widget: IWidget, resolve: () => void) => void
   onEditWidget: (widget: IWidget, resolve: () => void) => void
   onLoadViewDistinctValue: (viewId: number, params: Partial<IDistinctValueReqeustParams>) => void
@@ -589,6 +591,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       onExecuteQuery,
       onGetProgress,
       onGetResult,
+      onKillExecute,
       onLoadViewDistinctValue,
       onBeofreDropColunm
     } = this.props
@@ -675,6 +678,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
                 onExecuteQuery={onExecuteQuery}
                 onGetProgress={onGetProgress}
                 onGetResult={onGetResult}
+                onKillExecute={onKillExecute}
                 onSetQueryData={this.setQueryData}
                 onLoadDistinctValue={onLoadViewDistinctValue}
                 onBeofreDropColunm={onBeofreDropColunm}
@@ -737,6 +741,8 @@ export function mapDispatchToProps (dispatch) {
     onGetProgress: (execId, resolve, reject) => dispatch(getProgress(execId, resolve, reject)),
     // widget页面 获取结果集接口
     onGetResult: (execId, resolve, reject) => dispatch(getResult(execId, resolve, reject)),
+    // widget页面 kill查询接口
+    onKillExecute: (execId, resolve, reject) => dispatch(killExecute(execId, resolve, reject)),
     onAddWidget: (widget, resolve) => dispatch(addWidget(widget, resolve)),
     onEditWidget: (widget, resolve) => dispatch(editWidget(widget, resolve)),
     onLoadViewDistinctValue: (viewId, params) => dispatch(loadViewDistinctValue(viewId, params)),

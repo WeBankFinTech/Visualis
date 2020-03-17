@@ -75,7 +75,7 @@ const styles = require('./Display.less')
 import { IWidgetConfig, RenderType } from '../Widget/components/Widget'
 import { decodeMetricName } from '../Widget/components/util'
 import { ViewActions } from '../View/actions'
-const { loadViewDataFromVizItem, loadViewExecuteQuery, loadViewGetProgress, loadViewGetResult ,loadViewsDetail } = ViewActions // @TODO global filter in Display
+const { loadViewDataFromVizItem, loadViewExecuteQuery, loadViewGetProgress, loadViewGetResult, loadViewKillExecute, loadViewsDetail } = ViewActions // @TODO global filter in Display
 import { makeSelectWidgets } from '../Widget/selectors'
 import { makeSelectFormedViews } from '../View/selectors'
 import { GRID_ITEM_MARGIN, DEFAULT_BASELINE_COLOR, DEFAULT_SPLITER, MAX_LAYER_COUNT } from 'app/globalConstants'
@@ -175,6 +175,11 @@ interface IEditorProps extends RouteComponentProps<{}, IParams> {
     resolve: (data) => void,
     reject: (data) => void
     ) => void
+  onViewKillExecute: (
+    execId: string,
+    resolve: (data) => void,
+    reject: (data) => void
+    ) => void
   onLoadViewsDetail: (viewIds: number[], resolve: () => void) => void
 
   onShowEditorBaselines: (baselines: IBaseline[]) => void
@@ -227,8 +232,18 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
     onHideNavigator()
   }
 
+  private execIds = []
+
+  private deleteExecId = (execId) => {
+    const index = this.execIds.indexOf(execId);
+    if (index > -1) this.execIds.splice(index, 1)
+  }
+
   public componentWillUnmount () {
     this.timeout.forEach(item => clearTimeout(item))
+    this.execIds.forEach((execId) => {
+      this.props.onViewKillExecute(execId, () => {}, () => {})
+    })
     this.props.onResetDisplayState()
   }
 
@@ -448,6 +463,7 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
     this.setState({executeQueryFailed: false})
     onViewExecuteQuery(renderType, itemId, widget.viewId, requestParams, statistic,  (result) => {
       const { execId } = result
+      this.execIds.push(execId)
       this.executeQuery(execId, renderType, itemId, widget.viewId, requestParams, statistic, this)
     }, () => {
       this.setState({executeQueryFailed: true})
@@ -464,12 +480,15 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
       if (status === 'Failed') {
         // 提示 查询失败（显示表格头，就和现在的暂无数据保持一致的交互，只是提示换成“查询失败”）
         that.setState({executeQueryFailed: true})
+        that.deleteExecId(execId)
         return message.error('查询失败！')
       } else if (status === 'Succeed' && progress === 1) {
         // 查询成功，调用 结果集接口，status为success时，progress一定为1
         onViewGetResult(execId, renderType, itemId, viewId, requestParams, statistic, (result) => {
+          that.deleteExecId(execId)
         }, () => {
           that.setState({executeQueryFailed: true})
+          that.deleteExecId(execId)
           return message.error('查询失败！')
         })
       } else {
@@ -480,6 +499,7 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
       }
     }, () => {
       that.setState({executeQueryFailed: true})
+      that.deleteExecId(execId)
       return message.error('查询失败！')
     })
   }
@@ -1053,6 +1073,7 @@ function mapDispatchToProps (dispatch) {
     onViewExecuteQuery: (renderType, itemId, viewId, requestParams, statistic, resolve, reject) => dispatch(loadViewExecuteQuery(renderType, itemId, viewId, requestParams, 'display', statistic, resolve, reject)),
     onViewGetProgress: (execId, resolve, reject) => dispatch(loadViewGetProgress(execId, resolve, reject)),
     onViewGetResult: (execId, renderType, itemId, viewId, requestParams, statistic, resolve, reject) => dispatch(loadViewGetResult(execId, renderType, itemId, viewId, requestParams, 'display', statistic, resolve, reject)),
+    onViewKillExecute: (execId, resolve, reject) => dispatch(loadViewKillExecute(execId, resolve, reject)),
 
     onLoadViewsDetail: (viewIds, resolve) => dispatch(loadViewsDetail(viewIds, resolve)),
     onSelectLayer: ({ id, selected, exclusive }) => dispatch(DisplayActions.selectLayer({ id, selected, exclusive })),

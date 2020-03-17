@@ -454,6 +454,34 @@ export const ViewActions = {
     }
   },
 
+  killExecute (
+    execId: string,
+    resolve: (data: any[]) => void,
+    reject: (error) => void
+  ) {
+    return {
+      type: ActionTypes.KILL_EXECUTE,
+      payload: {
+        execId,
+        resolve,
+        reject
+      }
+    }
+  },
+  killExecuteLoaded () {
+    return {
+      type: ActionTypes.KILL_EXECUTE_SUCCESS
+    }
+  },
+  loadKillExecuteFail (err) {
+    return {
+      type: ActionTypes.KILL_EXECUTE_FAILURE,
+      payload: {
+        err
+      }
+    }
+  },
+
   loadViewDistinctValue (viewId: number, params: Partial<IDistinctValueReqeustParams>, resolve?: any) {
     return {
       type: ActionTypes.LOAD_VIEW_DISTINCT_VALUE,
@@ -674,6 +702,35 @@ export const ViewActions = {
       }
     }
   },
+
+  loadViewKillExecute (
+    execId,
+    resolve,
+    reject
+  ) {
+    return {
+      type: ActionTypes.VIEW_KILL_EXECUTE,
+      payload: {
+        execId,
+        resolve,
+        reject
+      },
+    }
+  },
+  viewKillExecuteLoaded () {
+    return {
+      type: ActionTypes.VIEW_KILL_EXECUTE_SUCCESS,
+    }
+  },
+  loadViewKillExecuteFail (errorMessage: string) {
+    return {
+      type: ActionTypes.VIEW_KILL_EXECUTE_FAILURE,
+      payload: {
+        errorMessage
+      }
+    }
+  },
+
   /** */
 }
 const mockAction = returnType(ViewActions)
