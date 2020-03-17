@@ -128,13 +128,18 @@ export class DisplayHeader extends React.Component<IDisplayHeaderProps, IDisplay
       widgetsSelected: [],
       widgetSelectorVisible: false
     })
+
+    // 创建一个以该Widget的name为标题的标签
+    selectedWidgets.forEach((item) => {
+      this.addSecondaryGraph(SecondaryGraphTypes.Label, item.name)()
+    })
   }
 
-  private addSecondaryGraph = (secondaryGraphType: SecondaryGraphTypes) => () => {
+  private addSecondaryGraph = (secondaryGraphType: SecondaryGraphTypes, name?: string) => () => {
     if (this.props.layers && this.props.layers.length >= MAX_LAYER_COUNT) return message.warning(`当前最多只支持添加${MAX_LAYER_COUNT}个图层！`, 5);
     const title = (slideSettings[secondaryGraphType] as any).title
     this.props.onAddLayers([{
-      name: `${title}_${uuid(5)}`,
+      name: name ? name : `${title}_${uuid(5)}`,
       type: GraphTypes.Secondary,
       subType: secondaryGraphType,
       params: JSON.stringify(this.getDefaultSetting(GraphTypes.Secondary, secondaryGraphType))
