@@ -99,6 +99,7 @@ interface IWorkbenchStates {
   cache: boolean
   expired: number
   splitSize: number
+  isFold: boolean
   // 初始的widgetProps
   originalWidgetProps: IWidgetProps
   originalComputed: any[]
@@ -112,7 +113,7 @@ const SplitPane = React.lazy(() => import('react-split-pane'))
 export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates> {
 
   private operatingPanel: OperatingPanel = null
-  private defaultSplitSize = 440
+  private defaultSplitSize = 456
   private maxSplitSize = this.defaultSplitSize * 1.5
 
   constructor (props) {
@@ -130,6 +131,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       autoLoadData: true,
       expired: DEFAULT_CACHE_EXPIRED,
       splitSize,
+      isFold: false,
       originalWidgetProps: null,
       widgetProps: {
         data: [],
@@ -162,6 +164,21 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     this.widgetRef.changePercent(percent)
   }
 
+  private changeIsFold = () => {
+    const { isFold } = this.state
+    if (isFold) {
+      this.setState({
+        isFold:  !isFold,
+        splitSize: 456
+      })
+    } else {
+      this.setState({
+        isFold:  !isFold,
+        splitSize: 16
+      })
+    }
+  }
+
   onRef = (ref) => {
     this.widgetRef = ref
   }
@@ -177,6 +194,8 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     return params;
   }
 
+  private collapsed = null
+
   public componentWillMount () {
     const { params, onLoadViews, onLoadWidgetDetail } = this.props
     onLoadViews(Number(params.pid), () => {
@@ -185,7 +204,21 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       }
     })
     const routeParams = this.getParams();
-    const viewId = routeParams[0] ? routeParams[0].split('=')[1] : '';
+    let viewId = null
+    if (routeParams.length) {
+      routeParams.forEach((param) => {
+        const name = param.split('=')[0]
+        const value = param.split('=')[1]
+        if (name === 'viewId') viewId = value
+        if (name === 'collapsed') {
+          if (value === 'true') {
+            this.collapsed = true
+          } else {
+            this.collapsed = false
+          }
+        }
+      })
+    }
     if (viewId) {
       sessionStorage.setItem('viewId', viewId);
     }
@@ -193,7 +226,6 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
 
   public componentDidMount () {
     this.props.onHideNavigator()
-    const routeParams = this.getParams();
   }
 
   public componentWillReceiveProps (nextProps: IWorkbenchProps) {
@@ -574,7 +606,8 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       originalComputed,
       widgetProps,
       settingFormVisible,
-      settings
+      settings,
+      isFold
     } = this.state
     const selectedView = formedViews[selectedViewId]
     const { queryMode, multiDrag } = settings
@@ -611,6 +644,8 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
               maxSize={this.maxSplitSize}
               onChange={this.saveSplitSize}
               onDragFinished={this.resizeChart}
+              allowResize={false}
+              resizerStyle={{display: 'none'}}
             >
               <OperatingPanel
                 ref={(f) => this.operatingPanel = f}
@@ -645,6 +680,11 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
                 onBeofreDropColunm={onBeofreDropColunm}
                 // 改动查询数据的进度
                 changeGetProgressPercent={this.changeGetProgressPercent}
+                // 左侧两栏配置栏是否折叠
+                isFold={isFold}
+                onChangeIsFold={this.changeIsFold}
+                // 是否有第一次的默认折叠,如果是的话,要在噢peratingPanel里调用一次onChangeIsFold
+                collapsed={this.collapsed}
               />
               <div className={styles.viewPanel}>
                 <div className={styles.widgetBlock}>

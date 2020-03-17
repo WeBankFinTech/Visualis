@@ -84,6 +84,9 @@ interface IOperatingPanelProps {
   multiDrag: boolean
   computed: any[]
   originalComputed: any[]
+  isFold: boolean
+  onChangeIsFold: () => void
+  collapsed: boolean
   onViewSelect: (viewId: number) => void
   onSetControls: (controls: any[]) => void
   onCacheChange: (e: RadioChangeEvent) => void
@@ -210,6 +213,13 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     this.setState({
       ...this.getChartDataConfig(getPivotModeSelectedCharts([]))
     })
+  }
+
+  public componentDidMount () {
+    const { collapsed, onChangeIsFold } = this.props
+    if (collapsed) {
+      onChangeIsFold()
+    }
   }
 
   public componentWillReceiveProps (nextProps: IOperatingPanelProps) {
@@ -1665,6 +1675,8 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       onExpiredChange,
       originalWidgetProps,
       originalComputed,
+      isFold,
+      onChangeIsFold
     } = this.props
     const {
       dragged,
@@ -2090,7 +2102,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
 
     return (
       <div className={styles.operatingPanel}>
-        <div className={styles.model}>
+        <div className={styles.model} style={{display: isFold ? 'none' : ''}}>
           <div className={styles.viewSelect}>
             <Select
               size="small"
@@ -2190,7 +2202,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
             <DropArea {...categoryAreaProps}/>
           </div>
         </div>
-        <div className={styles.config}>
+        <div className={styles.config} style={{display: isFold ? 'none' : ''}}>
           <div className={styles.mode}>
             <RadioGroup
               size="small"
@@ -2241,6 +2253,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
             {tabPane}
           </div>
         </div>
+        <div className={styles.toggleContainer}><div className={styles.toggle} onClick={onChangeIsFold}><Icon type={isFold ? "double-right" : "double-left"} /></div></div>
         <Modal
           wrapClassName="ant-modal-small"
           visible={colorModalVisible}
