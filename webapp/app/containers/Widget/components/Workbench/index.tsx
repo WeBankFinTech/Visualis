@@ -197,14 +197,22 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
   }
 
   private collapsed = null
+  private view = {}
+  // 如果url中有view信息，下面是一些view中没有但需要有默认值的，如果有view时，urlView会作为selectedView传到OperatingPanel中
+  private urlView = {
+    config: '',
+    description: '',
+    id: 0,
+    projectId: 0,
+    roles: [],
+    sourceId: 0,
+    sql: '',
+    variable: []
+  }
 
   public componentWillMount () {
     const { params, onLoadViews, onLoadWidgetDetail } = this.props
-    onLoadViews(Number(params.pid), () => {
-      if (params.wid !== 'add' && !Number.isNaN(Number(params.wid))) {
-        onLoadWidgetDetail(Number(params.wid))
-      }
-    })
+
     const routeParams = this.getParams();
     let viewId = null
     if (routeParams.length) {
@@ -219,11 +227,20 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
             this.collapsed = false
           }
         }
+        if (name === 'view') this.view = typeof value === 'string' ? JSON.parse(value) : {}
       })
     }
     if (viewId) {
       sessionStorage.setItem('viewId', viewId);
     }
+
+    // 无论是新增还是编辑页面，都需要请求views列表
+    onLoadViews(Number(params.pid), () => {
+      // 只有编辑页面，需要请求widget的detail，请求回来之后，会触发componentWillReceiveProps，currentWidget会变为widget的detail
+      if (params.wid !== 'add' && !Number.isNaN(Number(params.wid))) {
+        onLoadWidgetDetail(Number(params.wid))
+      }
+    })
   }
 
   public componentDidMount () {
@@ -231,6 +248,13 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
   }
 
   public componentWillReceiveProps (nextProps: IWorkbenchProps) {
+    if (Object.keys(this.view).length > 0 && !this.urlView.name) {
+      this.urlView = {
+        ...this.urlView,
+        ...this.view
+      }
+    }
+
     const { views, currentWidget } = nextProps
     const viewId = sessionStorage.getItem('viewId');
     // 说明此时是直接在url里加上了?viewId=${viewId}，要自动选中该view，只有第一次进入的时候要，所以this.state.selectedViewId当时应该为null
@@ -267,6 +291,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     sessionStorage.setItem('viewId', '');
   }
 
+  // 比如查询模式和是否允许多选拖拽这些用户的基本设置
   private initSettings = (): IWorkbenchSettings => {
     let workbenchSettings = {
       queryMode: WorkbenchQueryMode.Immediately,
@@ -448,7 +473,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     const { params, onAddWidget, onEditWidget } = this.props
     const { id, name, description, selectedViewId, controls, cache, expired, widgetProps, computed, originalComputed, autoLoadData } = this.state
     if (!name.trim()) {
-      message.error('Widget名称不能为空')
+      message.error('Widget名称不能为空')
       return
     }
     if (!selectedViewId) {
@@ -472,7 +497,8 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
         autoLoadData,
         data: [],
         // 这个queryData就是widget要调用getdata接口会传的参数，因为在dss工作流里，需要从后台直接提交计算widget的请求
-        query: this.queryData
+        query: this.queryData,
+        view: this.view
       }),
       publish: true
     }
@@ -612,7 +638,8 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       settings,
       isFold
     } = this.state
-    const selectedView = formedViews[selectedViewId]
+    let selectedView = formedViews[selectedViewId]
+
     const { queryMode, multiDrag } = settings
 
     const { selectedChart, cols, rows, metrics, data } = widgetProps
@@ -656,7 +683,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
                 views={views}
                 originalWidgetProps={originalWidgetProps}
                 originalComputed={originalComputed}
-                selectedView={selectedView}
+                selectedView={Object.keys(this.view).length > 0 ? this.urlView : selectedView}
                 distinctColumnValues={distinctColumnValues}
                 columnValueLoading={columnValueLoading}
                 controls={controls}
@@ -689,6 +716,8 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
                 onChangeIsFold={this.changeIsFold}
                 // 是否有第一次的默认折叠,如果是的话,要在噢peratingPanel里调用一次onChangeIsFold
                 collapsed={this.collapsed}
+                // 如果url中有view的话，要进行特殊的配置
+                view={this.view}
               />
               <div className={styles.viewPanel}>
                 <div className={styles.widgetBlock}>

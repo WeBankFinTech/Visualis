@@ -84,9 +84,10 @@ interface IOperatingPanelProps {
   multiDrag: boolean
   computed: any[]
   originalComputed: any[]
+  view: object
   isFold: boolean
-  onChangeIsFold: () => void
   collapsed: boolean
+  onChangeIsFold: () => void
   onViewSelect: (viewId: number) => void
   onSetControls: (controls: any[]) => void
   onCacheChange: (e: RadioChangeEvent) => void
@@ -1038,7 +1039,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     }
   ) => {
     const { cols, rows, metrics, secondaryMetrics, filters, color, label, size, xAxis, tip, yAxis } = dataParams
-    const { selectedView, onLoadData, onExecuteQuery, onSetWidgetProps, onSetQueryData } = this.props
+    const { selectedView, onLoadData, onExecuteQuery, onSetWidgetProps, onSetQueryData, view } = this.props
     const { mode, chartModeSelectedChart, pagination } = this.state
     let renderType
     let updatedPagination
@@ -1182,6 +1183,9 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       expired: 0,
       flush: false
     }
+
+    // 如果有view，就把view放进requestParams才能正常请求
+    if (Object.keys(view).length > 0) requestParams.view = view
 
     if (options) {
       if (options.orders) {
@@ -1699,7 +1703,8 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       originalWidgetProps,
       originalComputed,
       isFold,
-      onChangeIsFold
+      onChangeIsFold,
+      view
     } = this.props
     const {
       dragged,
@@ -2127,17 +2132,27 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       <div className={styles.operatingPanel}>
         <div className={styles.model} style={{display: isFold ? 'none' : ''}}>
           <div className={styles.viewSelect}>
-            <Select
-              size="small"
-              placeholder="选择一个View"
-              showSearch
-              dropdownMatchSelectWidth={false}
-              value={selectedView && selectedView.id}
-              onChange={this.viewSelect}
-              filterOption={this.filterView}
-            >
-              {(views || []).map(({ id, name }) => <Option key={id} value={id}>{name}</Option>)}
-            </Select>
+            {
+              Object.keys(view).length > 0 ? 
+              <Select
+                size="small"
+                value={view.name}
+                disabled
+              >
+              </Select>
+              :
+              <Select
+                size="small"
+                placeholder="选择一个View"
+                showSearch
+                dropdownMatchSelectWidth={false}
+                value={selectedView && selectedView.id}
+                onChange={this.viewSelect}
+                filterOption={this.filterView}
+              >
+                {(views || []).map(({ id, name }) => <Option key={id} value={id}>{name}</Option>)}
+              </Select>
+            }
             {/* <Dropdown overlay={coustomFieldSelectMenu} trigger={['click']} placement="bottomRight">
               <Icon type="plus" />
             </Dropdown> */}
