@@ -1199,6 +1199,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       onSetQueryData(requestParams)
 
       // 在查询数据之前，清空所有之前的请求
+      this.timeout.forEach(item => clearTimeout(item))
       this.execIds.forEach((execId) => {
         this.props.onKillExecute(execId, () => {}, () => {})
       })
