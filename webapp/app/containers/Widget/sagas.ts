@@ -88,15 +88,18 @@ export function* deleteWidget ({ payload }) {
 
 export function* getWidgetDetail (action) {
   const { payload } = action
+  const { resolve } = payload
   try {
     const result = yield call(request, `${api.widget}/${payload.id}`)
     const viewId = result.payload.viewId
     // 直接从dss里面创建widget并且不绑定view的时候，是没有viewId的，这个时候不请求view详情接口
     if (!viewId) {
       yield put(widgetDetailLoadedWithoutViewDetail(result.payload)) 
+      resolve(result.payload)
     } else {
       const view = yield call(request, `${api.view}/${viewId}`)
       yield put(widgetDetailLoaded(result.payload, view.payload))
+      resolve(result.payload)
     }
   } catch (err) {
     yield put(loadWidgetDetailFail(err))

@@ -40,11 +40,12 @@ export const ViewActions = {
       }
     }
   },
-  loadViews (projectId: number, resolve?: (views: IViewBase[]) => void) {
+  loadViews (projectId: number, contextId?: string, resolve?: (views: IViewBase[]) => void) {
     return {
       type: ActionTypes.LOAD_VIEWS,
       payload: {
         projectId,
+        contextId,
         resolve
       }
     }

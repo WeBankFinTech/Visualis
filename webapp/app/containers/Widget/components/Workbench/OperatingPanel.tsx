@@ -88,7 +88,7 @@ interface IOperatingPanelProps {
   isFold: boolean
   collapsed: boolean
   onChangeIsFold: () => void
-  onViewSelect: (viewId: number) => void
+  onViewSelect: (view: object) => void
   onSetControls: (controls: any[]) => void
   onCacheChange: (e: RadioChangeEvent) => void
   onChangeAutoLoadData: (e: RadioChangeEvent) => void
@@ -1312,7 +1312,16 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     }
   }
 
-  private viewSelect = (viewId: number) => {
+  private viewSelect = (name: string) => {
+    const { views } = this.props
+    let view = null
+    for (let i = 0; i < views.length; i++) {
+      if (name === views[i].name) {
+        view = views[i]
+        break
+      }
+    }
+    const viewId = view.id
     const { mode, dataParams } = this.state
     const hasItems = Object.values(dataParams)
       .filter((param) => !!param.items.length)
@@ -1321,11 +1330,11 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         title: '切换 View 会清空所有配置项，是否继续？',
         onOk: () => {
           this.resetWorkbench(mode)
-          this.props.onViewSelect(viewId)
+          this.props.onViewSelect(view)
         }
       })
     } else {
-      this.props.onViewSelect(viewId)
+      this.props.onViewSelect(view)
     }
     sessionStorage.setItem('viewId', viewId.toString());
   }
@@ -1828,6 +1837,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
 
     let queryInfo: string[] = []
     if (selectedView) {
+      if (!selectedView.variable) selectedView.variable = []
       if (typeof selectedView.variable !== 'object') selectedView.variable = JSON.parse(selectedView.variable)
       queryInfo = selectedView.variable.map((v) => v.name)
     }
@@ -2146,11 +2156,11 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
                 placeholder="选择一个View"
                 showSearch
                 dropdownMatchSelectWidth={false}
-                value={selectedView && selectedView.id}
+                value={selectedView && selectedView.name}
                 onChange={this.viewSelect}
                 filterOption={this.filterView}
               >
-                {(views || []).map(({ id, name }) => <Option key={id} value={id}>{name}</Option>)}
+                {(views || []).map(({ id, name }) => <Option key={name} value={name}>{name}</Option>)}
               </Select>
             }
             {/* <Dropdown overlay={coustomFieldSelectMenu} trigger={['click']} placement="bottomRight">

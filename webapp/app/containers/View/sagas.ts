@@ -37,7 +37,9 @@ export function* getViews (action: ViewActionType) {
   const { viewsLoaded, loadViewsFail } = ViewActions
   let views: IViewBase[]
   try {
-    const asyncData = yield call(request, `${api.view}?projectId=${payload.projectId}`)
+    // 如果contextId是不为空的字符串，则要在url里带上这个值
+    const url = payload.contextId ? `${api.view}?projectId=${payload.projectId}&contextId=${payload.contextId}` : `${api.view}?projectId=${payload.projectId}`
+    const asyncData = yield call(request, url)
     views = asyncData.payload
     yield put(viewsLoaded(views))
   } catch (err) {
@@ -174,8 +176,9 @@ export function* executeSql (action: ViewActionType) {
 /** View sagas for external usages */
 export function* getViewData (action: ViewActionType) {
   if (action.type !== ActionTypes.LOAD_VIEW_DATA) { return }
-  const { id, requestParams, resolve, reject } = action.payload
+  let { id, requestParams, resolve, reject } = action.payload
   const { viewDataLoaded, loadViewDataFail } = ViewActions
+  if (!id) id = 0
   try {
     const asyncData = yield call(request, {
       method: 'post',
@@ -203,8 +206,10 @@ export function* getViewData (action: ViewActionType) {
 
 export function* executeQuery (action: ViewActionType) {
   if (action.type !== ActionTypes.EXECUTE_QUERY) { return }
-  const { id, requestParams, resolve, reject } = action.payload
+  let { id, requestParams, resolve, reject } = action.payload
   const { executeQueryLoaded, loadExecuteQueryFail } = ViewActions
+  if (!id) id = 0
+
   try {
     const asyncData = yield call(request, {
       method: 'post',
@@ -379,7 +384,7 @@ export function* getViewDistinctValue (action: ViewActionType) {
 // dashboard和display编辑页面都是这里请求widget数据
 export function* getViewDataFromVizItem (action: ViewActionType) {
   if (action.type !== ActionTypes.LOAD_VIEW_DATA_FROM_VIZ_ITEM) { return }
-  const { renderType, itemId, viewId, requestParams, vizType, cancelTokenSource } = action.payload
+  let { renderType, itemId, viewId, requestParams, vizType, cancelTokenSource } = action.payload
   const { viewDataFromVizItemLoaded, loadViewDataFromVizItemFail } = ViewActions
   const {
     filters,
@@ -393,6 +398,8 @@ export function* getViewDataFromVizItem (action: ViewActionType) {
     ...rest
   } = requestParams
   const { pageSize, pageNo } = pagination || { pageSize: 0, pageNo: 0 }
+
+  if (!viewId) viewId = 0
 
   try {
     const asyncData = yield call(request, {
@@ -416,7 +423,7 @@ export function* getViewDataFromVizItem (action: ViewActionType) {
 }
 export function* viewExecuteQuery (action: ViewActionType) {
   if (action.type !== ActionTypes.VIEW_EXECUTE_QUERY) { return }
-  const { renderType, itemId, viewId, requestParams, vizType, cancelTokenSource, resolve, reject } = action.payload
+  let { renderType, itemId, viewId, requestParams, vizType, cancelTokenSource, resolve, reject } = action.payload
   const { viewExecuteQueryLoaded, loadViewExecuteQueyFail } = ViewActions
   const {
     filters,
@@ -430,6 +437,8 @@ export function* viewExecuteQuery (action: ViewActionType) {
     ...rest
   } = requestParams
   const { pageSize, pageNo } = pagination || { pageSize: 0, pageNo: 0 }
+
+  if (!viewId) viewId = 0
 
   try {
     const asyncData = yield call(request, {

@@ -60,9 +60,9 @@ interface IWorkbenchProps {
   router: any
   params: { pid: string, wid: string }
   onHideNavigator: () => void
-  onLoadViews: (projectId: number, resolve?: any) => void
+  onLoadViews: (projectId: number, contextId?: string, resolve?: any) => void
   onLoadViewDetail: (viewId: number, resolve: () => void) => void
-  onLoadWidgetDetail: (id: number) => void
+  onLoadWidgetDetail: (id: number, resolve: (data) => void) => void
   onLoadViewData: (
     viewId: number,
     requestParams: IDataRequestParams,
@@ -108,6 +108,8 @@ interface IWorkbenchStates {
   widgetProps: IWidgetProps
   settingFormVisible: boolean
   settings: IWorkbenchSettings
+  contextId: string
+  view: object
 }
 
 const SplitPane = React.lazy(() => import('react-split-pane'))
@@ -156,7 +158,26 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
         onPaginationChange: this.paginationChange
       },
       settingFormVisible: false,
-      settings: this.initSettings()
+      settings: this.initSettings(),
+      /*
+      相当于有三种view：
+      1. 正常的，id>0的view
+      2. 虚拟view：
+          1. 在url中的view数据，没有id或者id为null或者id<=0
+          2. 根据contextId拿到的metadata，没有id或者id为null或者id<=0
+      */
+      /*
+      1. 如果widget的config里面有view：
+        1. 就用view里的data作为widget的view，而不是根据viewId再去请求
+        2. 只要config里的view是不为空的值，那么view下拉框就要置灰
+      2. 如果widget的config里有contextId字段（第一次肯定不会出现contextId和view同时存在的情况），就要在调用请求views的接口时，加上contextId=xxx：
+        1. 请求回来的views列表中，既有metadata，也有正常view
+      3. 如果views列表是带了contextId=xxx请求回来的：
+        1. 如果用户选择的是metadata（通过里面的id来判断，不是大于0的就说明是metadata），要把选择的这个metadata在保存时保存到config的view字段里
+        2. 如果选择的是正常的view，那就保持原逻辑
+      */
+      contextId: '',
+      view: {}
     }
   }
 
@@ -207,7 +228,11 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     roles: [],
     sourceId: 0,
     sql: '',
-    variable: []
+    variable: [],
+    name: '',
+    model: {},
+    source: {},
+    params: {}
   }
 
   public componentWillMount () {
@@ -235,10 +260,30 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     }
 
     // 无论是新增还是编辑页面，都需要请求views列表
-    onLoadViews(Number(params.pid), () => {
+    // 正常情况下，contextId先都为''
+    onLoadViews(Number(params.pid), '', () => {
       // 只有编辑页面，需要请求widget的detail，请求回来之后，会触发componentWillReceiveProps，currentWidget会变为widget的detail
       if (params.wid !== 'add' && !Number.isNaN(Number(params.wid))) {
-        onLoadWidgetDetail(Number(params.wid))
+        onLoadWidgetDetail(Number(params.wid), (data) => {
+          const { contextId, view } = JSON.parse(data.config)
+          if (Object.keys(this.view).length > 0) {
+            // 如果url里有view，说明this.view是不为空的对象，这时候以this.view为准，直接用该view作为当前页面的view，onLoadWidgetDetail调用成功后会调用componentWillReceiveProps，在componentWillReceiveProps里面将this.urlView更新，所以在这里无需进行设置
+          } else {
+            // 如果url里没有view，且config里的view是不为空的对象，则以这个config里的view为准，直接用该view作为当前页面的view，onLoadWidgetDetail调用成功后会调用componentWillReceiveProps，在componentWillReceiveProps里面将this.urlView更新，所以在这里无需进行设置
+            if (typeof view === 'object' && Object.keys(view).length > 0) {
+              this.view = view
+              this.urlView = {
+                ...this.urlView,
+                ...this.view
+              }
+            } else {
+              // 如果url里没有view，且config里的view不是不为空的对象，且有contextId，则带上contextId请求views
+              if (contextId) {
+                onLoadViews(Number(params.pid), contextId)
+              }
+            }
+          }
+        })
       }
     })
   }
@@ -248,13 +293,6 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
   }
 
   public componentWillReceiveProps (nextProps: IWorkbenchProps) {
-    if (Object.keys(this.view).length > 0 && !this.urlView.name) {
-      this.urlView = {
-        ...this.urlView,
-        ...this.view
-      }
-    }
-
     const { views, currentWidget } = nextProps
     const viewId = sessionStorage.getItem('viewId');
     // 说明此时是直接在url里加上了?viewId=${viewId}，要自动选中该view，只有第一次进入的时候要，所以this.state.selectedViewId当时应该为null
@@ -263,12 +301,29 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     }
     // 这里的currentWidget就是当前的widget的数据，流程是，最开始currentWidget和this.props.currentWidget都为null，加载完数据后，currentWidget变为非空对象，然后这时候更新state，下一次之后，currentWidget和this.props.currentWidget就都为相同的非空对象了，而且以后不会再变了，所以下面if里的逻辑按理说只会执行一次，所以传到operatingPanel里的originalWidgetProps也不会变了
     if (currentWidget && (currentWidget !== this.props.currentWidget)) {
-      const { controls, cache, expired, computed, autoLoadData, cols, rows, ...rest } = JSON.parse(currentWidget.config)
+      const { controls, cache, expired, computed, autoLoadData, cols, rows, view, ...rest } = JSON.parse(currentWidget.config)
+
+      if (Object.keys(this.view).length > 0) {
+        this.urlView = {
+          ...this.urlView,
+          ...this.view
+        }
+      } else {
+        if (typeof view === 'object' && Object.keys(view).length > 0) {
+          this.view = view
+          this.urlView = {
+            ...this.urlView,
+            ...this.view
+          }
+        }
+      }
+
       const updatedCols = cols.map((col) => widgetDimensionMigrationRecorder(col))
       const updatedRows = rows.map((row) => widgetDimensionMigrationRecorder(row))
       if (rest.selectedChart === ChartTypes.Bar) {
         rest.chartStyles = barChartStylesMigrationRecorder(rest.chartStyles)
       }
+
       this.setState({
         id: currentWidget.id,
         name: currentWidget.name,
@@ -321,7 +376,8 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     })
   }
 
-  private viewSelect = (viewId: number) => {
+  private viewSelect = (view: object) => {
+    const viewId = view.id
     const { formedViews } = this.props
     const nextState = {
       selectedViewId: viewId,
@@ -329,12 +385,24 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       cache: false,
       expired: DEFAULT_CACHE_EXPIRED
     }
-    if (formedViews[viewId]) {
-      this.setState(nextState)
-    } else {
-      this.props.onLoadViewDetail(viewId, () => {
+    // 如果在下拉框中选中正常view（viewId > 0），逻辑不变
+    // 如果是选中的metadata，则直接用其数据作为view
+    if (viewId) {
+      if (formedViews[viewId]) {
         this.setState(nextState)
-      })
+      } else {
+        this.props.onLoadViewDetail(viewId, () => {
+          this.setState(nextState)
+        })
+      }
+    } else {
+      this.view = view
+      if (typeof this.view.model === 'string') this.view.model = JSON.parse(this.view.model)
+      this.urlView = {
+        ...this.urlView,
+        ...this.view
+      }
+      this.setState(nextState)
     }
   }
 
@@ -476,7 +544,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       message.error('Widget名称不能为空')
       return
     }
-    if (!selectedViewId) {
+    if (!selectedViewId && Object.keys(this.view).length === 0) {
       message.error('请选择一个View')
       return
     }
@@ -760,9 +828,9 @@ const mapStateToProps = createStructuredSelector({
 export function mapDispatchToProps (dispatch) {
   return {
     onHideNavigator: () => dispatch(hideNavigator()),
-    onLoadViews: (projectId, resolve) => dispatch(loadViews(projectId, resolve)),
+    onLoadViews: (projectId, contextId, resolve) => dispatch(loadViews(projectId, contextId, resolve)),
     onLoadViewDetail: (viewId, resolve) => dispatch(loadViewsDetail([viewId], resolve)),
-    onLoadWidgetDetail: (id) => dispatch(loadWidgetDetail(id)),
+    onLoadWidgetDetail: (id, resolve) => dispatch(loadWidgetDetail(id, resolve)),
     onLoadViewData: (viewId, requestParams, resolve, reject) => dispatch(loadViewData(viewId, requestParams, resolve, reject)),
     // widget页面 提交查询数据接口
     onExecuteQuery: (viewId, requestParams, resolve, reject) => dispatch(executeQuery(viewId, requestParams, resolve, reject)),

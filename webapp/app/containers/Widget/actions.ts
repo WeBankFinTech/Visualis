@@ -87,11 +87,12 @@ export function addWidgetFail () {
   }
 }
 
-export function loadWidgetDetail (id) {
+export function loadWidgetDetail (id, resolve) {
   return {
     type: LOAD_WIDGET_DETAIL,
     payload: {
-      id
+      id,
+      resolve
     }
   }
 }
