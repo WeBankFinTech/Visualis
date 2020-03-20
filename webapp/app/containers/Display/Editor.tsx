@@ -962,6 +962,7 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
       settingContent = (
         // 最右侧的 设置栏
         <SettingForm
+          currentLocalLayers={currentLocalLayers}
           key={settingInfo.key}
           id={settingInfo.id}
           // 设置项

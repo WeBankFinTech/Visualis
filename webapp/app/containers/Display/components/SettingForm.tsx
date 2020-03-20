@@ -35,6 +35,7 @@ import { SketchPicker } from 'react-color'
 const styles = require('../Display.less')
 
 interface ISettingFormProps extends FormComponentProps {
+  currentLocalLayers: any[]
   id: number
   settingInfo: any
   settingParams: any
@@ -256,6 +257,16 @@ export class SettingForm extends React.Component<ISettingFormProps, ISettingForm
   }
 
   private renderInput = (item, formItemChange) => {
+    const { currentLocalLayers, id } = this.props
+    let layer = {}
+    for (let i = 0; i < currentLocalLayers.length; i++) {
+      if (id === currentLocalLayers[i].id) {
+        layer = currentLocalLayers[i]
+        break
+      }
+    }
+    let text = ''
+    if (layer && layer.params) text = JSON.parse(layer.params).contentText
     if (item.title === '文本内容') {
       // 说明此时是正在编辑 标签 组件的文本内容,需要可以换行的输入框
       return (
@@ -263,6 +274,7 @@ export class SettingForm extends React.Component<ISettingFormProps, ISettingForm
           rows={8}
           placeholder={item.tip || item.placeholder || item.name}
           onPressEnter={formItemChange(item.name)}
+          defaultValue={text ? text : ''}
         />
       )
     }
