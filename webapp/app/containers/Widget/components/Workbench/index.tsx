@@ -60,7 +60,7 @@ interface IWorkbenchProps {
   router: any
   params: { pid: string, wid: string }
   onHideNavigator: () => void
-  onLoadViews: (projectId: number, contextId?: string, resolve?: any) => void
+  onLoadViews: (projectId: number, contextId?: string, nodeName?: string, resolve?: any) => void
   onLoadViewDetail: (viewId: number, resolve: () => void) => void
   onLoadWidgetDetail: (id: number, resolve: (data) => void) => void
   onLoadViewData: (
@@ -109,6 +109,7 @@ interface IWorkbenchStates {
   settingFormVisible: boolean
   settings: IWorkbenchSettings
   contextId: string
+  nodeName: string
   view: object
 }
 
@@ -170,13 +171,14 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       1. 如果widget的config里面有view：
         1. 就用view里的data作为widget的view，而不是根据viewId再去请求
         2. 只要config里的view是不为空的值，那么view下拉框就要置灰
-      2. 如果widget的config里有contextId字段（第一次肯定不会出现contextId和view同时存在的情况），就要在调用请求views的接口时，加上contextId=xxx：
+      2. 如果widget的config里有contextId字段（第一次肯定不会出现contextId和view同时存在的情况），就要在调用请求views的接口时，加上contextId=xxx&nodeName=xxx：
         1. 请求回来的views列表中，既有metadata，也有正常view
       3. 如果views列表是带了contextId=xxx请求回来的：
         1. 如果用户选择的是metadata（通过里面的id来判断，不是大于0的就说明是metadata），要把选择的这个metadata在保存时保存到config的view字段里
         2. 如果选择的是正常的view，那就保持原逻辑
       */
       contextId: '',
+      nodeName: '',
       view: {}
     }
   }
@@ -260,12 +262,12 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     }
 
     // 无论是新增还是编辑页面，都需要请求views列表
-    // 正常情况下，contextId先都为''
-    onLoadViews(Number(params.pid), '', () => {
+    // 正常情况下，contextId和nodeName先都为''
+    onLoadViews(Number(params.pid), '', '', () => {
       // 只有编辑页面，需要请求widget的detail，请求回来之后，会触发componentWillReceiveProps，currentWidget会变为widget的detail
       if (params.wid !== 'add' && !Number.isNaN(Number(params.wid))) {
         onLoadWidgetDetail(Number(params.wid), (data) => {
-          const { contextId, view } = JSON.parse(data.config)
+          const { contextId, nodeName, view } = JSON.parse(data.config)
           if (Object.keys(this.view).length > 0) {
             // 如果url里有view，说明this.view是不为空的对象，这时候以this.view为准，直接用该view作为当前页面的view，onLoadWidgetDetail调用成功后会调用componentWillReceiveProps，在componentWillReceiveProps里面将this.urlView更新，所以在这里无需进行设置
           } else {
@@ -277,9 +279,9 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
                 ...this.view
               }
             } else {
-              // 如果url里没有view，且config里的view不是不为空的对象，且有contextId，则带上contextId请求views
+              // 如果url里没有view，且config里的view不是不为空的对象，且有contextId，则带上contextId和nodeName请求views
               if (contextId) {
-                onLoadViews(Number(params.pid), contextId)
+                onLoadViews(Number(params.pid), contextId, nodeName)
               }
             }
           }
@@ -828,7 +830,7 @@ const mapStateToProps = createStructuredSelector({
 export function mapDispatchToProps (dispatch) {
   return {
     onHideNavigator: () => dispatch(hideNavigator()),
-    onLoadViews: (projectId, contextId, resolve) => dispatch(loadViews(projectId, contextId, resolve)),
+    onLoadViews: (projectId, contextId, nodeName, resolve) => dispatch(loadViews(projectId, contextId, nodeName, resolve)),
     onLoadViewDetail: (viewId, resolve) => dispatch(loadViewsDetail([viewId], resolve)),
     onLoadWidgetDetail: (id, resolve) => dispatch(loadWidgetDetail(id, resolve)),
     onLoadViewData: (viewId, requestParams, resolve, reject) => dispatch(loadViewData(viewId, requestParams, resolve, reject)),

@@ -38,7 +38,7 @@ export function* getViews (action: ViewActionType) {
   let views: IViewBase[]
   try {
     // 如果contextId是不为空的字符串，则要在url里带上这个值
-    const url = payload.contextId ? `${api.view}?projectId=${payload.projectId}&contextId=${payload.contextId}` : `${api.view}?projectId=${payload.projectId}`
+    const url = payload.contextId ? `${api.view}?projectId=${payload.projectId}&contextId=${payload.contextId}&nodeName=${payload.nodeName}` : `${api.view}?projectId=${payload.projectId}`
     const asyncData = yield call(request, url)
     views = asyncData.payload
     yield put(viewsLoaded(views))
