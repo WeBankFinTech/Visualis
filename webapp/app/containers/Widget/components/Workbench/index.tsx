@@ -168,14 +168,25 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
           2. 根据contextId拿到的metadata，没有id或者id为null或者id<=0
       */
       /*
-      1. 如果widget的config里面有view：
-        1. 就用view里的data作为widget的view，而不是根据viewId再去请求
-        2. 只要config里的view是不为空的值，那么view下拉框就要置灰
-      2. 如果widget的config里有contextId字段（第一次肯定不会出现contextId和view同时存在的情况），就要在调用请求views的接口时，加上contextId=xxx&nodeName=xxx：
-        1. 请求回来的views列表中，既有metadata，也有正常view
+      1. 如果url或者widget的config里面有view：
+          1. 如果url里有view，说明this.view是不为空的对象，这时候以url里的view/this.view为准，直接用该view作为当前页面的view
+          2. 如果url里没有view：
+              1. 如果有contextId， 就要重新带着contextId请求一次views列表：
+                  1. 如果config里的view不是不为空的对象，则这里无更多逻辑
+                  2. 如果config里的view是不为空的对象：
+                      1. 如果views列表里有和config.view的name一样的，则用新的这个view
+                      2. 如果views列表里无和config.view的name一样的，则就用config里的这个view
+              2. 如果没有contextId：
+                  1. 如果config里的view不是不为空的对象，则这里无更多逻辑
+                  2. 如果config里的view是不为空的对象，则就用config里的这个view
+          3. 只要config里的view是不为空的值，那么选择view的下拉框就要置灰
+      2. 如果widget的config里有contextId字段（第一次肯定不会出现contextId和view同时存在的情况），且url里没有view，且config里的view不是不为空的对象，就要在调用请求views的接口时，加上contextId=xxx：
+          1. 请求回来的views列表中，既有metadata，也有正常view
+          2. 进行判断，如果在下拉框中选中正常view，逻辑不变
+          3. 如果是选中的metadata，置灰下拉框，则直接用其数据作为view
       3. 如果views列表是带了contextId=xxx请求回来的：
-        1. 如果用户选择的是metadata（通过里面的id来判断，不是大于0的就说明是metadata），要把选择的这个metadata在保存时保存到config的view字段里
-        2. 如果选择的是正常的view，那就保持原逻辑
+          1. 如果用户选择的是metadata（通过里面的id来判断，不是大于0的就说明是metadata），要把选择的这个metadata在保存时保存到config的view字段里
+          2. 如果选择的是正常的view，那就保持原逻辑
       */
       contextId: '',
       nodeName: '',
@@ -221,6 +232,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
 
   private collapsed = null
   private view = {}
+  private urlHasView = false
   // 如果url中有view信息，下面是一些view中没有但需要有默认值的，如果有view时，urlView会作为selectedView传到OperatingPanel中
   private urlView = {
     config: '',
@@ -254,7 +266,10 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
             this.collapsed = false
           }
         }
-        if (name === 'view') this.view = typeof value === 'string' ? JSON.parse(value) : {}
+        if (name === 'view') {
+          this.view = typeof value === 'string' ? JSON.parse(value) : {}
+          this.urlHasView = true
+        }
       })
     }
     if (viewId) {
@@ -268,20 +283,34 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       if (params.wid !== 'add' && !Number.isNaN(Number(params.wid))) {
         onLoadWidgetDetail(Number(params.wid), (data) => {
           const { contextId, nodeName, view } = JSON.parse(data.config)
-          if (Object.keys(this.view).length > 0) {
+          // 全局保存下来，保存widget的时候要用
+          this.setState({
+            contextId,
+            nodeName
+          })
+          if (Object.keys(this.view).length > 0 && this.urlHasView) {
             // 如果url里有view，说明this.view是不为空的对象，这时候以this.view为准，直接用该view作为当前页面的view，onLoadWidgetDetail调用成功后会调用componentWillReceiveProps，在componentWillReceiveProps里面将this.urlView更新，所以在这里无需进行设置
           } else {
-            // 如果url里没有view，且config里的view是不为空的对象，则以这个config里的view为准，直接用该view作为当前页面的view，onLoadWidgetDetail调用成功后会调用componentWillReceiveProps，在componentWillReceiveProps里面将this.urlView更新，所以在这里无需进行设置
-            if (typeof view === 'object' && Object.keys(view).length > 0) {
-              this.view = view
-              this.urlView = {
-                ...this.urlView,
-                ...this.view
-              }
+            // 如果url里没有view：
+            //   1、如果有contextId， 就要重新带着contextId请求一次views列表：
+            //     1、如果config里的view不是不为空的对象，则这里无更多逻辑
+            //     2、如果config里的view是不为空的对象：
+            //       1、如果views列表里有和config.view的name一样的，则用新的这个view
+            //       2、如果views列表里无和config.view的name一样的，则就用config里的这个view
+            //   2、如果没有contextId：
+            //     1、如果config里的view不是不为空的对象，则这里无更多逻辑
+            //     2、如果config里的view是不为空的对象，则就用config里的这个view
+            // onLoadWidgetDetail调用成功后会调用componentWillReceiveProps，在componentWillReceiveProps里面将this.urlView更新，所以在这里无需进行设置
+            if (contextId) {
+              // 如果url里没有view，且有contextId，则带上contextId和nodeName请求views
+              onLoadViews(Number(params.pid), contextId, nodeName)
             } else {
-              // 如果url里没有view，且config里的view不是不为空的对象，且有contextId，则带上contextId和nodeName请求views
-              if (contextId) {
-                onLoadViews(Number(params.pid), contextId, nodeName)
+              if (typeof view === 'object' && Object.keys(view).length > 0) {
+                this.view = view
+                this.urlView = {
+                  ...this.urlView,
+                  ...this.view
+                }
               }
             }
           }
@@ -301,6 +330,30 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     if(views && views.length && viewId && !this.state.selectedViewId) {
       this.setState({ selectedViewId: Number(viewId) }, () => this.viewSelect(Number(viewId)))
     }
+
+    if (views && views.length && currentWidget) {
+      let { view } = JSON.parse(currentWidget.config)
+
+      // 说明config里的view是一个不为空的对象
+      if (typeof view === 'object' && Object.keys(view).length > 0) {
+        if (views && views.length) {
+          for (let i = 0; i < views.length; i++) {
+            // 如果新的views列表里，有和config里的view的name相同的view，则要使用新views列表里的view
+            if (views[i].name === view.name) {
+              view = views[i]
+              break
+            }
+          }
+        }
+        this.view = view
+        if (typeof this.view.model === 'string') this.view.model = JSON.parse(this.view.model)
+        this.urlView = {
+          ...this.urlView,
+          ...this.view
+        }
+      }
+    }
+
     // 这里的currentWidget就是当前的widget的数据，流程是，最开始currentWidget和this.props.currentWidget都为null，加载完数据后，currentWidget变为非空对象，然后这时候更新state，下一次之后，currentWidget和this.props.currentWidget就都为相同的非空对象了，而且以后不会再变了，所以下面if里的逻辑按理说只会执行一次，所以传到operatingPanel里的originalWidgetProps也不会变了
     if (currentWidget && (currentWidget !== this.props.currentWidget)) {
       const { controls, cache, expired, computed, autoLoadData, cols, rows, view, ...rest } = JSON.parse(currentWidget.config)
@@ -541,7 +594,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
   // 点击widget编辑页面右上角的保存
   private saveWidget = () => {
     const { params, onAddWidget, onEditWidget } = this.props
-    const { id, name, description, selectedViewId, controls, cache, expired, widgetProps, computed, originalComputed, autoLoadData } = this.state
+    const { id, name, description, selectedViewId, controls, cache, expired, widgetProps, computed, originalComputed, autoLoadData, contextId, nodeName } = this.state
     if (!name.trim()) {
       message.error('Widget名称不能为空')
       return
@@ -568,7 +621,9 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
         data: [],
         // 这个queryData就是widget要调用getdata接口会传的参数，因为在dss工作流里，需要从后台直接提交计算widget的请求
         query: this.queryData,
-        view: this.view
+        view: this.view,
+        contextId,
+        nodeName
       }),
       publish: true
     }
