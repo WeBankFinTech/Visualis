@@ -181,25 +181,12 @@ export class LayerList extends React.Component <ILayerListProps, ILayerListState
         e.target.value = layer.name
         return message.error('更改失败，标签名不能包含空格！')
       } else {
-        // 判断是否和其他标签重名了
-        let isRepeat = false
+        // 合理的标签名，更新其值
         for (let i = 0; i < layers.length; i++) {
-          if (e.target.value === layers[i].name && layer.id !== layers[i].id) {
-            isRepeat = true
-          }
-        }
-        if (isRepeat) {
-          // 输入框里的值变回原值
-          e.target.value = layer.name
-          return message.error('更改失败，不能和其他标签重名！')
-        } else {
-          // 合理的标签名，更新其值
-          for (let i = 0; i < layers.length; i++) {
-            if (layer.id === layers[i].id) {
-              layers[i].name = e.target.value
-              onEditDisplayLayers([layers[i]])
-              return message.success('更改成功！')
-            }
+          if (layer.id === layers[i].id) {
+            layers[i].name = e.target.value
+            onEditDisplayLayers([layers[i]])
+            return message.success('更改成功！')
           }
         }
       }
