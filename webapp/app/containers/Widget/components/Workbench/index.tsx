@@ -372,7 +372,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     if (currentWidget && (currentWidget !== this.props.currentWidget)) {
       const { controls, cache, expired, computed, autoLoadData, cols, rows, view, ...rest } = JSON.parse(currentWidget.config)
 
-      if (Object.keys(this.view).length > 0) {
+      if (Object.keys(this.view).length > 0 && this.urlHasView) {
         this.urlView = {
           ...this.urlView,
           ...this.view
