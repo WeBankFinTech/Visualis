@@ -258,6 +258,8 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       routeParams.forEach((param) => {
         const name = param.split('=')[0]
         const value = param.split('=')[1]
+        const decodeValue = decodeURI(value)
+
         if (name === 'viewId') viewId = value
         if (name === 'collapsed') {
           if (value === 'true') {
@@ -267,7 +269,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
           }
         }
         if (name === 'view') {
-          this.view = typeof value === 'string' ? JSON.parse(value) : {}
+          this.view = typeof value === 'string' ? JSON.parse(decodeValue) : {}
           this.urlHasView = true
         }
       })
@@ -315,6 +317,18 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
             }
           }
         })
+      } else if (params.wid === 'add') {
+        // 新增页面中，如果url里面有view，则要更新urlView
+        if (Object.keys(this.view).length > 0 && this.urlHasView) {
+          this.urlView = {
+            ...this.urlView,
+            ...this.view
+          }
+          // 要更新一下this.state.view，并执行渲染逻辑
+          this.setState({
+            view: this.view
+          })
+        }
       }
     })
   }
@@ -335,7 +349,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       let { view } = JSON.parse(currentWidget.config)
 
       // 说明config里的view是一个不为空的对象
-      if (typeof view === 'object' && Object.keys(view).length > 0) {
+      if (typeof view === 'object' && Object.keys(view).length > 0 && !this.urlHasView) {
         if (views && views.length) {
           for (let i = 0; i < views.length; i++) {
             // 如果新的views列表里，有和config里的view的name相同的view，则要使用新views列表里的view
