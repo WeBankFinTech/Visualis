@@ -1751,12 +1751,12 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     if (mode === 'pivot'
       && valueDragItems.length
       && dataParams.metrics.items.every((item) => item.chart.id === getPivot().id)) {
-      categoryDragItems = categoryDragItems.concat({
-        name: '指标名称',
-        type: 'category',
-        visualType: ViewModelVisualTypes.String,
-        checked: false
-      })
+      // categoryDragItems = categoryDragItems.concat({
+      //   name: '指标名称',
+      //   type: 'category',
+      //   visualType: ViewModelVisualTypes.String,
+      //   checked: false
+      // })
     }
 
     const coustomFieldSelectMenu = (
