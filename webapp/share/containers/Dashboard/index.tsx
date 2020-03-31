@@ -365,7 +365,7 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
 
     const widget = widgets.find((w) => w.id === widgetId)
     const widgetConfig: IWidgetConfig = JSON.parse(widget.config)
-    const { cols, rows, metrics, secondaryMetrics, filters, color, label, size, xAxis, tip, orders, cache, expired } = widgetConfig
+    const { cols, rows, metrics, secondaryMetrics, filters, color, label, size, xAxis, tip, orders, cache, expired, view } = widgetConfig
     const updatedCols = cols.map((col) => widgetDimensionMigrationRecorder(col))
     const updatedRows = rows.map((row) => widgetDimensionMigrationRecorder(row))
     const customOrders = updatedCols.concat(updatedRows)
@@ -478,6 +478,7 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
       nativeQuery,
       customOrders
     }
+    if (typeof view === 'object' && Object.keys(view).length > 0) requestParams.view = view
 
     if (tempOrders) {
       requestParams.orders = requestParams.orders.concat(tempOrders)
