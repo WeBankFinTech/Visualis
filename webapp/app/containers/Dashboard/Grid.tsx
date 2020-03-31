@@ -1101,6 +1101,7 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
       })
       const selectedWidgetsViewIds = widgets.filter((w) => selectedWidgets.includes(w.id)).map((w) => w.viewId)
       const viewIds = selectedWidgetsViewIds
+        .filter((viewId) => typeof viewId === 'number' && viewId > 0)
         .filter((viewId, idx) => selectedWidgetsViewIds.indexOf(viewId) === idx)
         .filter((viewId) => !formedViews[viewId])
 
@@ -1792,7 +1793,8 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
         const drillHistory = queryConditions.drillHistory
         const drillpathSetting = queryConditions.drillpathSetting
         const drillpathInstance = queryConditions.drillpathInstance
-        const view = formedViews[widget.viewId]
+        const config = widget ? JSON.parse(widget.config) : {}
+        const view = config.view ? config.view : formedViews[widget.viewId]
         const isTrigger = currentLinkages && currentLinkages.length ? currentLinkages.map((linkage) => linkage.trigger[0]
         ).some((tr) => tr === String(id)) : false
 

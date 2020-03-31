@@ -687,7 +687,8 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
       })
     })
     if (viewIds && viewIds.length) {
-      const loadViewIds = viewIds.filter((viewId) => !formedViews[viewId])
+      const loadViewIds = viewIds.filter((viewId) => typeof viewId === 'number' && viewId > 0 && !formedViews[viewId])
+
       if (loadViewIds.length) {
         onLoadViewsDetail(loadViewIds, () => {
           onAddDisplayLayers(currentDisplay.id, currentSlide.id, layers)
@@ -905,7 +906,15 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
 
     const layerItems = !Array.isArray(widgets) ? null : currentLocalLayers.map((layer, idx) => {
       const widget = widgets.find((w) => w.id === layer.widgetId)
-      const model = widget && formedViews[widget.viewId].model
+      let model = {}
+      if (widget) {
+        if (widget.viewId) {
+          model = widget && formedViews[widget.viewId].model
+        } else {
+          const config = JSON.parse(widget.config)
+          model = config.model
+        }
+      }
       const layerId = layer.id
 
       const { polling, frequency } = JSON.parse(layer.params)
