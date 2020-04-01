@@ -345,7 +345,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       this.setState({ selectedViewId: Number(viewId) }, () => this.viewSelect(Number(viewId)))
     }
 
-    if (views && views.length && currentWidget) {
+    if (views && views.length && currentWidget && currentWidget.config) {
       let { view } = JSON.parse(currentWidget.config)
 
       // 说明config里的view是一个不为空的对象
