@@ -345,7 +345,7 @@ export class SettingForm extends React.Component<ISettingFormProps, ISettingForm
             [item.name]: false
           }
         }, () => {
-          formItemChange(item.name)(response.payload)
+          formItemChange(item.name)('/api/rest_s/v1/visualis' + response.payload)
         })
       }
     }
@@ -354,7 +354,6 @@ export class SettingForm extends React.Component<ISettingFormProps, ISettingForm
       formItemChange(item.name)(null)
       e.stopPropagation()
     }
-
     return (
       <Row>
         <Col span={24}>
