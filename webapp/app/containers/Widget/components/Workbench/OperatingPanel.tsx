@@ -1211,6 +1211,62 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         this.props.onKillExecute(execId, () => {}, () => {})
       })
 
+      const mergedParams = this.getChartDataConfig(selectedCharts)
+      const mergedDataParams = mergedParams.dataParams
+      const mergedStyleParams = mergedParams.styleParams
+      onSetWidgetProps({
+        data: null,
+        cols: cols.items.map((item) => ({
+          ...item,
+          field: item.field || getDefaultFieldConfig(),
+          format: item.format || getDefaultFieldFormatConfig(),
+          sort: item.sort
+        })),
+        rows: rows.items.map((item) => ({
+          ...item,
+          field: item.field || getDefaultFieldConfig(),
+          format: item.format || getDefaultFieldFormatConfig(),
+          sort: item.sort
+        })),
+        metrics: metrics.items.map((item) => ({
+          ...item,
+          agg: item.agg || 'sum',
+          chart: item.chart || getPivot(),
+          field: item.field || getDefaultFieldConfig(),
+          format: item.format || getDefaultFieldFormatConfig()
+        })),
+        ...secondaryMetrics && {
+          secondaryMetrics: secondaryMetrics.items.map((item) => ({
+            ...item,
+            agg: item.agg || 'sum',
+            chart: item.chart || getPivot(),
+            field: item.field || getDefaultFieldConfig(),
+            format: item.format || getDefaultFieldFormatConfig()
+          }))
+        },
+        filters: filters.items.map(({name, type, config}) => ({ name, type, config })),
+        ...color && {color},
+        ...label && {label},
+        ...size && {size},
+        ...xAxis && {xAxis},
+        ...tip && {tip},
+        ...yAxis && {yAxis},
+        chartStyles: mergedStyleParams,
+        selectedChart: mode === 'pivot' ? chartModeSelectedChart.id : selectedCharts[0].id,
+        pagination: updatedPagination,
+        dimetionAxis: this.getDimetionAxis(selectedCharts),
+        renderType: renderType || 'clear',
+        orders,
+        mode,
+        model: selectedView ? selectedView.model : {}
+      })
+      this.setState({
+        chartModeSelectedChart: mode === 'pivot' ? chartModeSelectedChart : selectedCharts[0],
+        pagination: updatedPagination,
+        dataParams: mergedDataParams,
+        styleParams: mergedStyleParams
+      })
+      
       // 执行查询数据接口
       onExecuteQuery(selectedView.id, requestParams, (result) => {
         const { execId } = result
