@@ -174,7 +174,7 @@ export function* uploadCurrentSlideCover (action: DisplayActionType) {
       method: 'post',
       data: formData
     })
-    const coverPath = asyncData.payload
+    const coverPath = '/api/rest_s/v1/visualis' + asyncData.payload
     yield put(currentSlideCoverUploaded(coverPath))
     resolve(coverPath)
   } catch (err) {
