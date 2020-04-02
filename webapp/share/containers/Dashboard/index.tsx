@@ -249,6 +249,7 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
     if (qs.type === 'dashboard') {
       onLoadDashboard(qs.shareInfo, (err) => {
         if (err.response.status === 403) {
+          message.error('您无权访问！')
           this.setState({
             showLogin: false
           })
@@ -259,6 +260,7 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
         onSetIndividualDashboard(w.id, qs.shareInfo)
       }, (err) => {
         if (err.response.status === 403) {
+          message.error('您无权访问！')
           this.setState({
             showLogin: false
           })

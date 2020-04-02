@@ -439,8 +439,9 @@ export class Display extends React.Component<IDisplayProps, IDisplayStates> {
     onLoadDisplay(shareInfo, () => {
       console.log('share page need login...')
     }, () => {
+      message.error('您无权访问！')
       this.setState({
-        showLogin: true
+        showLogin: false
       })
     })
   }
