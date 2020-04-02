@@ -142,7 +142,7 @@ export class DashboardItem extends React.PureComponent<IDashboardItemProps, IDas
     const { itemId, widget, view, onGetChartData, container, datasource } = this.props
     const { cacheWidgetProps, cacheWidgetId } = this.state
     const widgetProps = JSON.parse(widget.config)
-    const { autoLoadData } = widgetProps
+    const { autoLoadData, model } = widgetProps
     const pagination = this.getPagination(widgetProps, datasource)
     const nativeQuery = this.getNativeQuery(widgetProps)
     if (container === 'share') {
@@ -155,7 +155,7 @@ export class DashboardItem extends React.PureComponent<IDashboardItemProps, IDas
       widgetProps,
       pagination,
       nativeQuery,
-      model: view.model
+      model: view ? view.model : model
     })
     if (!cacheWidgetProps) {
       this.setState({
