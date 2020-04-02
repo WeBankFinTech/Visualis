@@ -250,7 +250,7 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
       onLoadDashboard(qs.shareInfo, (err) => {
         if (err.response.status === 403) {
           this.setState({
-            showLogin: true
+            showLogin: false
           })
         }
       })
@@ -260,7 +260,7 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
       }, (err) => {
         if (err.response.status === 403) {
           this.setState({
-            showLogin: true
+            showLogin: false
           })
         }
       })
