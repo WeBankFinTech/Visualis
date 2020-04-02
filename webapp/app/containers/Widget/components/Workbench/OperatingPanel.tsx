@@ -400,16 +400,19 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         ...tip && {tip}
       }
       this.setState({
-        mode: mode || 'pivot', // FIXME 兼容 0.3.0-beta.1 之前版本
+        // 要用widgetProps而不是originalProps里的数据，不然在还未查询出数据时就切换图表驱动和透视驱动就会报错
+        mode: widgetProps.mode || 'pivot', // FIXME 兼容 0.3.0-beta.1 之前版本
         currentWidgetlibs,
         ...selectedChart && {chartModeSelectedChart: widgetlibs['chart'].find((wl) => wl.id === selectedChart)},
         dataParams: mergedDataParams,
-        styleParams: chartStyles,
+        // 要用widgetProps而不是originalProps里的数据，不然在还未查询出数据时就切换图表驱动和透视驱动就会报错
+        styleParams: widgetProps.chartStyles,
         showColsAndRows: !!rows.length
       }, () => {
         // 这里需要widgetProps.chartStyles.table.headerConfig而不是originalWidgetProps.chartStyles.table.headerCon而不是
-        if (chartStyles.table) chartStyles.table.headerConfig = widgetProps.chartStyles.table.headerConfig
-        this.setWidgetProps(mergedDataParams, chartStyles)
+        if (chartStyles.table && widgetProps && widgetProps.chartStyles.table) chartStyles.table.headerConfig = widgetProps.chartStyles.table.headerConfig
+        // 要用widgetProps而不是originalProps里的数据，不然在还未查询出数据时就切换图表驱动和透视驱动就会报错
+        this.setWidgetProps(mergedDataParams, widgetProps.chartStyles)
       })
     }
   }
@@ -1371,6 +1374,14 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
 
   // 如切换 透视驱动和图表驱动 时，重置各配置
   private resetWorkbench = (mode) => {
+    // 重置时，清空所有之前的请求
+    this.timeout.forEach(item => clearTimeout(item))
+    this.execIds.forEach((execId) => {
+      this.props.onKillExecute(execId, () => {}, () => {})
+    })
+    // 让进度条消失，如果设成-2，会显示查询失败，所以这里设成-3，进度条只是消失
+    this.props.changeGetProgressPercent(-3)
+
     const { dataParams } = this.state
     Object.values(dataParams).forEach((param) => {
       param.items = []
