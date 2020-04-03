@@ -201,7 +201,7 @@ export class DisplayList extends React.PureComponent<IDisplayListProps, IDisplay
 
   private renderDisplay (display: IDisplay) {
     const coverStyle: React.CSSProperties = {
-      backgroundImage: `url(${require(`assets/images/bg${display.avatar}.png`)}`
+      backgroundImage: `url(${require(`assets/images/bg${typeof parseInt(display.avatar) === 'number' && !isNaN(parseInt(display.avatar)) ? display.avatar : Math.ceil(Math.random() * 20)}.png`)}`
     }
     const { onDisplayClick, onDelete, currentProject } = this.props
 
