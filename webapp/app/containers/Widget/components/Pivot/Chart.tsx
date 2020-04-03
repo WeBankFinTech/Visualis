@@ -248,7 +248,21 @@ export class Chart extends React.Component<IChartProps, IChartStates> {
 
             lineData.forEach((unit: IChartUnit, k) => {
               const { width, records } = unit
+              let name = ''
+              let chart = {}
+              let from = ''
+              for (let i = 0; i < metrics.length; i++) {
+                if (metrics[i].chart && metrics[i].chart.name && metrics[i].chart.name !== 'pivot') {
+                  name = metrics[i].chart.name
+                  chart = metrics[i].chart
+                  from = metrics[i].from
+                  break
+                }
+              }
+
               metrics.forEach((m, l) => {
+                metrics[l].chart = chart
+                metrics[l].from = from
                 const decodedMetricName = decodeMetricName(m.name)
                 const xAxisData = records.map((r) => r.key)
                 if (chartOptionGenerator(m.chart.name, drawingData)) {
