@@ -155,7 +155,7 @@ export class DashboardItem extends React.PureComponent<IDashboardItemProps, IDas
       widgetProps,
       pagination,
       nativeQuery,
-      model: view ? view.model : model
+      model: view && view.model ? view.model : model
     })
     if (!cacheWidgetProps) {
       this.setState({
