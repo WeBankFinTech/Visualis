@@ -1021,9 +1021,12 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     })
   }
 
+  private manuallyQuery = false
+
   // 点击手动查询按钮
   private forceSetWidgetProps = () => {
     const { dataParams, styleParams, pagination } = this.state
+    this.manuallyQuery = true
     this.setWidgetProps(dataParams, styleParams, {
       renderType: 'rerender',
       updatedPagination: pagination,
@@ -1201,6 +1204,9 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
                        && selectedView
                        && requestParamString !== this.lastRequestParamString
                        && queryMode === WorkbenchQueryMode.Immediately
+                       || this.manuallyQuery
+    this.manuallyQuery = false
+
     if (needRequest) {
       this.lastRequestParamString = requestParamString
       onSetQueryData(requestParams)
