@@ -562,7 +562,11 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     switch (name) {
       case 'filters':
         if (cachedItem.visualType !== 'number' && cachedItem.visualType !== 'date') {
-          onLoadDistinctValue(selectedView.id, { columns: [cachedItem.name] })
+          const tempParams = {
+            columns: [cachedItem.name]
+          }
+          if (typeof this.props.view === 'object' && Object.keys(this.props.view).length > 0) tempParams.view = this.props.view
+          onLoadDistinctValue(selectedView.id, tempParams)
         }
         this.setState({
           modalCachedData: cachedItem,
@@ -572,7 +576,11 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         })
         break
       case 'color':
-        onLoadDistinctValue(selectedView.id, { columns: [cachedItem.name] })
+        const tempParams = {
+          columns: [cachedItem.name]
+        }
+        if (typeof this.props.view === 'object' && Object.keys(this.props.view).length > 0) tempParams.view = this.props.view
+        onLoadDistinctValue(selectedView.id, tempParams)
         this.setState({
           modalCachedData: cachedItem,
           modalCallback: resolve,
@@ -742,7 +750,11 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       this.setWidgetProps(dataParams, styleParams)
     } else {
       const { selectedView, onLoadDistinctValue } = this.props
-      onLoadDistinctValue(selectedView.id, { columns: [item.name] })
+      const tempParams = {
+        columns: [item.name]
+      }
+      if (typeof this.props.view === 'object' && Object.keys(this.props.view).length > 0) tempParams.view = this.props.view
+      onLoadDistinctValue(selectedView.id, tempParams)
       this.setState({
         currentEditingCommonParamKey: from,
         currentEditingItem: item,
@@ -841,7 +853,11 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
   private dropboxItemChangeColorConfig = (item: IDataParamSource) => {
     const { selectedView, onLoadDistinctValue } = this.props
     const { dataParams, styleParams } = this.state
-    onLoadDistinctValue(selectedView.id, { columns: [item.name] })
+    const tempParams = {
+      columns: [item.name]
+    }
+    if (typeof this.props.view === 'object' && Object.keys(this.props.view).length > 0) tempParams.view = this.props.view
+    onLoadDistinctValue(selectedView.id, tempParams)
     this.setState({
       modalCachedData: item,
       modalDataFrom: 'color',
@@ -867,7 +883,11 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     const { selectedView, onLoadDistinctValue } = this.props
     const { dataParams, styleParams } = this.state
     if (item.type === 'category') {
-      onLoadDistinctValue(selectedView.id, { columns: [item.name] })
+      const tempParams = {
+        columns: [item.name]
+      }
+      if (typeof this.props.view === 'object' && Object.keys(this.props.view).length > 0) tempParams.view = this.props.view
+      onLoadDistinctValue(selectedView.id, tempParams)
     }
     this.setState({
       modalCachedData: item,
