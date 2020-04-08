@@ -382,7 +382,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
 
       dataParams.filters.items = []
       filters.forEach((f) => {
-        const modelColumn = model[f.name]
+        const modelColumn = model[f.name] ? model[f.name] : model[f.name.split('@')[0]]
         if (modelColumn) {
           dataParams.filters.items = dataParams.filters.items.concat({
             ...f,
@@ -1206,6 +1206,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
                        && queryMode === WorkbenchQueryMode.Immediately
                        || this.manuallyQuery
     this.manuallyQuery = false
+
 
     if (needRequest) {
       this.lastRequestParamString = requestParamString
