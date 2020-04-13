@@ -1096,6 +1096,8 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     }
     if (color) {
       groups = groups.concat(color.items.map((c) => c.name))
+      // 去重
+      groups = Array.from(new Set(groups))
     }
     if (label) {
       groups = groups.concat(label.items
