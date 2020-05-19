@@ -577,15 +577,25 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     }
   }
 
+  // 是否开启缓存radio按钮
   private cacheChange = (e) => {
     this.setState({
       cache: e.target.value
     })
   }
 
+  // 缓存有效期输入框
   private expiredChange = (value) => {
+    let tempValue = value
+    if (typeof value !== 'number') {
+      // 如果不是数字类型，默认设置成300
+      tempValue = 300 
+    } else {
+      // value必须大于1
+      if (value <= 0) tempValue = 300
+    }
     this.setState({
-      expired: value
+      expired: tempValue
     })
   }
 

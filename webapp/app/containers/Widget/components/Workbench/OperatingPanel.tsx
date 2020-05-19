@@ -43,7 +43,7 @@ import PivotTypes from '../../config/pivot/PivotTypes'
 import { uuid } from 'utils/util'
 
 import { RadioChangeEvent } from 'antd/lib/radio'
-import { Row, Col, Icon, Menu, Radio, InputNumber, Dropdown, Modal, Popconfirm, Checkbox, notification, Tooltip, Select, message } from 'antd'
+import { Row, Col, Icon, Menu, Radio, InputNumber, Dropdown, Modal, Popconfirm, Checkbox, notification, Tooltip, Select, message, Button } from 'antd'
 import { IDistinctValueReqeustParams } from 'app/components/Filters/types'
 import { WorkbenchQueryMode } from './types'
 import { CheckboxChangeEvent } from 'antd/lib/checkbox'
@@ -1065,7 +1065,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     }
   ) => {
     const { cols, rows, metrics, secondaryMetrics, filters, color, label, size, xAxis, tip, yAxis } = dataParams
-    const { selectedView, onLoadData, onExecuteQuery, onSetWidgetProps, onSetQueryData, view } = this.props
+    const { selectedView, onLoadData, onExecuteQuery, onSetWidgetProps, onSetQueryData, view, cache, expired } = this.props
     const { mode, chartModeSelectedChart, pagination } = this.state
     let renderType
     let updatedPagination
@@ -1207,9 +1207,10 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       pageNo: updatedPagination.pageNo,
       pageSize: updatedPagination.pageSize,
       nativeQuery: noAggregators,
-      cache: false,
-      expired: 0,
-      flush: false
+      cache,
+      expired,
+      // 只有清除缓存时flush为true，其他所有时候都为false
+      flush: this.clearCacheStatus
     }
 
     // 如果有view，就把view放进requestParams才能正常请求
@@ -1235,10 +1236,13 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       onSetQueryData(requestParams)
 
       // 在查询数据之前，清空所有之前的请求
-      this.timeout.forEach(item => clearTimeout(item))
-      this.execIds.forEach((execId) => {
-        this.props.onKillExecute(execId, () => {}, () => {})
-      })
+      if (!this.clearCacheStatus) {
+        // 清理缓存请求不影响正常查询
+        this.timeout.forEach(item => clearTimeout(item))
+        this.execIds.forEach((execId) => {
+          this.props.onKillExecute(execId, () => {}, () => {})
+        })
+      }
 
       const mergedParams = this.getChartDataConfig(selectedCharts)
       const mergedDataParams = mergedParams.dataParams
@@ -1301,7 +1305,8 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         const { execId } = result
         this.execIds.push(execId)
         // 每隔三秒执行一次查询进度接口
-        this.executeQuery(dataParams, execId, updatedPagination, selectedCharts, renderType, orders, this)
+        if (!this.clearCacheStatus) this.executeQuery(dataParams, execId, updatedPagination, selectedCharts, renderType, orders, this)
+        this.clearCacheStatus = false
       }, () => {
         this.props.changeGetProgressPercent(-2)
         return message.error('查询失败！')
@@ -1363,6 +1368,16 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         styleParams: mergedStyleParams
       })
     }
+  }
+
+  // 清除缓存时，用来控制flush=true和只请求getdata不请求progress和结果集
+  private clearCacheStatus = false
+
+  // 清理缓存
+  private clearCache = () => {
+    const { dataParams, styleParams } = this.state
+    this.clearCacheStatus = true
+    this.setWidgetProps(dataParams, styleParams)
   }
 
   private getDimetionAxis = (selectedCharts): DimetionType => {
@@ -2114,6 +2129,15 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
                 <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
                   <Col span={24}>
                     <InputNumber value={expired} disabled={!cache} onChange={onExpiredChange} />
+                  </Col>
+                </Row>
+              </div>
+            </div>
+            <div className={styles.paneBlock}>
+              <div className={styles.blockBody}>
+                <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
+                  <Col span={24}>
+                    <Button size="small" onClick={this.clearCache}>清理缓存</Button>
                   </Col>
                 </Row>
               </div>
