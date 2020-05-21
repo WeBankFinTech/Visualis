@@ -88,6 +88,7 @@ interface IOperatingPanelProps {
   isFold: boolean
   collapsed: boolean
   onChangeIsFold: () => void
+  onSetView: (view: object) => void
   onViewSelect: (view: object) => void
   onSetControls: (controls: any[]) => void
   onCacheChange: (e: RadioChangeEvent) => void
@@ -2202,11 +2203,23 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         let selectedView = this.props.selectedView;
         const propName = draggedItem.name;
         draggedItem.modelType = 'value';
-        if (selectedView) {
+        draggedItem.name = propName;
+        // selectedView.id小于等于0或者为null，就是虚拟view
+        if (selectedView && selectedView.id) {
+          // 实体view，调用更新view的接口
           if (typeof selectedView.model !== 'object') selectedView.model = JSON.parse(selectedView.model)
           selectedView.model[propName] = draggedItem;
+          this.props.onBeofreDropColunm(selectedView, () => {})
+        } else {
+          // 虚拟view，不调用更新view的接口，直接更新widget的view
+          const tempView = this.props.view
+          if (typeof tempView.model !== 'object') tempView.model = JSON.parse(tempView.model)
+          // 从category变为value
+          tempView.model[propName].modelType = 'value'
+          this.props.onSetView(tempView)
+          // 取消掉拖拽时的样式
+          this.setState({dragged: null})
         }
-        this.props.onBeofreDropColunm(selectedView, () => {})
       }
     }
     const valueAreaProps = {
@@ -2233,11 +2246,22 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         const propName = decodeMetricName(draggedItem.name);
         draggedItem.modelType = 'category';
         draggedItem.name = propName;
-        if (selectedView) {
+        // selectedView.id小于等于0或者为null，就是虚拟view
+        if (selectedView && selectedView.id) {
+          // 实体view，调用更新view的接口
           if (typeof selectedView.model !== 'object') selectedView.model = JSON.parse(selectedView.model)
           selectedView.model[propName] = draggedItem;
+          this.props.onBeofreDropColunm(selectedView, () => {})
+        } else {
+          // 虚拟view，不调用更新view的接口，直接更新widget的view
+          const tempView = this.props.view
+          if (typeof tempView.model !== 'object') tempView.model = JSON.parse(tempView.model)
+          // 从value变为category
+          tempView.model[propName].modelType = 'category'
+          this.props.onSetView(tempView)
+          // 取消掉拖拽时的样式
+          this.setState({dragged: null})
         }
-        this.props.onBeofreDropColunm(selectedView, () => {})
       }
     }
 

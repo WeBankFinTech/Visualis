@@ -451,8 +451,8 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     const nextState = {
       selectedViewId: viewId,
       controls: [],
-      cache: false,
-      expired: DEFAULT_CACHE_EXPIRED
+      cache: this.state.cache,
+      expired: this.state.expired
     }
     // 如果在下拉框中选中正常view（viewId > 0），逻辑不变
     // 如果是选中的metadata，则直接用其数据作为view
@@ -612,6 +612,18 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
         ...widgetProps,
         data
       }
+    })
+  }
+
+  private setView = (view) => {
+    this.view = view
+    this.urlView = {
+      ...this.urlView,
+      ...this.view
+    }
+    // 要更新一下this.state.view，执行渲染逻辑
+    this.setState({
+      view: this.view
     })
   }
 
@@ -842,6 +854,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
                 queryMode={queryMode}
                 multiDrag={multiDrag}
                 computed={computed}
+                onSetView={this.setView}
                 onViewSelect={this.viewSelect}
                 onChangeAutoLoadData={this.changeAutoLoadData}
                 onSetControls={this.setControls}
