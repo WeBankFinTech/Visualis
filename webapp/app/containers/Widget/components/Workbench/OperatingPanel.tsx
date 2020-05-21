@@ -1302,16 +1302,20 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       })
       
       // 执行查询数据接口
-      onExecuteQuery(selectedView.id, requestParams, (result) => {
-        const { execId } = result
-        this.execIds.push(execId)
-        // 每隔三秒执行一次查询进度接口
-        if (!this.clearCacheStatus) this.executeQuery(dataParams, execId, updatedPagination, selectedCharts, renderType, orders, this)
-        this.clearCacheStatus = false
-      }, () => {
-        this.props.changeGetProgressPercent(-2)
-        return message.error('查询失败！')
-      })
+      // 虚拟view切换分类型和数值型时，会执行到这里，要加上判断，切换操作不调用查询数据的接口
+      if (!this.changeValueCategory) {
+        this.changeValueCategory = false
+        onExecuteQuery(selectedView.id, requestParams, (result) => {
+          const { execId } = result
+          this.execIds.push(execId)
+          // 每隔三秒执行一次查询进度接口
+          if (!this.clearCacheStatus) this.executeQuery(dataParams, execId, updatedPagination, selectedCharts, renderType, orders, this)
+          this.clearCacheStatus = false
+        }, () => {
+          this.props.changeGetProgressPercent(-2)
+          return message.error('查询失败！')
+        })
+      }
     } else {
       const mergedParams = this.getChartDataConfig(selectedCharts)
       const mergedDataParams = mergedParams.dataParams
@@ -1370,6 +1374,9 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       })
     }
   }
+
+  // 虚拟view切换分类型和数值型时，会执行到这里，要加上判断，切换操作不调用查询数据的接口
+  private changeValueCategory = false
 
   // 清除缓存时，用来控制flush=true和只请求getdata不请求progress和结果集
   private clearCacheStatus = false
@@ -2216,6 +2223,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
           if (typeof tempView.model !== 'object') tempView.model = JSON.parse(tempView.model)
           // 从category变为value
           tempView.model[propName].modelType = 'value'
+          this.changeValueCategory = true
           this.props.onSetView(tempView)
           // 取消掉拖拽时的样式
           this.setState({dragged: null})
@@ -2258,6 +2266,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
           if (typeof tempView.model !== 'object') tempView.model = JSON.parse(tempView.model)
           // 从value变为category
           tempView.model[propName].modelType = 'category'
+          this.changeValueCategory = true
           this.props.onSetView(tempView)
           // 取消掉拖拽时的样式
           this.setState({dragged: null})
