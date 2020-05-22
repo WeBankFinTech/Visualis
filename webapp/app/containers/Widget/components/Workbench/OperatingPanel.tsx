@@ -1304,7 +1304,6 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       // 执行查询数据接口
       // 虚拟view切换分类型和数值型时，会执行到这里，要加上判断，切换操作不调用查询数据的接口
       if (!this.changeValueCategory) {
-        this.changeValueCategory = false
         onExecuteQuery(selectedView.id, requestParams, (result) => {
           const { execId } = result
           this.execIds.push(execId)
@@ -1315,6 +1314,8 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
           this.props.changeGetProgressPercent(-2)
           return message.error('查询失败！')
         })
+      } else {
+        this.changeValueCategory = false
       }
     } else {
       const mergedParams = this.getChartDataConfig(selectedCharts)
