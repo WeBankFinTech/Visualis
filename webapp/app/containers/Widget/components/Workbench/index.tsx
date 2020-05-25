@@ -303,7 +303,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
             //     1、如果config里的view不是不为空的对象，则这里无更多逻辑
             //     2、如果config里的view是不为空的对象，则就用config里的这个view
             // onLoadWidgetDetail调用成功后会调用componentWillReceiveProps，在componentWillReceiveProps里面将this.urlView更新，所以在这里无需进行设置
-            if (contextId) {
+            if (contextId && typeof view !== 'number') {
               // 如果url里没有view，且有contextId，则带上contextId和nodeName请求views
               onLoadViews(Number(params.pid), contextId, nodeName)
             } else {
