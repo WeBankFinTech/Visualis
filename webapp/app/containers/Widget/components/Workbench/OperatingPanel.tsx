@@ -1307,12 +1307,25 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         onExecuteQuery(selectedView.id, requestParams, (result) => {
           const { execId } = result
           this.execIds.push(execId)
-          // 每隔三秒执行一次查询进度接口
-          if (!this.clearCacheStatus) this.executeQuery(dataParams, execId, updatedPagination, selectedCharts, renderType, orders, this)
-          this.clearCacheStatus = false
+          if (this.clearCacheStatus) {
+            // 说明此时是清理缓存调用的getdata接口，并且不调用progress和result接口
+            this.clearCacheStatus = false
+            return message.success('清理缓存成功！')
+          } else {
+            // 此时不是清理缓存，是正常查询数据
+            // 每隔三秒执行一次查询进度接口
+            this.executeQuery(dataParams, execId, updatedPagination, selectedCharts, renderType, orders, this)
+          }
         }, () => {
-          this.props.changeGetProgressPercent(-2)
-          return message.error('查询失败！')
+          if (this.clearCacheStatus) {
+            // 说明此时是清理缓存调用的getdata接口
+            this.clearCacheStatus = false
+            this.props.changeGetProgressPercent(-2)
+            return message.error('清理缓存失败！')
+          } else {
+            this.props.changeGetProgressPercent(-2)
+            return message.error('查询失败！')
+          }
         })
       } else {
         this.changeValueCategory = false
