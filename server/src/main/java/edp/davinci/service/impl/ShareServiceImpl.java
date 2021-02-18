@@ -181,7 +181,7 @@ public class ShareServiceImpl implements ShareService {
         }
 
         if (!StringUtils.isEmpty(shareInfo.getSharedUserName())) {
-            if (!shareInfo.getSharedUserName().equals(user.getUsername())) {
+            if (user == null || !shareInfo.getSharedUserName().equals(user.getUsername())) {
                 throw new ForbiddenExecption("ERROR Permission denied");
             }
         }
@@ -216,7 +216,7 @@ public class ShareServiceImpl implements ShareService {
         Display display = displayMapper.getById(displayId);
 
         if (!StringUtils.isEmpty(shareInfo.getSharedUserName())) {
-            if (!shareInfo.getSharedUserName().equals(user.getUsername())) {
+            if (user == null || !shareInfo.getSharedUserName().equals(user.getUsername())) {
                 throw new ForbiddenExecption("ERROR Permission denied");
             }
         }
@@ -293,7 +293,7 @@ public class ShareServiceImpl implements ShareService {
         }
 
         if (!StringUtils.isEmpty(shareInfo.getSharedUserName())) {
-            if (!shareInfo.getSharedUserName().equals(user.getUsername())) {
+            if (user == null || !shareInfo.getSharedUserName().equals(user.getUsername())) {
                 throw new ForbiddenExecption("ERROR Permission denied");
             }
         }
@@ -341,7 +341,7 @@ public class ShareServiceImpl implements ShareService {
         }
 
         if (!StringUtils.isEmpty(shareInfo.getSharedUserName())) {
-            if (!shareInfo.getSharedUserName().equals(user.getUsername())) {
+            if (user == null || !shareInfo.getSharedUserName().equals(user.getUsername())) {
                 throw new ForbiddenExecption("ERROR Permission denied");
             }
         }
@@ -433,7 +433,7 @@ public class ShareServiceImpl implements ShareService {
         }
 
         if (!StringUtils.isEmpty(shareInfo.getSharedUserName())) {
-            if (!shareInfo.getSharedUserName().equals(user.getUsername())) {
+            if (user == null || !shareInfo.getSharedUserName().equals(user.getUsername())) {
                 throw new ForbiddenExecption("ERROR Permission denied");
             }
         }
@@ -496,7 +496,7 @@ public class ShareServiceImpl implements ShareService {
             }
 
             if (!StringUtils.isEmpty(shareInfo.getSharedUserName())) {
-                if (!shareInfo.getSharedUserName().equals(user.getUsername())) {
+                if (user == null || !shareInfo.getSharedUserName().equals(user.getUsername())) {
                     resultFail(user, request, HttpCodeEnum.FORBIDDEN).message("ERROR Permission denied");
                 }
             }

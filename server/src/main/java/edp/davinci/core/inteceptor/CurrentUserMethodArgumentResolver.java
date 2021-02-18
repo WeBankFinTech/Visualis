@@ -52,12 +52,19 @@ public class CurrentUserMethodArgumentResolver implements CurrentUserMethodArgum
 
     @Override
     public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer, NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {
+        HttpServletRequest httpServletRequest = webRequest.getNativeRequest(HttpServletRequest.class);
         try
         {
-            return (User)userMapper.selectByUsername(SecurityFilter.getLoginUsername(webRequest.getNativeRequest(HttpServletRequest.class)));
+            return (User)userMapper.selectByUsername(SecurityFilter.getLoginUsername(httpServletRequest));
         }catch (Throwable e){
             log.error("Failed to get user:",e);
-            throw e;
+            // 普通分享页特殊处理，可以不需要登录（不影响授权分享页，授权分享依旧需要登录）
+            if (httpServletRequest != null && httpServletRequest.getRequestURI().contains("/share/")) {
+                log.warn("Fallback to share page User handler for {}", httpServletRequest.getRequestURI());
+                return  (User) webRequest.getAttribute(Consts.CURRENT_USER, RequestAttributes.SCOPE_REQUEST);
+            }else {
+                throw e;
+            }
         }
     }
 }
