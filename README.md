@@ -53,7 +53,7 @@ Visualis also supports most of the original features of Davinci.
 ## DataSphere Studio Integration
 Visualis seamlessly integrates with the data develoment, workflow scheduling and data quality management modules of DataSphere Studio, achieving a smooth and consistent user experience across the whole data application development lifecycle.
 
-For more detail, please visit [DataSphere Studio documentations]().
+For more detail, please visit [DataSphere Studio documentations](https://github.com/WeBankFinTech/DataSphereStudio).
 
 ![Visualis](images/Visualis_AppJoint.gif)
  
