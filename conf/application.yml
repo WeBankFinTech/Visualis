@@ -1,11 +1,11 @@
 server:
   protocol: http
   address: 127.0.0.1 #server ip address
-  port:  9007 #该模块提供服务的端口（必须）
-  url: http://0.0.0.0:0000/dws/visualis #frontend index page full path
-  access: 
-    address: 0.0.0.0 #frontend address
-    port: 0000 #frontend port
+  port:  9008 #该模块提供服务的端口（必须）
+  url: http://127.0.0.1:8088/dss/visualis #frontend index page full path
+  access:
+    address: 127.0.0.1 #frontend address
+    port: 8088 #frontend port
 
 #指定eureka Server的地址，用于注册（必须）
 eureka:
@@ -32,13 +32,15 @@ file:
   base-path: ${DAVINCI3_HOME}
 
 spring:
+  main:
+    allow-bean-definition-overriding: true
   application:
-    name: visualis #模块名，用于做高可用（必须）
+    name: visualis-dev #模块名，用于做高可用（必须）
   ## davinci datasouce config
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/xxx?characterEncoding=UTF-8 #application mysql database jdbc url
-    username: xxx #application mysql database username
-    password: xxx #application mysql database password
+    url: jdbc:mysql://127.0.0.1:3306/dss?characterEncoding=UTF-8&allowMultiQueries=true
+    username: hadoop
+    password: hadoop
     driver-class-name: com.mysql.jdbc.Driver
     initial-size: 2
     min-idle: 1
