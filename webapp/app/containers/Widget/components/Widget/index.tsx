@@ -2,7 +2,8 @@ import React, { createRef } from 'react'
 import classnames from 'classnames'
 import Pivot from '../Pivot'
 import Chart from '../Chart'
-import { Icon } from 'antd'
+import { Icon, Progress } from 'antd'
+import widgetStyles from './style.less'
 import {
   AggregatorType,
   DragType,
@@ -27,6 +28,7 @@ import { IframeConfig } from '../Workbench/ConfigSections/IframeSection'
 import { ITableConfig } from '../Config/Table'
 import { IRichTextConfig, IBarConfig, IRadarConfig } from '../Workbench/ConfigSections'
 import { IDoubleYAxisConfig } from '../Workbench/ConfigSections/DoubleYAxisSection'
+import { IGapConfig } from '../Workbench/ConfigSections/GapSection'
 import { IModel } from '../Workbench/index'
 import WaterMask from '../WaterMask/index'
 import { IQueryVariableMap } from 'containers/Dashboard/Grid'
@@ -51,6 +53,10 @@ export interface IWidgetDimension {
   field: IFieldConfig
   format: IFieldFormatConfig
   sort: IFieldSortConfig
+  width?: number
+  widthChanged?: boolean
+  alreadySetWidth?: boolean
+  oldColumnCounts?: number
 }
 
 export interface IWidgetMetric {
@@ -59,6 +65,10 @@ export interface IWidgetMetric {
   chart: IChartInfo
   field: IFieldConfig
   format: IFieldFormatConfig
+  width?: number
+  widthChanged?: boolean
+  alreadySetWidth?: boolean
+  oldColumnCounts?: number
 }
 
 export interface IWidgetSecondaryMetric {
@@ -157,7 +167,10 @@ export interface IWidgetProps {
   computed?: any[]
   selectedItems?: number[]
   onSelectChartsItems?: (selectedItems: number[]) => void
+  onSetWidgetProps: (widgetProps: IWidgetProps) => void
   // onHideDrillPanel?: (swtich: boolean) => void
+  executeQueryFailed?: boolean
+  visualisData: object
 }
 
 export interface IWidgetConfig extends IWidgetProps {
@@ -175,7 +188,7 @@ export interface IWidgetWrapperProps extends IWidgetProps {
 export interface IWidgetWrapperStates {
   width: number
   height: number
-  isShow: boolean
+  getProgressPercent: number
 }
 
 export class Widget extends React.Component<
@@ -191,13 +204,18 @@ export class Widget extends React.Component<
     this.state = {
       width: 0,
       height: 0,
-      isShow: true
+      getProgressPercent: -1
     }
+  }
+
+  private changePercent = (percent) => {
+    this.setState({getProgressPercent: percent})
   }
 
   private container = createRef<HTMLDivElement>()
 
   public componentDidMount () {
+    if (typeof this.props.onRef === 'function') this.props.onRef(this)
     this.getContainerSize()
   }
 
@@ -211,28 +229,18 @@ export class Widget extends React.Component<
     const { offsetWidth, offsetHeight } = this.container
       .current as HTMLDivElement
     const { width, height } = this.state
-    if (
-      offsetWidth &&
-      offsetHeight &&
-      (offsetWidth !== width || offsetHeight !== height)
-    ) {
-      this.setState({
-        width: offsetWidth,
-        height: offsetHeight
-      })
+    if ( offsetWidth && offsetHeight && (offsetWidth !== width || offsetHeight !== height) ) {
+      this.setState({ width: offsetWidth, height: offsetHeight })
     }
   }
 
   public render () {
-    const { loading, empty, mode } = this.props
-    const { width, height, isShow } = this.state
-    const isWaterMask = localStorage.getItem('isWaterMask') === 'true';
+    const { loading, empty, mode, executeQueryFailed, selectedChart, visualisData } = this.props
+    const { width, height, getProgressPercent } = this.state
     const username = localStorage.getItem('username');
-
     const widgetProps = { width, height, ...this.props }
 
     delete widgetProps.loading
-
     let widgetContent: JSX.Element
     if (width && height) {
       // FIXME
@@ -244,16 +252,40 @@ export class Widget extends React.Component<
         )
     }
 
+    let waterMaskWidth = 0
+    if (this.container &&  this.container.current && this.container.current.childNodes[1] && this.container.current.childNodes[1].style.width) waterMaskWidth = parseInt(this.container.current.childNodes[1].style.width)
     const waterMaskProps = {
-      text: `由DataSphere Studio生成，仅供内部参考，严禁对外分享-${username}`,
+      text: `${username}`,
+      waterMaskWidth
     }
 
+    // visualis和datawrangler测试环境不一样，所以测试环境下要写死这个ip
+    const dataWranglerUrl = `http://10.107.116.246:8315/#/sheet/add?simpleMode=true&showBottomBar=false&readOnly=true&showChangeModeButton=false&visualisData=${JSON.stringify(visualisData)}`
     return (
-      <div className={styles.wrapper} ref={this.container}>
-        {isShow && isWaterMask &&  <WaterMask {...waterMaskProps} />}
-        {widgetContent}
+      <div className={styles.wrapper + ' widget-class'} ref={this.container} id="widget" style={{overflowX: 'auto', overflowY: 'hidden'}}>
+        <WaterMask {...waterMaskProps} />
+        { selectedChart === 19 && mode === 'chart' ? 
+          <iframe src={dataWranglerUrl} width="100%" height="100%" frameBorder="0" id="dataWrangler"></iframe>
+          :
+          widgetContent
+        }
         {loading}
-        {empty}
+        {/* 表格暂无数据时的提示，有了进度条就不需要了 */}
+        {/* {empty} */}
+        {
+          getProgressPercent * 100 > -1 && getProgressPercent * 100 < 100 ? 
+          <div className={widgetStyles.mask}>
+            <Progress type='circle' percent={getProgressPercent * 100}></Progress>
+          </div> : null
+        }
+        {
+          // -2表示是查询失败后设置的getProgressPercent
+          // executeQueryFailed是查询失败的另一个明显标时 dashboard和display的编辑、分享页里如果查询失败会传进来
+          getProgressPercent === -2 || executeQueryFailed ? 
+          <div className={widgetStyles.mask} style={{fontSize: '28px', fontWeight: 'bold'}}>
+            查询失败
+          </div> : null
+        }
       </div>
     )
   }

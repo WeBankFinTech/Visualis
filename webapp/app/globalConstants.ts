@@ -33,7 +33,8 @@ export const DEFAULT_BASELINE_COLOR = '#ecc302'
 
 export const TABLE_HEADER_HEIGHT = 50
 export const TABLE_PAGINATION_HEIGHT = 61
-export const COLUMN_WIDTH = 150
+// 假设widget编辑页面里的图表驱动里的表格的所有列总宽度为1350（最常见的显示屏下，表格处的宽度应该大概就是1350px）
+export const TOTAL_COLUMN_WIDTH = 1350
 export const DASHBOARD_ITEM_FILTER_HEIGHT = 40
 
 export const DEFAULT_TABLE_PAGE = 1

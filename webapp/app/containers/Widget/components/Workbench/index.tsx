@@ -12,7 +12,7 @@ import viewSaga from 'containers/View/sagas'
 import formReducer from 'containers/Dashboard/FormReducer'
 import { hideNavigator } from 'containers/App/actions'
 import { ViewActions } from 'containers/View/actions'
-const { loadViews, loadViewsDetail, loadViewData, loadViewDistinctValue } = ViewActions
+const { loadViews, loadViewsDetail, loadViewData, loadEngines, executeQuery, getProgress, getResult, killExecute, loadViewDistinctValue } = ViewActions
 import { addWidget, editWidget, loadWidgetDetail, clearCurrentWidget, executeComputed } from 'containers/Widget/actions'
 import { makeSelectCurrentWidget, makeSelectLoading, makeSelectDataLoading, makeSelectDistinctColumnValues, makeSelectColumnValueLoading } from 'containers/Widget/selectors'
 import { makeSelectViews, makeSelectFormedViews } from 'containers/View/selectors'
@@ -60,15 +60,32 @@ interface IWorkbenchProps {
   router: any
   params: { pid: string, wid: string }
   onHideNavigator: () => void
-  onLoadViews: (projectId: number, resolve?: any) => void
+  onLoadViews: (projectId: number, contextId?: string, nodeName?: string, resolve?: any) => void
   onLoadViewDetail: (viewId: number, resolve: () => void) => void
-  onLoadWidgetDetail: (id: number) => void
+  onLoadWidgetDetail: (id: number, resolve: (data) => void) => void
   onLoadViewData: (
     viewId: number,
     requestParams: IDataRequestParams,
     resolve: (data) => void,
     reject: (error) => void
   ) => void
+  onLoadEngines: (
+    viewId: number,
+    resolve: (data) => void,
+  ) => void
+  // widget页面 提交查询数据接口
+  onExecuteQuery: (
+    viewId: number,
+    requestParams: IDataRequestParams,
+    resolve: (data) => void,
+    reject: (error) => void
+  ) => void
+  // widget页面 进度查询接口
+  onGetProgress: (execId: string, resolve: (data) => void, reject: (error) => void) => void
+  // widget页面 获取结果集接口
+  onGetResult: (execId: string, pageNo: number, pageSize: number, resolve: (data) => void, reject: (error) => void) => void
+  // widget页面 kill查询接口
+  onKillExecute: (execId: string, resolve: (data) => void, reject: (error) => void) => void
   onAddWidget: (widget: IWidget, resolve: () => void) => void
   onEditWidget: (widget: IWidget, resolve: () => void) => void
   onLoadViewDistinctValue: (viewId: number, params: Partial<IDistinctValueReqeustParams>) => void
@@ -88,11 +105,17 @@ interface IWorkbenchStates {
   cache: boolean
   expired: number
   splitSize: number
+  isFold: boolean
+  // 初始的widgetProps
   originalWidgetProps: IWidgetProps
   originalComputed: any[]
   widgetProps: IWidgetProps
   settingFormVisible: boolean
   settings: IWorkbenchSettings
+  contextId: string
+  nodeName: string
+  view: object
+  engine: string
 }
 
 const SplitPane = React.lazy(() => import('react-split-pane'))
@@ -100,7 +123,7 @@ const SplitPane = React.lazy(() => import('react-split-pane'))
 export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates> {
 
   private operatingPanel: OperatingPanel = null
-  private defaultSplitSize = 440
+  private defaultSplitSize = 456
   private maxSplitSize = this.defaultSplitSize * 1.5
 
   constructor (props) {
@@ -118,6 +141,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       autoLoadData: true,
       expired: DEFAULT_CACHE_EXPIRED,
       splitSize,
+      isFold: false,
       originalWidgetProps: null,
       widgetProps: {
         data: [],
@@ -135,13 +159,70 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
         chartStyles: getStyleConfig({}),
         selectedChart: ChartTypes.Table,
         orders: [],
-        mode: 'pivot',
+        mode: 'chart',
         model: {},
         onPaginationChange: this.paginationChange
       },
       settingFormVisible: false,
-      settings: this.initSettings()
+      settings: this.initSettings(),
+      /*
+      相当于有三种view：
+      1. 正常的，id>0的view
+      2. 虚拟view：
+          1. 在url中的view数据，没有id或者id为null或者id<=0
+          2. 根据contextId拿到的metadata，没有id或者id为null或者id<=0
+      */
+      /*
+      1. 如果url或者widget的config里面有view：
+          1. 如果url里有view，说明this.view是不为空的对象，这时候以url里的view/this.view为准，直接用该view作为当前页面的view
+          2. 如果url里没有view：
+              1. 如果有contextId， 就要重新带着contextId请求一次views列表：
+                  1. 如果config里的view不是不为空的对象，则这里无更多逻辑
+                  2. 如果config里的view是不为空的对象：
+                      1. 如果views列表里有和config.view的name一样的，则用新的这个view
+                      2. 如果views列表里无和config.view的name一样的，则就用config里的这个view
+              2. 如果没有contextId：
+                  1. 如果config里的view不是不为空的对象，则这里无更多逻辑
+                  2. 如果config里的view是不为空的对象，则就用config里的这个view
+          3. 只要config里的view是不为空的值，那么选择view的下拉框就要置灰
+      2. 如果widget的config里有contextId字段（第一次肯定不会出现contextId和view同时存在的情况），且url里没有view，且config里的view不是不为空的对象，就要在调用请求views的接口时，加上contextId=xxx：
+          1. 请求回来的views列表中，既有metadata，也有正常view
+          2. 进行判断，如果在下拉框中选中正常view，逻辑不变
+          3. 如果是选中的metadata，置灰下拉框，则直接用其数据作为view
+      3. 如果views列表是带了contextId=xxx请求回来的：
+          1. 如果用户选择的是metadata（通过里面的id来判断，不是大于0的就说明是metadata），要把选择的这个metadata在保存时保存到config的view字段里
+          2. 如果选择的是正常的view，那就保持原逻辑
+      */
+      contextId: '',
+      nodeName: '',
+      view: {},
+      engine: ''
     }
+  }
+
+  private widgetRef = null
+
+  private changeGetProgressPercent = (percent) => {
+    this.widgetRef.changePercent(percent)
+  }
+
+  private changeIsFold = () => {
+    const { isFold } = this.state
+    if (isFold) {
+      this.setState({
+        isFold:  !isFold,
+        splitSize: 456
+      })
+    } else {
+      this.setState({
+        isFold:  !isFold,
+        splitSize: 16
+      })
+    }
+  }
+
+  onRef = (ref) => {
+    this.widgetRef = ref
   }
 
   private placeholder = {
@@ -155,33 +236,112 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     return params;
   }
 
+  private collapsed = null
+  private view = {}
+  private urlHasView = false
+  // 如果url中有view信息，下面是一些view中没有但需要有默认值的，如果有view时，urlView会作为selectedView传到OperatingPanel中
+  private urlView = {
+    config: '',
+    description: '',
+    id: 0,
+    projectId: 0,
+    roles: [],
+    sourceId: 0,
+    sql: '',
+    variable: [],
+    name: '',
+    model: {},
+    source: {},
+    params: {}
+  }
+
   public componentWillMount () {
     const { params, onLoadViews, onLoadWidgetDetail } = this.props
-    onLoadViews(Number(params.pid), () => {
-      if (params.wid !== 'add' && !Number.isNaN(Number(params.wid))) {
-        onLoadWidgetDetail(Number(params.wid))
-      }
-    })
+
     const routeParams = this.getParams();
-    const viewId = routeParams[0] ? routeParams[0].split('=')[1] : '';
-    const isWaterMask = routeParams[1] ? routeParams[1].split('=')[1] : '';
-    const username = routeParams[2] ? routeParams[2].split('=')[1] : '';
+    let viewId = null
+    if (routeParams.length) {
+      routeParams.forEach((param) => {
+        const name = param.split('=')[0]
+        const value = param.split('=')[1]
+        const decodeValue = decodeURI(value)
+
+        if (name === 'viewId') viewId = value
+        if (name === 'collapsed') {
+          if (value === 'true') {
+            this.collapsed = true
+          } else {
+            this.collapsed = false
+          }
+        }
+        if (name === 'view') {
+          this.view = typeof value === 'string' ? JSON.parse(decodeValue) : {}
+          this.urlHasView = true
+        }
+      })
+    }
     if (viewId) {
       sessionStorage.setItem('viewId', viewId);
     }
-    if (isWaterMask) {
-      localStorage.setItem('isWaterMask', isWaterMask);
-      localStorage.setItem('username', username);
-    }
+
+    // 无论是新增还是编辑页面，都需要请求views列表
+    // 正常情况下，contextId和nodeName先都为''
+    onLoadViews(Number(params.pid), '', '', () => {
+      // 只有编辑页面，需要请求widget的detail，请求回来之后，会触发componentWillReceiveProps，currentWidget会变为widget的detail
+      if (params.wid !== 'add' && !Number.isNaN(Number(params.wid))) {
+        onLoadWidgetDetail(Number(params.wid), (data) => {
+          const { contextId, nodeName, view, engine } = JSON.parse(data.config)
+          // 全局保存下来，保存widget的时候要用
+          this.setState({
+            contextId,
+            nodeName,
+            engine
+          })
+          if (Object.keys(this.view).length > 0 && this.urlHasView) {
+            // 如果url里有view，说明this.view是不为空的对象，这时候以this.view为准，直接用该view作为当前页面的view，onLoadWidgetDetail调用成功后会调用componentWillReceiveProps，在componentWillReceiveProps里面将this.urlView更新，所以在这里无需进行设置
+          } else {
+            // 如果url里没有view：
+            //   1、如果有contextId， 就要重新带着contextId请求一次views列表：
+            //     1、如果config里的view不是不为空的对象，则这里无更多逻辑
+            //     2、如果config里的view是不为空的对象：
+            //       1、如果views列表里有和config.view的name一样的，则用新的这个view
+            //       2、如果views列表里无和config.view的name一样的，则就用config里的这个view
+            //   2、如果没有contextId：
+            //     1、如果config里的view不是不为空的对象，则这里无更多逻辑
+            //     2、如果config里的view是不为空的对象，则就用config里的这个view
+            // onLoadWidgetDetail调用成功后会调用componentWillReceiveProps，在componentWillReceiveProps里面将this.urlView更新，所以在这里无需进行设置
+            if (contextId && typeof view !== 'number') {
+              // 如果url里没有view，且有contextId，则带上contextId和nodeName请求views
+              onLoadViews(Number(params.pid), contextId, nodeName)
+            } else {
+              if (typeof view === 'object' && Object.keys(view).length > 0) {
+                this.view = view
+                this.urlView = {
+                  ...this.urlView,
+                  ...this.view
+                }
+              }
+            }
+          }
+        })
+      } else if (params.wid === 'add') {
+        // 新增页面中，如果url里面有view，则要更新urlView
+        if (Object.keys(this.view).length > 0 && this.urlHasView) {
+          this.urlView = {
+            ...this.urlView,
+            ...this.view
+          }
+          // 要更新一下this.state.view，并执行渲染逻辑
+          this.setState({
+            view: this.view
+          })
+        }
+      }
+    })
   }
 
   public componentDidMount () {
     this.props.onHideNavigator()
-    const routeParams = this.getParams();
-    const isWaterMask = routeParams[1] ? routeParams[1].split('=')[1] : '';
-    if (isWaterMask) {
-      localStorage.setItem('isWaterMask', isWaterMask);
-    }
   }
 
   public componentWillReceiveProps (nextProps: IWorkbenchProps) {
@@ -192,13 +352,54 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       this.setState({ selectedViewId: Number(viewId) }, () => this.viewSelect(Number(viewId)))
     }
 
+    if (views && views.length && currentWidget && currentWidget.config) {
+      let { view } = JSON.parse(currentWidget.config)
+
+      // 说明config里的view是一个不为空的对象
+      if (typeof view === 'object' && Object.keys(view).length > 0 && !this.urlHasView) {
+        if (views && views.length) {
+          for (let i = 0; i < views.length; i++) {
+            // 如果新的views列表里，有和config里的view的name相同的view，则要使用新views列表里的view
+            if (views[i].name === view.name) {
+              view = views[i]
+              break
+            }
+          }
+        }
+        this.view = view
+        if (typeof this.view.model === 'string') this.view.model = JSON.parse(this.view.model)
+        this.urlView = {
+          ...this.urlView,
+          ...this.view
+        }
+      }
+    }
+
+    // 这里的currentWidget就是当前的widget的数据，流程是，最开始currentWidget和this.props.currentWidget都为null，加载完数据后，currentWidget变为非空对象，然后这时候更新state，下一次之后，currentWidget和this.props.currentWidget就都为相同的非空对象了，而且以后不会再变了，所以下面if里的逻辑按理说只会执行一次，所以传到operatingPanel里的originalWidgetProps也不会变了
     if (currentWidget && (currentWidget !== this.props.currentWidget)) {
-      const { controls, cache, expired, computed, autoLoadData, cols, rows, ...rest } = JSON.parse(currentWidget.config)
+      const { controls, cache, expired, computed, autoLoadData, cols, rows, view, ...rest } = JSON.parse(currentWidget.config)
+
+      if (Object.keys(this.view).length > 0 && this.urlHasView) {
+        this.urlView = {
+          ...this.urlView,
+          ...this.view
+        }
+      } else {
+        if (typeof view === 'object' && Object.keys(view).length > 0) {
+          this.view = view
+          this.urlView = {
+            ...this.urlView,
+            ...this.view
+          }
+        }
+      }
+
       const updatedCols = cols.map((col) => widgetDimensionMigrationRecorder(col))
       const updatedRows = rows.map((row) => widgetDimensionMigrationRecorder(row))
       if (rest.selectedChart === ChartTypes.Bar) {
         rest.chartStyles = barChartStylesMigrationRecorder(rest.chartStyles)
       }
+
       this.setState({
         id: currentWidget.id,
         name: currentWidget.name,
@@ -219,16 +420,20 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     this.props.onClearCurrentWidget()
     // 离开页面时清除viewId的数据，因为只有第一次进入页面时需要，如果url里有?viewId=${viewId}进行自动选择view
     sessionStorage.setItem('viewId', '');
+    window.removeEventListener('message', this.addListenerHandler)
+    window.removeEventListener('message', this.editListenerHandler)
+
   }
 
+  // 比如查询模式和是否允许多选拖拽这些用户的基本设置
   private initSettings = (): IWorkbenchSettings => {
     let workbenchSettings = {
       queryMode: WorkbenchQueryMode.Immediately,
-      multiDrag: false
+      multiDrag: true
     }
     try {
-      const loginUser = JSON.parse(localStorage.getItem('loginUser'))
-      const currentUserWorkbenchSetting = loginUser ? JSON.parse(localStorage.getItem(`${loginUser.id}_workbench_settings`)) : null
+      const loginUser = localStorage.getItem('username')
+      const currentUserWorkbenchSetting = loginUser ? JSON.parse(localStorage.getItem(`${loginUser}_workbench_settings`)) : null
       if (currentUserWorkbenchSetting) {
         workbenchSettings = currentUserWorkbenchSetting
       }
@@ -250,20 +455,33 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     })
   }
 
-  private viewSelect = (viewId: number) => {
+  private viewSelect = (view: object) => {
+    const viewId = view.id
     const { formedViews } = this.props
     const nextState = {
       selectedViewId: viewId,
       controls: [],
-      cache: false,
-      expired: DEFAULT_CACHE_EXPIRED
+      cache: this.state.cache,
+      expired: this.state.expired
     }
-    if (formedViews[viewId]) {
-      this.setState(nextState)
-    } else {
-      this.props.onLoadViewDetail(viewId, () => {
+    // 如果在下拉框中选中正常view（viewId > 0），逻辑不变
+    // 如果是选中的metadata，则直接用其数据作为view
+    if (viewId) {
+      if (formedViews[viewId]) {
         this.setState(nextState)
-      })
+      } else {
+        this.props.onLoadViewDetail(viewId, () => {
+          this.setState(nextState)
+        })
+      }
+    } else {
+      this.view = view
+      if (typeof this.view.model === 'string') this.view.model = JSON.parse(this.view.model)
+      this.urlView = {
+        ...this.urlView,
+        ...this.view
+      }
+      this.setState(nextState)
     }
   }
 
@@ -274,10 +492,9 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
   }
 
   private deleteComputed = (computeField) => {
-    console.log({computeField})
     const { from } = computeField
     const { params, onEditWidget } = this.props
-    const { id, name, description, selectedViewId, controls, cache, autoLoadData, expired, widgetProps, computed, originalWidgetProps, originalComputed } = this.state
+    const { id, name, description, selectedViewId, controls, cache, autoLoadData, expired, widgetProps, computed, originalComputed } = this.state
     if (from === 'originalComputed') {
       this.setState({
         originalComputed: originalComputed.filter((oc) => oc.id !== computeField.id)
@@ -370,18 +587,29 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     }
   }
 
+  // 是否开启缓存radio按钮
   private cacheChange = (e) => {
     this.setState({
       cache: e.target.value
     })
   }
 
+  // 缓存有效期输入框
   private expiredChange = (value) => {
+    let tempValue = value
+    if (typeof value !== 'number') {
+      // 如果不是数字类型，默认设置成300
+      tempValue = 300
+    } else {
+      // value必须大于1
+      if (value <= 0) tempValue = 300
+    }
     this.setState({
-      expired: value
+      expired: tempValue
     })
   }
 
+  // 更新widgetProps
   private setWidgetProps = (widgetProps: IWidgetProps) => {
     const { cols, rows } = widgetProps
     const data = [...(widgetProps.data || this.state.widgetProps.data)]
@@ -397,17 +625,31 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     })
   }
 
+  private setView = (view) => {
+    this.view = view
+    this.urlView = {
+      ...this.urlView,
+      ...this.view
+    }
+    // 要更新一下this.state.view，执行渲染逻辑
+    this.setState({
+      view: this.view
+    })
+  }
+
+  // 点击widget编辑页面右上角的保存
   private saveWidget = () => {
     const { params, onAddWidget, onEditWidget } = this.props
-    const { id, name, description, selectedViewId, controls, cache, expired, widgetProps, computed, originalWidgetProps, originalComputed, autoLoadData } = this.state
+    const { id, name, description, selectedViewId, controls, cache, expired, widgetProps, computed, originalComputed, autoLoadData, contextId, nodeName, engine } = this.state
     if (!name.trim()) {
-      message.error('Widget名称不能为空')
+      message.error('Widget名称不能为空')
       return
     }
-    if (!selectedViewId) {
+    if (!selectedViewId && Object.keys(this.view).length === 0) {
       message.error('请选择一个View')
       return
     }
+
     const widget = {
       name,
       description,
@@ -415,48 +657,121 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       viewId: selectedViewId,
       projectId: Number(params.pid),
       config: JSON.stringify({
+        // 把当前最新的widgetProps放到config参数里传给后端，每次打开widget页面时，默认从config里读取出初始widgetProps
+        // 所以就始终保持widgetProps是最新的配置就行了，比如更改列宽所有相关的，保持cols和metrics里都是最新的数据
         ...widgetProps,
         controls,
         computed: originalComputed && originalComputed ? [...computed, ...originalComputed] : [...computed],
         cache,
         expired,
         autoLoadData,
-        data: []
+        data: [],
+        // 这个queryData就是widget要调用getdata接口会传的参数，因为在dss工作流里，需要从后台直接提交计算widget的请求
+        query: this.queryData,
+        view: this.view,
+        contextId,
+        nodeName,
+        engine
       }),
       publish: true
     }
-    console.info({
-      widget
-    })
     if (id) {
       onEditWidget({...widget, id}, () => {
-        message.success('修改成功')
-        const editSignDashboard = sessionStorage.getItem('editWidgetFromDashboard')
-        const editSignDisplay = sessionStorage.getItem('editWidgetFromDisplay')
-        if (editSignDashboard) {
-          sessionStorage.removeItem('editWidgetFromDashboard')
-          const [pid, portalId, portalName, dashboardId, itemId] = editSignDashboard.split(DEFAULT_SPLITER)
-          this.props.router.replace(`/project/${pid}/portal/${portalId}/portalName/${portalName}/dashboard/${dashboardId}`)
-        } else if (editSignDisplay) {
-          sessionStorage.removeItem('editWidgetFromDisplay')
-          const [pid, displayId] = editSignDisplay.split(DEFAULT_SPLITER)
-          this.props.router.replace(`/project/${pid}/display/${displayId}`)
+        // 关于DataWrangler保存和删除表格的逻辑：datawrangler收到visualis的信号，然后调用接口
+        // 1. 新建widget页面里：
+        //     1. DataWrangler尚未创建表格，Visualis切换到excel类型，使用当前Visualis的选择参数加载数据，保存widget，DataWrangler里保存一个名为visualis_widget_{widgetId}的表格
+        // 2. 编辑widget页面里：
+        //     1. DataWrangler尚未创建表格，Visualis切换到excel类型，使用当前Visualis的选择参数加载数据，保存widget，DataWrangler里保存一个名为visualis_widget_{widgetId}的表格
+        //     2. DataWrangler尚未创建表格，Visualis切换到excel类型，使用当前Visualis的选择参数加载数据，然后Visualis再切换到其他图表类型，全程DataWrangler里不保存表格也不删除表格
+        //     3. DataWrangler里已创建表格，Visualis初始是在excel类型，然后Visualis再切换到其他图表类型，切换时DataWrangler里删除原先的名为visualis_widget_{widgetId}的表格
+        //     4. DataWrangler里已创建表格，Visualis初始是在excel类型，中间可能有切换类型或者更改指标维度等各种操作，只要保存widget时还是在excel类型，则DataWrangler里删除原先的名为visualis_widget_{widgetId}的表格，再保存一个新的名为visualis_widget_{widgetId}的表格，这一步的操作是相当于将表格的数据和样式更新到最新进度，选择先删后改而不是直接编辑的原因是中间用户的操作可能导致已经删了原先的表格
+        if (widgetProps.selectedChart === 19 && widgetProps.mode === 'chart') {
+          document.getElementById('dataWrangler').contentWindow.postMessage({type: 'save', id, mode: 'edit'},'*')
+          this.params = params
+          // 交给iframe嵌的datawrangler使用，那边保存完成后再跳转
+          window.addEventListener('message', this.editListenerHandler)
         } else {
-          this.props.router.replace(`/project/${params.pid}/widgets`)
+          message.success('保存成功')
+          const editSignDashboard = sessionStorage.getItem('editWidgetFromDashboard')
+          const editSignDisplay = sessionStorage.getItem('editWidgetFromDisplay')
+          if (editSignDashboard) {
+            sessionStorage.removeItem('editWidgetFromDashboard')
+            const [pid, portalId, portalName, dashboardId, itemId] = editSignDashboard.split(DEFAULT_SPLITER)
+            this.props.router.replace(`/project/${pid}/portal/${portalId}/portalName/${portalName}/dashboard/${dashboardId}`)
+          } else if (editSignDisplay) {
+            sessionStorage.removeItem('editWidgetFromDisplay')
+            const [pid, displayId] = editSignDisplay.split(DEFAULT_SPLITER)
+            this.props.router.replace(`/project/${pid}/display/${displayId}`)
+          } else {
+            this.props.router.replace(`/project/${params.pid}/widgets`)
+          }
         }
       })
     } else {
-      onAddWidget(widget, () => {
-        message.success('添加成功')
-        this.props.router.replace(`/project/${params.pid}/widgets`)
+      onAddWidget(widget, (widgetId) => {
+        if (widgetProps.selectedChart === 19 && widgetProps.mode === 'chart' ) {
+          document.getElementById('dataWrangler').contentWindow.postMessage({type: 'save', id: widgetId, mode: 'add'}, '*')
+          // 交给iframe嵌的datawrangler使用，那边保存完成后再跳转
+          this.params = params
+          window.addEventListener('message', this.addListenerHandler)
+        } else {
+          message.success('保存成功')
+          this.props.router.replace(`/project/${params.pid}/widgets`)
+        }
       })
     }
   }
 
+  private params = null
+
+  private editListenerHandler = (event) => {
+    message.success('保存成功')
+    if (event.data.type === 'edit') {
+      const editSignDashboard = sessionStorage.getItem('editWidgetFromDashboard')
+      const editSignDisplay = sessionStorage.getItem('editWidgetFromDisplay')
+      if (editSignDashboard) {
+        sessionStorage.removeItem('editWidgetFromDashboard')
+        const [pid, portalId, portalName, dashboardId, itemId] = editSignDashboard.split(DEFAULT_SPLITER)
+        this.props.router.replace(`/project/${pid}/portal/${portalId}/portalName/${portalName}/dashboard/${dashboardId}`)
+      } else if (editSignDisplay) {
+        sessionStorage.removeItem('editWidgetFromDisplay')
+        const [pid, displayId] = editSignDisplay.split(DEFAULT_SPLITER)
+        this.props.router.replace(`/project/${pid}/display/${displayId}`)
+      } else {
+        this.props.router.replace(`/project/${this.params.pid}/widgets`)
+      }
+    }
+  }
+
+  private addListenerHandler = (event) => {
+    if (event.data.type === 'add') {
+      message.success('保存成功')
+      this.props.router.replace(`/project/${this.params.pid}/widgets`)
+    }
+  }
+
+  // 这个queryData就是widget要调用getdata接口会传的参数，因为在dss工作流里，需要从后台直接提交计算widget的请求
+  private queryData = null
+
+  // 每次queryData有变化，也就是每次请求了数据时都更新成最新的请求接口的参数
+  private setQueryData = (data) => {
+    this.queryData = data
+  }
+
   private cancel = () => {
-    sessionStorage.removeItem('editWidgetFromDashboard')
-    sessionStorage.removeItem('editWidgetFromDisplay')
-    this.props.router.goBack()
+    const editSignDashboard = sessionStorage.getItem('editWidgetFromDashboard')
+    const editSignDisplay = sessionStorage.getItem('editWidgetFromDisplay')
+    if (editSignDashboard) {
+      sessionStorage.removeItem('editWidgetFromDashboard')
+      const [pid, portalId, portalName, dashboardId, itemId] = editSignDashboard.split(DEFAULT_SPLITER)
+      this.props.router.replace(`/project/${pid}/portal/${portalId}/portalName/${portalName}/dashboard/${dashboardId}`)
+    } else if (editSignDisplay) {
+      sessionStorage.removeItem('editWidgetFromDisplay')
+      const [pid, displayId] = editSignDisplay.split(DEFAULT_SPLITER)
+      this.props.router.replace(`/project/${pid}/display/${displayId}`)
+    } else {
+      this.props.router.replace(`/project/${this.props.params.pid}/widgets`)
+    }
   }
 
   private paginationChange = (pageNo: number, pageSize: number, orders) => {
@@ -492,7 +807,6 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     })
   }
 
-
   private changeAutoLoadData = (e) => {
     this.setState({
       autoLoadData: e.target.value
@@ -507,8 +821,8 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
 
   private saveSettingForm = (values: IWorkbenchSettings) => {
     try {
-      const loginUser = JSON.parse(localStorage.getItem('loginUser'))
-      if (loginUser) localStorage.setItem(`${loginUser.id}_workbench_settings`, JSON.stringify(values))
+      const loginUser = localStorage.getItem('username')
+      if (loginUser) localStorage.setItem(`${loginUser}_workbench_settings`, JSON.stringify(values))
       this.setState({
         settings: values
       })
@@ -524,6 +838,10 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
     })
   }
 
+  private setEngine = (val) => {
+    this.setState({ engine: val })
+  }
+
   public render () {
     const {
       views,
@@ -533,10 +851,16 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       distinctColumnValues,
       columnValueLoading,
       onLoadViewData,
+      onLoadEngines,
+      onExecuteQuery,
+      onGetProgress,
+      onGetResult,
+      onKillExecute,
       onLoadViewDistinctValue,
       onBeofreDropColunm
     } = this.props
     const {
+      id,
       name,
       description,
       selectedViewId,
@@ -550,9 +874,12 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       originalComputed,
       widgetProps,
       settingFormVisible,
-      settings
+      settings,
+      isFold,
+      engine
     } = this.state
-    const selectedView = formedViews[selectedViewId]
+    let selectedView = formedViews[selectedViewId]
+
     const { queryMode, multiDrag } = settings
 
     const { selectedChart, cols, rows, metrics, data } = widgetProps
@@ -564,6 +891,11 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
       hasDataConfig
     }
 
+    const visualisData = {}
+    if (widgetProps.mode == 'chart' && widgetProps.selectedChart === 19) {
+      visualisData.viewId = selectedViewId
+      visualisData.requestParams = this.queryData
+    }
     return (
       <div className={styles.workbench}>
         <EditorHeader
@@ -588,13 +920,18 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
               maxSize={this.maxSplitSize}
               onChange={this.saveSplitSize}
               onDragFinished={this.resizeChart}
+              allowResize={false}
+              resizerStyle={{display: 'none'}}
             >
               <OperatingPanel
                 ref={(f) => this.operatingPanel = f}
+                // widgetId
+                id={id}
+                widgetProps={widgetProps}
                 views={views}
                 originalWidgetProps={originalWidgetProps}
                 originalComputed={originalComputed}
-                selectedView={selectedView}
+                selectedView={Object.keys(this.view).length > 0 ? this.urlView : selectedView}
                 distinctColumnValues={distinctColumnValues}
                 columnValueLoading={columnValueLoading}
                 controls={controls}
@@ -604,6 +941,7 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
                 queryMode={queryMode}
                 multiDrag={multiDrag}
                 computed={computed}
+                onSetView={this.setView}
                 onViewSelect={this.viewSelect}
                 onChangeAutoLoadData={this.changeAutoLoadData}
                 onSetControls={this.setControls}
@@ -613,18 +951,40 @@ export class Workbench extends React.Component<IWorkbenchProps, IWorkbenchStates
                 onSetComputed={this.setComputed}
                 onDeleteComputed={this.deleteComputed}
                 onLoadData={onLoadViewData}
+                onLoadEngines={onLoadEngines}
+                onExecuteQuery={onExecuteQuery}
+                onGetProgress={onGetProgress}
+                onGetResult={onGetResult}
+                onKillExecute={onKillExecute}
+                onSetQueryData={this.setQueryData}
                 onLoadDistinctValue={onLoadViewDistinctValue}
                 onBeofreDropColunm={onBeofreDropColunm}
+                // 改动查询数据的进度
+                changeGetProgressPercent={this.changeGetProgressPercent}
+                // 左侧两栏配置栏是否折叠
+                isFold={isFold}
+                onChangeIsFold={this.changeIsFold}
+                // 是否有第一次的默认折叠,如果是的话,要在噢peratingPanel里调用一次onChangeIsFold
+                collapsed={this.collapsed}
+                // 如果url中有view的话，要进行特殊的配置
+                view={this.view}
+                setEngine={this.setEngine}
+                engine={engine}
               />
               <div className={styles.viewPanel}>
                 <div className={styles.widgetBlock}>
                   <Widget
+                    // 存一个tempWidgetProps值，用于后面onSetWidgetProps
+                    tempWidgetProps={JSON.parse(JSON.stringify(widgetProps))}
+                    onSetWidgetProps={this.setWidgetProps}
                     {...widgetProps}
                     loading={<DashboardItemMask.Loading {...maskProps}/>}
                     empty={<DashboardItemMask.Empty {...maskProps}/>}
                     editing={true}
                     onPaginationChange={this.paginationChange}
                     onChartStylesChange={this.chartStylesChange}
+                    onRef={this.onRef}
+                    visualisData={visualisData}
                   />
                 </div>
               </div>
@@ -655,10 +1015,19 @@ const mapStateToProps = createStructuredSelector({
 export function mapDispatchToProps (dispatch) {
   return {
     onHideNavigator: () => dispatch(hideNavigator()),
-    onLoadViews: (projectId, resolve) => dispatch(loadViews(projectId, resolve)),
+    onLoadViews: (projectId, contextId, nodeName, resolve) => dispatch(loadViews(projectId, contextId, nodeName, resolve)),
     onLoadViewDetail: (viewId, resolve) => dispatch(loadViewsDetail([viewId], resolve)),
-    onLoadWidgetDetail: (id) => dispatch(loadWidgetDetail(id)),
+    onLoadWidgetDetail: (id, resolve) => dispatch(loadWidgetDetail(id, resolve)),
     onLoadViewData: (viewId, requestParams, resolve, reject) => dispatch(loadViewData(viewId, requestParams, resolve, reject)),
+    onLoadEngines: (viewId, resolve) => dispatch(loadEngines(viewId, resolve)),
+    // widget页面 提交查询数据接口
+    onExecuteQuery: (viewId, requestParams, resolve, reject) => dispatch(executeQuery(viewId, requestParams, resolve, reject)),
+    // widget页面 进度查询接口
+    onGetProgress: (execId, resolve, reject) => dispatch(getProgress(execId, resolve, reject)),
+    // widget页面 获取结果集接口
+    onGetResult: (execId, pageNo, pageSize, resolve, reject) => dispatch(getResult(execId, pageNo, pageSize, resolve, reject)),
+    // widget页面 kill查询接口
+    onKillExecute: (execId, resolve, reject) => dispatch(killExecute(execId, resolve, reject)),
     onAddWidget: (widget, resolve) => dispatch(addWidget(widget, resolve)),
     onEditWidget: (widget, resolve) => dispatch(editWidget(widget, resolve)),
     onLoadViewDistinctValue: (viewId, params) => dispatch(loadViewDistinctValue(viewId, params)),

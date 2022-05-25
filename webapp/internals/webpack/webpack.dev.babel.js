@@ -7,6 +7,7 @@ const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const CircularDependencyPlugin = require('circular-dependency-plugin')
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin')
+const CspHtmlWebpackPlugin = require('csp-html-webpack-plugin')
 
 module.exports = require('./webpack.base.babel')({
   mode: 'development',
@@ -36,8 +37,8 @@ module.exports = require('./webpack.base.babel')({
       chunks: 'all',
       cacheGroups: {
         vendors: {
-          test: /[\\/]node_modules[\\/](?!antd|jquery|three|bootstrap-datepicker)(.[a-zA-Z0-9.\-_]+)[\\/]/,
-          // test: /[\\/]node_modules[\\/]/,
+          // test: /[\\/]node_modules[\\/](?!antd|jquery|three|bootstrap-datepicker)(.[a-zA-Z0-9.\-_]+)[\\/]/,
+          test: /[\\/]node_modules[\\/]/,
           name: 'vendor',
           chunks: 'all'
         }
@@ -64,7 +65,38 @@ module.exports = require('./webpack.base.babel')({
       exclude: /a\.js|node_modules/, // exclude node_modules
       failOnError: false // show a warning when there is a circular dependency
     }),
-    new ForkTsCheckerWebpackPlugin()
+    new ForkTsCheckerWebpackPlugin(),
+    new CspHtmlWebpackPlugin(
+      {
+        'base-uri': "'self'",
+        'object-src': "'none'",
+        'child-src': "'none'",
+        'script-src': ["'self'","'unsafe-inline'","'unsafe-eval'"],
+        'style-src': ["'self'","'unsafe-inline'"],
+        'connect-src': [
+          "'self'",
+          'http://10.107.116.246:8088'
+        ],
+        // 不加的话iframe要报错
+        'frame-src': '*',
+        'img-src': [
+          "'self'",
+          'data:'
+        ]
+      },
+      {
+        enabled: true,
+        hashingMethod: 'sha256',
+        hashEnabled: {
+          'script-src': true,
+          'style-src': false
+        },
+        nonceEnabled: {
+          'script-src': true,
+          'style-src': false
+        }
+      }
+    )
   ],
 
   tsLoaders: [{
