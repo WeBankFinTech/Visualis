@@ -191,7 +191,6 @@ public class OrganizationServiceImpl implements OrganizationService {
             }
         } catch (Exception e) {
             log.error("uploadAvatar: organization({}) avatar upload error, error: {}", organization.getName(), e.getMessage());
-            e.printStackTrace();
             throw new ServerException("organization avatar upload error");
         }
 
@@ -378,8 +377,7 @@ public class OrganizationServiceImpl implements OrganizationService {
                     Constants.INVITE_ORG_MEMBER_MAIL_TEMPLATE,
                     content);
         } catch (ServerException e) {
-            log.info(e.getMessage());
-            e.printStackTrace();
+            log.error(e.getMessage());
         }
     }
 

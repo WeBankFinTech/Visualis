@@ -21,9 +21,11 @@ package edp.davinci.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
-import edp.core.common.jdbc.JdbcDataSource;
-import com.webank.wedatasphere.dss.visualis.service.hive.HiveDBHelper;
+import com.webank.wedatasphere.dss.visualis.auth.ProjectAuth;
+import com.webank.wedatasphere.dss.visualis.configuration.CommonConfig;
+import com.webank.wedatasphere.dss.visualis.utils.HiveDBHelper;
 import com.webank.wedatasphere.dss.visualis.utils.VisualisUtils;
+import edp.core.common.jdbc.JdbcDataSource;
 import edp.core.enums.DataTypeEnum;
 import edp.core.exception.NotFoundException;
 import edp.core.exception.ServerException;
@@ -38,11 +40,13 @@ import edp.davinci.core.enums.*;
 import edp.davinci.core.model.DataUploadEntity;
 import edp.davinci.core.utils.CsvUtils;
 import edp.davinci.core.utils.ExcelUtils;
+import edp.davinci.dao.ConfigMapper;
 import edp.davinci.dao.SourceMapper;
 import edp.davinci.dao.ViewMapper;
 import edp.davinci.dto.projectDto.ProjectDetail;
 import edp.davinci.dto.projectDto.ProjectPermission;
 import edp.davinci.dto.sourceDto.*;
+import edp.davinci.model.Config;
 import edp.davinci.model.Source;
 import edp.davinci.model.User;
 import edp.davinci.model.View;
@@ -89,6 +93,9 @@ public class SourceServiceImpl implements SourceService {
     private ViewMapper viewMapper;
 
     @Autowired
+    private ConfigMapper configMapper;
+
+    @Autowired
     private ProjectService projectService;
 
     @Autowired
@@ -96,6 +103,9 @@ public class SourceServiceImpl implements SourceService {
 
     @Autowired
     HiveDBHelper hiveDBHelper;
+
+    @Autowired
+    private ProjectAuth projectAuth;
 
 
     @Override
@@ -134,12 +144,19 @@ public class SourceServiceImpl implements SourceService {
                 sources = null;
             }
         }
-        if(CollectionUtils.isEmpty(sources)){
+        if(sources.stream().noneMatch(s -> VisualisUtils.isLinkisDataSource(s))){
             Source hiveSource = sourceMapper.getById(VisualisUtils.getHiveDataSourceId());
             hiveSource.setId(null);
             hiveSource.setProjectId(projectId);
             sourceMapper.insert(hiveSource);
             totalSources.add(hiveDBHelper.sourceToHiveSource(hiveSource));
+        }
+        if(getAvailableEngineTypes(user.username).contains(VisualisUtils.PRESTO().getValue()) && sources.stream().noneMatch(s -> VisualisUtils.isPrestoDataSource(s))){
+            Source prestoSource = sourceMapper.getById(VisualisUtils.getPrestoDataSourceId());
+            prestoSource.setId(null);
+            prestoSource.setProjectId(projectId);
+            sourceMapper.insert(prestoSource);
+            totalSources.add(hiveDBHelper.sourceToHiveSource(prestoSource));
         }
         return totalSources;
     }
@@ -198,15 +215,21 @@ public class SourceServiceImpl implements SourceService {
 
         //测试连接
         SourceConfig config = sourceCreate.getConfig();
+        checkWhitelist(config);
 
-        boolean testConnection = sqlUtils
-                .init(
-                        config.getUrl(),
-                        config.getUsername(),
-                        config.getPassword(),
-                        config.getVersion(),
-                        config.isExt()
-                ).testConnection();
+        boolean testConnection;
+        try{
+            testConnection = sqlUtils
+                    .init(
+                            config.getUrl(),
+                            config.getUsername(),
+                            config.getPassword(),
+                            config.getVersion(),
+                            config.isExt()
+                    ).testConnection();
+        } catch (Exception e){
+            throw new ServerException("failed to connect to database: " + e.getMessage(), e);
+        }
 
         if (testConnection) {
             Source source = new Source().createdBy(user.getId());
@@ -222,6 +245,15 @@ public class SourceServiceImpl implements SourceService {
             }
         } else {
             throw new ServerException("get source connection fail");
+        }
+    }
+
+    private void checkWhitelist(SourceConfig config) {
+        if((Boolean) CommonConfig.ENABLE_JDBC_WHITELIST().getValue()){
+            String ipPort = org.apache.commons.lang.StringUtils.substringBetween(config.getUrl(), "//", "?");
+            if(!CommonConfig.JDBC_WHITELIST().getValue().contains(ipPort)){
+                throw new ServerException("JDBC URL not in whitelist");
+            }
         }
     }
 
@@ -241,6 +273,10 @@ public class SourceServiceImpl implements SourceService {
             throw new NotFoundException("this source is not found");
         }
 
+        if(!projectAuth.isPorjectOwner(source.getProjectId(), user.getId())) {
+            throw new UnAuthorizedExecption("current user has no permission.");
+        }
+
         ProjectDetail projectDetail = projectService.getProjectDetail(source.getProjectId(), user, false);
 
         ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
@@ -255,15 +291,22 @@ public class SourceServiceImpl implements SourceService {
         }
 
         SourceConfig sourceConfig = sourceInfo.getConfig();
+        checkWhitelist(sourceConfig);
         //测试连接
-        boolean testConnection = sqlUtils
-                .init(
-                        sourceConfig.getUrl(),
-                        sourceConfig.getUsername(),
-                        sourceConfig.getPassword(),
-                        sourceConfig.getVersion(),
-                        sourceConfig.isExt()
-                ).testConnection();
+        boolean testConnection;
+        try{
+            testConnection = sqlUtils
+                    .init(
+                            sourceConfig.getUrl(),
+                            sourceConfig.getUsername(),
+                            sourceConfig.getPassword(),
+                            sourceConfig.getVersion(),
+                            sourceConfig.isExt()
+                    ).testConnection();
+        } catch (Exception e){
+            throw new ServerException("failed to connect to database: " + e.getMessage(), e);
+        }
+
 
         if (testConnection) {
             String origin = source.toString();
@@ -300,6 +343,11 @@ public class SourceServiceImpl implements SourceService {
         if (null == source) {
             log.info("source (:{}) is not found", id);
             throw new NotFoundException("this source is not found");
+        }
+
+
+        if(!projectAuth.isPorjectOwner(source.getProjectId(), user.getId())) {
+            throw new UnAuthorizedExecption("current user has no permission.");
         }
 
         ProjectDetail projectDetail = projectService.getProjectDetail(source.getProjectId(), user, false);
@@ -341,6 +389,12 @@ public class SourceServiceImpl implements SourceService {
             if (StringUtils.isEmpty(sourceTest.getVersion()) || JDBC_DATASOURCE_DEFAULT_VERSION.equals(sourceTest.getVersion())) {
                 sourceTest.setVersion(null);
                 sourceTest.setExt(false);
+            }
+            if((Boolean) CommonConfig.ENABLE_JDBC_WHITELIST().getValue()){
+                String ipPort = org.apache.commons.lang.StringUtils.substringBetween(sourceTest.getUrl(), "//", "?");
+                if(!CommonConfig.JDBC_WHITELIST().getValue().contains(ipPort)){
+                    throw new ServerException("JDBC URL not in whitelist");
+                }
             }
             testConnection = sqlUtils
                     .init(
@@ -499,7 +553,7 @@ public class SourceServiceImpl implements SourceService {
 
         List<String> dbList = null;
 
-        if(VisualisUtils.isHiveDataSource(source)){
+        if(VisualisUtils.isLinkisDataSource(source)){
             dbList = hiveDBHelper.getHiveDBNames(ticketId);
         } else {
             try {
@@ -544,7 +598,7 @@ public class SourceServiceImpl implements SourceService {
 
 
         List<QueryColumn> tableList = null;
-        if(VisualisUtils.isHiveDataSource(source)){
+        if(VisualisUtils.isLinkisDataSource(source)){
             tableList = hiveDBHelper.getHiveTables(dbName, ticketId);
         } else {
             try {
@@ -588,13 +642,13 @@ public class SourceServiceImpl implements SourceService {
         ProjectDetail projectDetail = projectService.getProjectDetail(source.getProjectId(), user, false);
 
         TableInfo tableInfo = null;
-        if(VisualisUtils.isHiveDataSource(source)){
+        if(VisualisUtils.isLinkisDataSource(source)){
             tableInfo = hiveDBHelper.getHiveTableInfo(dbName, tableName, ticketId);
         } else {
             try {
                 tableInfo = sqlUtils.init(source).getTableInfo(dbName, tableName);
             } catch (SourceException e) {
-                e.printStackTrace();
+                log.error("Error getting table data information for source: ", e);
                 throw new ServerException(e.getMessage());
             }
         }
@@ -633,6 +687,15 @@ public class SourceServiceImpl implements SourceService {
         SourceUtils sourceUtils = new SourceUtils(jdbcDataSource);
         sourceUtils.releaseDataSource(source.getJdbcUrl(), source.getName(), source.getPassword(), source.getDbVersion(), source.isExt());
         return sqlUtils.init(source).testConnection();
+    }
+
+    @Override
+    public List<String> getAvailableEngineTypes(String username) {
+        Config config = configMapper.getConfig("presto.enabled", "USER", username);
+        if(config == null || !Boolean.parseBoolean(config.getValue())){
+            return Lists.newArrayList(VisualisUtils.SPARK().getValue());
+        }
+        return Lists.newArrayList(VisualisUtils.AVAILABLE_ENGINE_TYPES().getValue().split(";"));
     }
 
     /**
@@ -727,7 +790,7 @@ public class SourceServiceImpl implements SourceService {
                 }
             }
         } catch (ServerException e) {
-            e.printStackTrace();
+            log.error("Insert data error: ", e);
             throw new ServerException(e.getMessage());
         }
 
@@ -787,10 +850,10 @@ public class SourceServiceImpl implements SourceService {
                 log.info("executeRealJob insert end ----  {}", DateUtils.toyyyyMMddHHmmss(endTime));
                 log.info("execution time {} second", (endTime - startTime) / 1000);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                log.error("Executing SQL is a thread interrupt error: ", e);
                 throw new ServerException(e.getMessage());
             } catch (ExecutionException e) {
-                e.printStackTrace();
+                log.error("Executing SQL error: ", e);
                 throw new ServerException(e.getMessage());
             } finally {
                 executorService.shutdown();

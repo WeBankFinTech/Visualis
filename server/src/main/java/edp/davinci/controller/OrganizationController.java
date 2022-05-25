@@ -22,6 +22,7 @@ package edp.davinci.controller;
 import com.alibaba.druid.util.StringUtils;
 import com.github.pagehelper.PageInfo;
 import edp.core.annotation.CurrentUser;
+import edp.core.annotation.MethodLog;
 import edp.davinci.common.controller.BaseController;
 import edp.davinci.core.common.Constants;
 import edp.davinci.core.common.ResultMap;
@@ -32,10 +33,6 @@ import edp.davinci.model.User;
 import edp.davinci.service.OrganizationService;
 import edp.davinci.service.ProjectService;
 import edp.davinci.service.RoleService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -43,18 +40,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import springfox.documentation.annotations.ApiIgnore;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Map;
 
-@Api(value = "/organization", tags = "organization", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-@ApiResponses(@ApiResponse(code = 404, message = "organization not found"))
 @Slf4j
 @RestController
-@RequestMapping(value = Constants.BASE_API_PATH + "/organizations", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+@RequestMapping(value = Constants.BASE_API_PATH + "/organizations", produces = MediaType.APPLICATION_JSON_VALUE)
 public class OrganizationController extends BaseController {
 
     @Autowired
@@ -74,11 +68,11 @@ public class OrganizationController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "create organization")
+    @MethodLog
     @PostMapping
     public ResponseEntity createOrganization(@Valid @RequestBody OrganizationCreate organizationCreate,
-                                             @ApiIgnore BindingResult bindingResult,
-                                             @ApiIgnore @CurrentUser User user,
+                                             BindingResult bindingResult,
+                                             @CurrentUser User user,
                                              HttpServletRequest request) {
         if (bindingResult.hasErrors()) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message(bindingResult.getFieldErrors().get(0).getDefaultMessage());
@@ -98,12 +92,12 @@ public class OrganizationController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "update organization")
+    @MethodLog
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateOrganization(@PathVariable Long id,
                                              @Valid @RequestBody OrganizationPut organizationPut,
-                                             @ApiIgnore BindingResult bindingResult,
-                                             @ApiIgnore @CurrentUser User user,
+                                             BindingResult bindingResult,
+                                             @CurrentUser User user,
                                              HttpServletRequest request) {
         if (invalidId(id) || !id.equals(organizationPut.getId())) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid organization id");
@@ -128,11 +122,11 @@ public class OrganizationController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "upload organization avatar")
+    @MethodLog
     @PostMapping(value = "/{id}/avatar")
     public ResponseEntity uploadOrgAvatar(@PathVariable Long id,
                                           @RequestParam("file") MultipartFile file,
-                                          @ApiIgnore @CurrentUser User user,
+                                          @CurrentUser User user,
                                           HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid organization id");
@@ -157,10 +151,10 @@ public class OrganizationController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "delete organization")
+    @MethodLog
     @DeleteMapping("/{id}")
     public ResponseEntity deleteOrganization(@PathVariable Long id,
-                                             @ApiIgnore @CurrentUser User user,
+                                             @CurrentUser User user,
                                              HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid organization id");
@@ -179,10 +173,10 @@ public class OrganizationController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get organization")
+    @MethodLog
     @GetMapping("/{id}")
     public ResponseEntity getOrganization(@PathVariable Long id,
-                                          @ApiIgnore @CurrentUser User user,
+                                          @CurrentUser User user,
                                           HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid organization id");
@@ -201,9 +195,9 @@ public class OrganizationController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get organizations")
+    @MethodLog
     @GetMapping
-    public ResponseEntity getOrganizations(@ApiIgnore @CurrentUser User user, HttpServletRequest request) {
+    public ResponseEntity getOrganizations(@CurrentUser User user, HttpServletRequest request) {
         List<OrganizationInfo> organizations = organizationService.getOrganizations(user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(organizations));
     }
@@ -217,13 +211,13 @@ public class OrganizationController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get organization projects")
+    @MethodLog
     @GetMapping("/{id}/projects")
     public ResponseEntity getOrgProjects(@PathVariable Long id,
                                          @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
                                          @RequestParam(value = "pageNum", required = false, defaultValue = "1") int pageNum,
                                          @RequestParam(value = "pageSize", required = false, defaultValue = "10") int pageSize,
-                                         @ApiIgnore @CurrentUser User user,
+                                         @CurrentUser User user,
                                          HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid organization id");
@@ -242,7 +236,7 @@ public class OrganizationController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get organization members")
+    @MethodLog
     @GetMapping("/{id}/members")
     public ResponseEntity getOrgMembers(@PathVariable Long id, HttpServletRequest request) {
         if (invalidId(id)) {
@@ -262,10 +256,10 @@ public class OrganizationController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get organization roles")
+    @MethodLog
     @GetMapping("/{id}/roles")
     public ResponseEntity getOrgRoles(@PathVariable Long id,
-                                      @ApiIgnore @CurrentUser User user,
+                                      @CurrentUser User user,
                                       HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid organization id");
@@ -285,11 +279,11 @@ public class OrganizationController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "invite member to join the organization")
+    @MethodLog
     @PostMapping("/{orgId}/member/{memId}")
     public ResponseEntity inviteMember(@PathVariable("orgId") Long orgId,
                                        @PathVariable("memId") Long memId,
-                                       @ApiIgnore @CurrentUser User user,
+                                       @CurrentUser User user,
                                        HttpServletRequest request) {
 
         if (invalidId(orgId)) {
@@ -339,10 +333,10 @@ public class OrganizationController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "member confirm invite")
+    @MethodLog
     @PostMapping("/confirminvite/{token}")
     public ResponseEntity confirmInvite(@PathVariable("token") String token,
-                                        @ApiIgnore @CurrentUser User user,
+                                        @CurrentUser User user,
                                         HttpServletRequest request) {
         if (StringUtils.isEmpty(token)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("The invitation confirm token can not be EMPTY");
@@ -358,10 +352,10 @@ public class OrganizationController extends BaseController {
      * @param relationId
      * @return
      */
-    @ApiOperation(value = "delete member from organization")
+    @MethodLog
     @DeleteMapping("/member/{relationId}")
     public ResponseEntity deleteOrgMember(@PathVariable Long relationId,
-                                          @ApiIgnore @CurrentUser User user,
+                                          @CurrentUser User user,
                                           HttpServletRequest request) {
         if (invalidId(relationId)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid relation id");
@@ -381,12 +375,12 @@ public class OrganizationController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "change member role or organization", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PutMapping(value = "/member/{relationId}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateMemberRole(@PathVariable Long relationId,
                                            @Valid @RequestBody OrganzationRole organzationRole,
-                                           @ApiIgnore BindingResult bindingResult,
-                                           @ApiIgnore @CurrentUser User user,
+                                           BindingResult bindingResult,
+                                           @CurrentUser User user,
                                            HttpServletRequest request) {
 
         if (invalidId(relationId)) {

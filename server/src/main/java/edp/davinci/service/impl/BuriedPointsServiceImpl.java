@@ -146,7 +146,7 @@ public class BuriedPointsServiceImpl implements BuriedPointsService {
                 l.add(map);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Entity to map error: ", e);
         }
         return l;
     }

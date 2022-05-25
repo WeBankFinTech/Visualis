@@ -55,6 +55,7 @@ public class CustomDataSourceUtils {
     }
 
 
+    @SuppressWarnings("unchecked")
     public static void loadAllFromYaml(String yamlPath) throws Exception {
         if (StringUtils.isEmpty(yamlPath)) {
             return;

@@ -23,6 +23,8 @@ import com.alibaba.druid.util.StringUtils;
 import edp.davinci.core.enums.ActionEnum;
 import edp.davinci.core.enums.FileTypeEnum;
 import edp.davinci.service.excel.MsgWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -41,6 +43,8 @@ import static edp.core.consts.Consts.*;
 
 @Component
 public class FileUtils {
+
+    final static Logger log = LoggerFactory.getLogger(FileUtils.class);
 
 
     @Value("${file.userfiles-path}")
@@ -147,7 +151,7 @@ public class FileUtils {
                     os.write(buffer);
                     os.flush();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("Reading the file failed while downloading the file: ", e);
                 } finally {
                     try {
                         if (null != is) {
@@ -157,7 +161,7 @@ public class FileUtils {
                             os.close();
                         }
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        log.error("Error in closing file: ", e);
                     }
                     remove(filePath);
                 }
@@ -234,7 +238,7 @@ public class FileUtils {
             }
             out.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Compressed file error: ", e);
         }
     }
 

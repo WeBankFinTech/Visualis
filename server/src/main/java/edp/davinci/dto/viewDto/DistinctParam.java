@@ -19,6 +19,7 @@
 
 package edp.davinci.dto.viewDto;
 
+import com.webank.wedatasphere.dss.visualis.query.model.VirtualView;
 import lombok.Data;
 
 import javax.validation.constraints.NotEmpty;
@@ -32,6 +33,8 @@ public class DistinctParam {
     private List<String> columns;
 
     private List<String> filters;
+
+    private VirtualView view;
 
     private List<Param> params;
 

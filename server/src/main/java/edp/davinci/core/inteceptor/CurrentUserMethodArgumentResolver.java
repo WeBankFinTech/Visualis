@@ -19,18 +19,18 @@
 
 package edp.davinci.core.inteceptor;
 
-import com.webank.wedatasphere.linkis.server.security.SecurityFilter;
+import org.apache.linkis.server.security.SecurityFilter;
 import edp.core.annotation.CurrentUser;
-import edp.core.consts.Consts;
 import edp.core.inteceptor.CurrentUserMethodArgumentResolverInterface;
 import edp.davinci.dao.UserMapper;
 import edp.davinci.model.User;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.MethodParameter;
 import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
-import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
 import javax.servlet.http.HttpServletRequest;
@@ -54,6 +54,10 @@ public class CurrentUserMethodArgumentResolver implements CurrentUserMethodArgum
     public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer, NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {
         try
         {
+            String dssUser = (String) ((ServletWebRequest) webRequest).getRequest().getAttribute("dss-user");
+            if(StringUtils.isNotBlank(dssUser)){
+                return userMapper.selectByUsername(dssUser);
+            }
             return (User)userMapper.selectByUsername(SecurityFilter.getLoginUsername(webRequest.getNativeRequest(HttpServletRequest.class)));
         }catch (Throwable e){
             log.error("Failed to get user:",e);

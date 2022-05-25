@@ -21,15 +21,11 @@ package edp.davinci.service.screenshot;
 
 import com.alibaba.druid.util.StringUtils;
 import com.webank.wedatasphere.dss.visualis.configuration.CommonConfig;
-import com.webank.wedatasphere.linkis.adapt.LinkisUtils;
 import edp.core.utils.ServerUtils;
-import edp.davinci.dao.CronJobMapper;
 import edp.davinci.dao.UserMapper;
-import edp.davinci.model.CronJob;
 import edp.davinci.model.User;
-import edp.davinci.service.CronJobService;
-import edp.davinci.service.UserService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.linkis.adapt.LinkisUtils;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeDriverService;
@@ -83,7 +79,7 @@ public class ScreenshotUtil {
 
     public void screenshot(long userId, long jobId, List<ImageContent> imageContents) {
         User user = userMapper.getById(userId);
-        log.info("start screenshot for job: {}", jobId);
+        log.info("start screenshot for job: {}, and set screenshot time out second is: {}", jobId, timeOutSecond);
         try {
             CountDownLatch countDownLatch = new CountDownLatch(imageContents.size());
             List<Future> futures = new ArrayList<>(imageContents.size());
@@ -91,10 +87,15 @@ public class ScreenshotUtil {
                 log.info("thread for screenshot start, type: {}, id: {}", content.getDesc(), content.getCId());
                 try {
                     File image = doScreenshot(content.getUrl(), user.username);
-                    content.setContent(image);
+                    if (null != image) {
+                        log.info("Finished doing screenshot, file path: {}", image.getAbsolutePath());
+                        content.setContent(image);
+                    } else {
+                        log.info("Screenshot failed. Set the picture content to null.");
+                        content.setContent(null);
+                    }
                 } catch (Exception e) {
                     log.error("error ScreenshotUtil.screenshot, ", e);
-                    e.printStackTrace();
                 } finally {
                     countDownLatch.countDown();
                     log.info("thread for screenshot finish, type: {}, id: {}", content.getDesc(), content.getCId());
@@ -112,7 +113,7 @@ public class ScreenshotUtil {
             imageContents.sort(Comparator.comparing(ImageContent::getOrder));
 
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error("screenshot thread gets interrupted, ", e);
         } finally {
             log.info("finish screenshot for job: {}", jobId);
         }
@@ -120,44 +121,71 @@ public class ScreenshotUtil {
 
 
     private File doScreenshot(String url, String username) throws Exception {
+        url = getUrlWithEnv(url);
         WebDriver driver = generateWebDriver();
-        Cookie ticketCookie = new Cookie(CommonConfig.TICKET_ID_STRING().getValue(), LinkisUtils.getUserTicketKV(username)._2, serverUtils.getAccessAddress(), "/", new Date(System.currentTimeMillis() + 1000*60*60*24*30L));
-        Cookie innerCookie = new Cookie("dataworkcloud_inner_request", "true", serverUtils.getAccessAddress(), "/", new Date(System.currentTimeMillis() + 1000*60*60*24*30L));
+        driver.get(serverUtils.getServerUrl());
+        Cookie ticketCookie = new Cookie(CommonConfig.TICKET_ID_STRING().getValue(), LinkisUtils.getUserTicketKV(username)._2,
+                serverUtils.getAccessAddress(), "/", new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 30L));
+
+        Cookie innerCookie = new Cookie("dataworkcloud_inner_request", "true", serverUtils.getAccessAddress(),
+                "/", new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 30L));
+
         driver.manage().addCookie(ticketCookie);
         driver.manage().addCookie(innerCookie);
 
         driver.get(url);
-        log.info("getting... {}", url);
+
+        log.info("for user {} getting... {}", username, url);
         try {
 
+            log.info("Start the screenshot and set the timeout value is {}", timeOutSecond);
             WebDriverWait wait = new WebDriverWait(driver, timeOutSecond);
 
             ExpectedCondition<WebElement> ConditionOfSign = ExpectedConditions.presenceOfElementLocated(By.id("headlessBrowserRenderSign"));
             ExpectedCondition<WebElement> ConditionOfWidth = ExpectedConditions.presenceOfElementLocated(By.id("width"));
             ExpectedCondition<WebElement> ConditionOfHeight = ExpectedConditions.presenceOfElementLocated(By.id("height"));
+            // WidgetExecuteFailedTag
+            ExpectedCondition<WebElement> ConditionOfWidgetExecuteFailedTag =
+                    ExpectedConditions.presenceOfElementLocated(By.id("WidgetExecuteFailedTag"));
 
-            wait.until(ExpectedConditions.or(ConditionOfSign, ConditionOfWidth, ConditionOfHeight));
+            wait.until(ExpectedConditions.or(ConditionOfSign, ConditionOfWidgetExecuteFailedTag, ConditionOfWidth, ConditionOfHeight));
 
-            String widthVal = driver.findElement(By.id("width")).getAttribute("value");
-            String heightVal = driver.findElement(By.id("height")).getAttribute("value");
+            WebElement widgetExecuteFailedTag = null;
 
-            int width = DEFAULT_SCREENSHOT_WIDTH;
-            int height = DEFAULT_SCREENSHOT_HEIGHT;
+            widgetExecuteFailedTag = waitUntilElementInvisible(By.id("WidgetExecuteFailedTag"), driver);
 
-            if (!StringUtils.isEmpty(widthVal)) {
-                width = Integer.parseInt(widthVal);
+            if (null == widgetExecuteFailedTag) {
+
+                String widthVal = driver.findElement(By.id("width")).getAttribute("value");
+                String heightVal = driver.findElement(By.id("height")).getAttribute("value");
+
+                int width = DEFAULT_SCREENSHOT_WIDTH;
+                int height = DEFAULT_SCREENSHOT_HEIGHT;
+
+                if (!StringUtils.isEmpty(widthVal)) {
+                    log.info("Browser resolution width is {}", widthVal);
+                    width = Integer.parseInt(widthVal);
+                } else {
+                    log.info("The browser resolution width is the default: {}", width);
+                }
+
+                if (!StringUtils.isEmpty(heightVal)) {
+                    log.info("Browser resolution height is {}", heightVal);
+                    height = Integer.parseInt(heightVal);
+                } else {
+                    log.info("The browser resolution height is the default: {}", height);
+                }
+                driver.manage().window().setSize(new Dimension(width, height));
+                Thread.sleep(2000);
+                return ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+            } else {
+                log.error("When the screenshot is taken, the widget execution fails and the widget WidgetExecuteFailedTag tag is captured!");
+                return null;
             }
-
-            if (!StringUtils.isEmpty(heightVal)) {
-                height = Integer.parseInt(heightVal);
-            }
-            driver.manage().window().setSize(new Dimension(width, height));
-            Thread.sleep(2000);
-            return ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error("do screenshot thread gets interrupted, ", e);
         } finally {
-            log.info("finish get {}, webdriver will quit soon", url);
+            log.info("for user {} finished getting {}, webdriver will quit soon", username, url);
             driver.quit();
         }
         return null;
@@ -180,6 +208,7 @@ public class ScreenshotUtil {
         driver.manage().timeouts().implicitlyWait(3, TimeUnit.MINUTES);
         driver.manage().window().maximize();
         driver.manage().window().setSize(new Dimension(DEFAULT_SCREENSHOT_WIDTH, DEFAULT_SCREENSHOT_HEIGHT));
+
         return driver;
     }
 
@@ -204,6 +233,13 @@ public class ScreenshotUtil {
         options.addArguments("silent");
         options.addArguments("--disable-application-cache");
 
+        options.addArguments("disable-dev-shm-usage");
+        options.addArguments("remote-debugging-port=9012");
+
+//        options.addArguments("--no-sandbox");
+//        options.addArguments("--disable-dev-shm-usage");
+//        options.addArguments("--headless");
+
         return new ChromeDriver(options);
     }
 
@@ -216,7 +252,41 @@ public class ScreenshotUtil {
         }
         log.info("Generating PhantomJs driver ({})...", PHANTOMJS_PATH);
         System.setProperty(PhantomJSDriverService.PHANTOMJS_EXECUTABLE_PATH_PROPERTY, PHANTOMJS_PATH);
+        PhantomJSDriver phantomJSDriver = null;
+        try {
+            phantomJSDriver = new PhantomJSDriver();
+        } catch (final Exception e) {
+            //初始化失败，需要进行下重试一次,如果两次都失败了，基本就证明本时段不可用
+            log.warn("failed to new PhantomJSDriver, we will do it once again", e);
+            phantomJSDriver = new PhantomJSDriver();
+        }
+        return phantomJSDriver;
+    }
 
-        return new PhantomJSDriver();
+    private String getUrlWithEnv(String url) {
+        String env = CommonConfig.ACCESS_ENV().getValue();
+        if (org.apache.commons.lang.StringUtils.isBlank(env)) {
+            return url;
+        }
+        url = url.replace("?", "?env=" + env + "&");
+        return url;
+    }
+
+    /**
+     * 缺陷记录：
+     * 之前使用widgetExecuteFailedTag = driver.findElement(By.id("WidgetExecuteFailedTag"));来获取失败元素，
+     * 通过判断widgetExecuteFailedTag是否为null，来判断是否执行成功，这样会导致一个问题。当执行成功是WidgetExecuteFailedTag对象并没有产生
+     * 导致findElement会去长时间搜索该对象，截图操作效率降低很多，目前通过如下方法来设置超时
+     * */
+    private WebElement waitUntilElementInvisible(By element, WebDriver driver) {
+        driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+        WebElement expectElement = null;
+        try {
+            expectElement = driver.findElement(element);
+        } catch (NoSuchElementException e) {
+            log.info("When the screenshot page is opened, the widget execution failure tag is not found. So Screenshot successful!");
+        }
+        driver.manage().timeouts().implicitlyWait(timeOutSecond, TimeUnit.SECONDS);
+        return expectElement;
     }
 }
