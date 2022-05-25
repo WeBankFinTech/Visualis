@@ -5,12 +5,13 @@ import set from 'lodash/set'
 import { uuid } from 'utils/util'
 import { fontWeightOptions, fontStyleOptions, fontFamilyOptions, fontSizeOptions } from '../constants'
 import { defaultConditionStyle, AvailableTableConditionStyleTypes } from './constants'
+import { TOTAL_COLUMN_WIDTH } from 'app/globalConstants'
 import { getColumnIconByType } from './util'
 import { ITableColumnConfig, ITableConditionStyle } from './types'
 import ColorPicker from 'components/ColorPicker'
 import ConditionStyleConfigModal from './ConditionStyleConfigModal'
 
-import { Row, Col, Tooltip, Select, Button, Radio, Checkbox, Table, Modal } from 'antd'
+import { Row, Col, Tooltip, Select, Button, Radio, Checkbox, Table, Modal, InputNumber } from 'antd'
 const RadioGroup = Radio.Group
 const RadioButton = Radio.Button
 
@@ -29,18 +30,22 @@ interface IColumnStyleConfigStates {
   selectedColumnName: string
   conditionStyleConfigModalVisible: boolean
   currentConditionStyle: ITableConditionStyle
+  checkedColumns: []
 }
 
 export class ColumnStyleConfig extends React.PureComponent<IColumnStyleConfigProps, IColumnStyleConfigStates> {
 
   public constructor (props: IColumnStyleConfigProps) {
     super(props)
+    // config是从tableSection里面传进来的validColumnConfig
     const localConfig = props.config
     this.state = {
       localConfig,
       selectedColumnName: localConfig.length > 0 ? localConfig[0].columnName : '',
       conditionStyleConfigModalVisible: false,
-      currentConditionStyle: null
+      currentConditionStyle: null,
+      // 当前选中的列
+      checkedColumns: []
     }
   }
 
@@ -64,12 +69,25 @@ export class ColumnStyleConfig extends React.PureComponent<IColumnStyleConfigPro
     })
     return (
       <li className={itemCls} key={columnName} onClick={this.selectColumn(columnName)}>
+        <Checkbox style={{marginRight: '7px', paddingLeft: '0', position: 'relative', top: '1px'}} onChange={this.checkColumn(columnName)}></Checkbox>
         <i className={`iconfont ${getColumnIconByType(visualType)}`} />
         <Tooltip title={displayName} mouseEnterDelay={0.8}>
           <label>{displayName}</label>
         </Tooltip>
       </li>
     )
+  }
+
+  private checkColumn = (columnName: string) => (e) => {
+    const { checkedColumns } = this.state
+    if (e.target.checked) {
+      // 把这一列加进数组中
+      checkedColumns.push(columnName)
+      this.setState({ checkedColumns })
+    } else {
+      // 把这一列从数组中删除
+      checkedColumns.splice(checkedColumns.indexOf(columnName), 1)
+    }
   }
 
   private selectColumn = (columnName: string) => () => {
@@ -81,13 +99,34 @@ export class ColumnStyleConfig extends React.PureComponent<IColumnStyleConfigPro
   private propChange = (
     propPath: Exclude<keyof(ITableColumnConfig), 'style'> | ['style', keyof ITableColumnConfig['style']]
   ) => (e) => {
+    // 如果是配置 列宽 时，必须要是输入的数字才有意义
+    if (propPath === 'width' && typeof e !== 'number') return e = null
+
     const value = e.target ? (e.target.value || e.target.checked) : e
-    const { localConfig, selectedColumnName } = this.state
-    const nextLocalConfig = produce(localConfig, (draft) => {
-      const selectedColumn = draft.find(({ columnName }) => columnName === selectedColumnName)
-      set(selectedColumn, propPath, value)
-      return draft
-    })
+    const { localConfig, selectedColumnName, checkedColumns } = this.state
+    let nextLocalConfig = []
+    // 如果当前列未勾选，则只更改当前列
+    // 开启列排序，暂不需要批量修改
+    if (!checkedColumns.includes(selectedColumnName) || propPath === 'sort') {
+      nextLocalConfig = produce(localConfig, (draft) => {
+        const selectedColumn = draft.find(({ columnName }) => columnName === selectedColumnName)
+        set(selectedColumn, propPath, value)
+        // 如果是更改了列宽之后，要改这个widthChanged值为true
+        if (propPath === 'width') set(selectedColumn, 'widthChanged', true)
+        return draft
+      })
+    } else {
+      // 如果当前列已勾选，则更改样式时要更改所有的勾选的列
+      nextLocalConfig = produce(localConfig, (draft) => {
+        checkedColumns.forEach((name) => {
+          const selectedColumn = draft.find(({ columnName }) => columnName === name)
+          set(selectedColumn, propPath, value)
+          // 如果是更改了列宽之后，要改这个widthChanged值为true
+          if (propPath === 'width') set(selectedColumn, 'widthChanged', true)
+        })
+        return draft
+      })
+    }
     this.setState({
       localConfig: nextLocalConfig
     })
@@ -97,7 +136,9 @@ export class ColumnStyleConfig extends React.PureComponent<IColumnStyleConfigPro
     this.props.onCancel()
   }
 
+  // 点击 表格数据设置 弹框下方的保存按钮
   private save = () => {
+    // 调用TableSection传来的onSave
     this.props.onSave(this.state.localConfig)
   }
 
@@ -201,9 +242,11 @@ export class ColumnStyleConfig extends React.PureComponent<IColumnStyleConfigPro
     if (localConfig.length <= 0) {
       return (<div />)
     }
-
-    const { style, visualType, sort, conditionStyles, showAsPercent } = localConfig.find((c) => c.columnName === selectedColumnName)
+    let { style, visualType, sort, conditionStyles, showAsPercent, width } = localConfig.find((c) => c.columnName === selectedColumnName)
     const { fontSize, fontFamily, fontWeight, fontColor, fontStyle, backgroundColor, justifyContent } = style
+    // 在配置框中，只显示整数的width值，所以这里的取整只是显示上取整，实际存的width值可能是有小数的
+    if (typeof width === 'number') width = Math.ceil(width)
+
     return (
       <Modal
         title="表格数据设置"
@@ -246,6 +289,19 @@ export class ColumnStyleConfig extends React.PureComponent<IColumnStyleConfigPro
                     </Row>
                   )
                 }
+                <Row gutter={8} type="flex" align="middle" className={stylesConfig.rowBlock}>
+                  <Col span={4}>列宽</Col>
+                  <Col span={10}>
+                      <InputNumber
+                        placeholder="20-2000"
+                        min={20}
+                        max={2000}
+                        className={styles.blockElm}
+                        value={width}
+                        onChange={this.propChange('width')}
+                      />
+                  </Col>
+                </Row>
                 <Row gutter={8} type="flex" align="middle" className={stylesConfig.rowBlock}>
                   <Col span={4}>背景色</Col>
                   <Col span={2}>

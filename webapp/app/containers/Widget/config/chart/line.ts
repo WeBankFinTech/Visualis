@@ -48,7 +48,7 @@ const line: IChartInfo = {
       step: false
     },
     label: {
-      showLabel: false,
+      showLabel: true,
       labelPosition: CHART_LABEL_POSITIONS[0].value,
       labelFontFamily: PIVOT_CHART_FONT_FAMILIES[0].value,
       labelFontSize: '12',

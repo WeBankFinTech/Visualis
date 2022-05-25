@@ -42,8 +42,8 @@ const pie: IChartInfo = {
   },
   style: {
     label: {
-      showLabel: false,
-      pieLabelPosition: CHART_PIE_LABEL_POSITIONS[0].value,
+      showLabel: true,
+      pieLabelPosition: 'outside',
       labelFontFamily: PIVOT_CHART_FONT_FAMILIES[0].value,
       labelFontSize: '12',
       labelColor: PIVOT_DEFAULT_FONT_COLOR,

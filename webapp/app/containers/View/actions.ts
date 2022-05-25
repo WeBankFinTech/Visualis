@@ -40,11 +40,13 @@ export const ViewActions = {
       }
     }
   },
-  loadViews (projectId: number, resolve?: (views: IViewBase[]) => void) {
+  loadViews (projectId: number, contextId?: string, nodeName?: string, resolve?: (views: IViewBase[]) => void) {
     return {
       type: ActionTypes.LOAD_VIEWS,
       payload: {
         projectId,
+        contextId,
+        nodeName,
         resolve
       }
     }
@@ -368,6 +370,124 @@ export const ViewActions = {
     }
   },
 
+  executeQuery (
+    id: number,
+    requestParams: IDataRequestParams,
+    resolve: (data: any[]) => void,
+    reject: (error) => void
+  ) {
+    return {
+      type: ActionTypes.EXECUTE_QUERY,
+      payload: {
+        id,
+        requestParams,
+        resolve,
+        reject
+      }
+    }
+  },
+  executeQueryLoaded () {
+    return {
+      type: ActionTypes.EXECUTE_QUERY_SUCCESS
+    }
+  },
+  loadExecuteQueryFail (err) {
+    return {
+      type: ActionTypes.EXECUTE_QUERY_FAILURE,
+      payload: {
+        err
+      }
+    }
+  },
+
+  getProgress (
+    execId: string,
+    resolve: (data: any[]) => void,
+    reject: (error) => void
+  ) {
+    return {
+      type: ActionTypes.GET_PROGRESS,
+      payload: {
+        execId,
+        resolve,
+        reject
+      }
+    }
+  },
+  getProgressLoaded () {
+    return {
+      type: ActionTypes.GET_PROGRESS_SUCCESS
+    }
+  },
+  loadGetProgressFail (err) {
+    return {
+      type: ActionTypes.GET_PROGRESS_FAILURE,
+      payload: {
+        err
+      }
+    }
+  },
+  
+  getResult (
+    execId: string,
+    pageNo: number,
+    pageSize: number,
+    resolve: (data: any[]) => void,
+    reject: (error) => void
+  ) {
+    return {
+      type: ActionTypes.GET_RESULT,
+      payload: {
+        execId,
+        pageNo,
+        pageSize,
+        resolve,
+        reject
+      }
+    }
+  },
+  getResultLoaded () {
+    return {
+      type: ActionTypes.GET_RESULT_SUCCESS
+    }
+  },
+  loadGetResultFail (err) {
+    return {
+      type: ActionTypes.GET_RESULT_FAILURE,
+      payload: {
+        err
+      }
+    }
+  },
+
+  killExecute (
+    execId: string,
+    resolve: (data: any[]) => void,
+    reject: (error) => void
+  ) {
+    return {
+      type: ActionTypes.KILL_EXECUTE,
+      payload: {
+        execId,
+        resolve,
+        reject
+      }
+    }
+  },
+  killExecuteLoaded () {
+    return {
+      type: ActionTypes.KILL_EXECUTE_SUCCESS
+    }
+  },
+  loadKillExecuteFail (err) {
+    return {
+      type: ActionTypes.KILL_EXECUTE_FAILURE,
+      payload: {
+        err
+      }
+    }
+  },
+
   loadViewDistinctValue (viewId: number, params: Partial<IDistinctValueReqeustParams>, resolve?: any) {
     return {
       type: ActionTypes.LOAD_VIEW_DISTINCT_VALUE,
@@ -445,7 +565,200 @@ export const ViewActions = {
         errorMessage
       }
     }
-  }
+  },
+
+  loadViewExecuteQuery (
+    renderType: RenderType,
+    itemId: number,
+    viewId: number,
+    requestParams: IDataRequestParams,
+    vizType: 'dashboard' | 'display',
+    statistic,
+    resolve,
+    reject
+  ) {
+    return {
+      type: ActionTypes.VIEW_EXECUTE_QUERY,
+      payload: {
+        renderType,
+        itemId,
+        viewId,
+        requestParams,
+        vizType,
+        cancelTokenSource: CancelToken.source(),
+        resolve,
+        reject
+      },
+      statistic
+    }
+  },
+  viewExecuteQueryLoaded (
+    renderType: RenderType,
+    itemId: number,
+    requestParams: IDataRequestParams,
+    result: any[],
+    vizType: 'dashboard' | 'display',
+    statistic
+  ) {
+    return {
+      type: ActionTypes.VIEW_EXECUTE_QUERY_SUCCESS,
+      payload: {
+        renderType,
+        itemId,
+        requestParams,
+        result,
+        vizType
+      },
+      statistic
+    }
+  },
+  loadViewExecuteQueyFail (itemId: number, vizType: 'dashboard' | 'display', errorMessage: string) {
+    return {
+      type: ActionTypes.VIEW_EXECUTE_QUERY_FAILURE,
+      payload: {
+        itemId,
+        vizType,
+        errorMessage
+      }
+    }
+  },
+  loadEngines (viewId, resolve) {
+    return {
+      type: ActionTypes.LOAD_ENGINES,
+      payload: {
+        viewId,
+        resolve
+      }
+    }
+  },
+  enginesLoaded () {
+    return {
+      type: ActionTypes.LOAD_ENGINES_SUCCESS,
+    }
+  },
+  loadEnginesFail (errorMessage: string) {
+    return {
+      type: ActionTypes.LOAD_ENGINES_FAILURE,
+      payload: {
+        errorMessage
+      }
+    }
+  },
+
+  loadViewGetProgress (
+    execId,
+    resolve,
+    reject
+  ) {
+    return {
+      type: ActionTypes.GET_PROGRESS,
+      payload: {
+        execId,
+        resolve,
+        reject
+      },
+    }
+  },
+  viewGetProgressLoaded () {
+    return {
+      type: ActionTypes.GET_PROGRESS_SUCCESS,
+    }
+  },
+  loadViewGetProgressFail (errorMessage: string) {
+    return {
+      type: ActionTypes.GET_PROGRESS_FAILURE,
+      payload: {
+        errorMessage
+      }
+    }
+  },
+
+  loadViewGetResult (
+    execId:string,
+    renderType: RenderType,
+    itemId: number,
+    viewId: number,
+    requestParams: IDataRequestParams,
+    vizType: 'dashboard' | 'display',
+    statistic,
+    resolve,
+    reject
+  ) {
+    return {
+      type: ActionTypes.VIEW_GET_RESULT,
+      payload: {
+        execId,
+        renderType,
+        itemId,
+        viewId,
+        requestParams,
+        vizType,
+        cancelTokenSource: CancelToken.source(),
+        resolve,
+        reject
+      },
+      statistic
+    }
+  },
+  viewGetResultLoaded (
+    renderType: RenderType,
+    itemId: number,
+    requestParams: IDataRequestParams,
+    result: any[],
+    vizType: 'dashboard' | 'display',
+    statistic
+  ) {
+    return {
+      type: ActionTypes.VIEW_GET_RESULT_SUCCESS,
+      payload: {
+        renderType,
+        itemId,
+        requestParams,
+        result,
+        vizType
+      },
+      statistic
+    }
+  },
+  loadViewGetResultFail (itemId: number, vizType: 'dashboard' | 'display', errorMessage: string) {
+    return {
+      type: ActionTypes.VIEW_GET_RESULT_FAILURE,
+      payload: {
+        itemId,
+        vizType,
+        errorMessage
+      }
+    }
+  },
+
+  loadViewKillExecute (
+    execId,
+    resolve,
+    reject
+  ) {
+    return {
+      type: ActionTypes.VIEW_KILL_EXECUTE,
+      payload: {
+        execId,
+        resolve,
+        reject
+      },
+    }
+  },
+  viewKillExecuteLoaded () {
+    return {
+      type: ActionTypes.VIEW_KILL_EXECUTE_SUCCESS,
+    }
+  },
+  loadViewKillExecuteFail (errorMessage: string) {
+    return {
+      type: ActionTypes.VIEW_KILL_EXECUTE_FAILURE,
+      payload: {
+        errorMessage
+      }
+    }
+  },
+
   /** */
 }
 const mockAction = returnType(ViewActions)

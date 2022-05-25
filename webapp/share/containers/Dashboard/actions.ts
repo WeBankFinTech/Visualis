@@ -27,6 +27,18 @@ import {
   LOAD_SHARE_RESULTSET,
   LOAD_SHARE_RESULTSET_SUCCESS,
   LOAD_SHARE_RESULTSET_FAILURE,
+  GET_BASE_INFO,
+  GET_BASE_INFO_SUCCESS,
+  GET_BASE_INFO_FAILURE,
+  EXECUTE_QUERY,
+  EXECUTE_QUERY_SUCCESS,
+  EXECUTE_QUERY_FAILURE,
+  GET_PROGRESS,
+  GET_PROGRESS_SUCCESS,
+  GET_PROGRESS_FAILURE,
+  GET_RESULT,
+  GET_RESULT_SUCCESS,
+  GET_RESULT_FAILURE,
   SET_INDIVIDUAL_DASHBOARD,
   LOAD_WIDGET_CSV,
   LOAD_WIDGET_CSV_SUCCESS,
@@ -124,6 +136,104 @@ export function resultsetGetted (renderType, itemId, requestParams, resultset) {
 export function getResultsetFail (itemId, errorMessage) {
   return {
     type: LOAD_SHARE_RESULTSET_FAILURE,
+    payload: {
+      itemId,
+      errorMessage
+    }
+  }
+}
+export function executeQuery (renderType, itemId, dataToken, requestParams, resolve, reject, parameters) {
+  return {
+    type: EXECUTE_QUERY,
+    payload: {
+      renderType,
+      itemId,
+      dataToken,
+      requestParams,
+      resolve,
+      reject,
+      parameters
+    }
+  }
+}
+
+export function executeQuerySuccess (renderType, itemId, requestParams, resultset) {
+  return {
+    type: EXECUTE_QUERY_SUCCESS,
+    payload: {
+      renderType,
+      itemId,
+      requestParams,
+      resultset
+    }
+  }
+}
+
+export function executeQueryFail (itemId, errorMessage) {
+  return {
+    type: EXECUTE_QUERY_FAILURE,
+    payload: {
+      itemId,
+      errorMessage
+    }
+  }
+}
+
+export function getProgress (execId, resolve, reject) {
+  return {
+    type: GET_PROGRESS,
+    payload: {
+      execId,
+      resolve,
+      reject
+    }
+  }
+}
+
+export function getProgressSuccess () {
+  return {
+    type: GET_PROGRESS_SUCCESS,
+  }
+}
+
+export function getProgressFail (errorMessage) {
+  return {
+    type: GET_PROGRESS_FAILURE,
+    payload: {
+      errorMessage
+    }
+  }
+}
+
+export function getResult (execId, renderType, itemId, requestParams, resolve, reject) {
+  return {
+    type: GET_RESULT,
+    payload: {
+      execId,
+      renderType,
+      itemId,
+      requestParams,
+      resolve,
+      reject
+    }
+  }
+}
+
+export function getResultSuccess (renderType, itemId, requestParams, resultset) {
+  return {
+    type: GET_RESULT_SUCCESS,
+    payload: {
+      renderType,
+      itemId,
+      requestParams,
+      resultset
+    }
+  }
+}
+
+export function getResultFail (itemId, errorMessage) {
+  return {
+    type: GET_RESULT_FAILURE,
     payload: {
       itemId,
       errorMessage
@@ -354,5 +464,26 @@ export function sendShareParams (params) {
     payload: {
       params
     }
+  }
+}
+
+export function getBaseInfo (resolve) {
+  return {
+    type: GET_BASE_INFO,
+    payload: {
+      resolve
+    }
+  }
+}
+
+export function getBaseInfoLoaded () {
+  return {
+    type: GET_BASE_INFO_SUCCESS
+  }
+}
+
+export function loadGetBaseInfoFail () {
+  return {
+    type: GET_BASE_INFO_FAILURE
   }
 }

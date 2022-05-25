@@ -87,19 +87,25 @@ export function getMergedCellSpan (data: any[], propName: string, idx: number) {
   return span
 }
 
+// 获取单元格的宽度
 export function computeCellWidth (style: ITableCellStyle, cellValue: string | number) {
   const { fontWeight, fontSize, fontFamily } = style || DefaultTableCellStyle
+  // getTextWidth是根据字符串的长度计算宽度
   const cellWidth = !cellValue ? 0 : getTextWidth(cellValue.toString(), fontWeight, `${fontSize}px`, fontFamily)
   return cellWidth + 16 + 2
 }
 
+// 获取列宽
 export function getDataColumnWidth (expression: string, columnConfig: ITableColumnConfig, format: IFieldFormatConfig, data: any[]) {
   if (!data.length) { return 0 }
   const style = columnConfig && columnConfig.style
   let values = data.map((record) => record[expression])
   values = values.filter((value, idx) => values.indexOf(value) === idx)
   const maxCellWidth = values.reduce((w, value) => {
+    // w是每次的w+value之和
+    // 对value进行格式化
     const formattedValue = getFormattedValue(value, format)
+    // 根据字符串的长度计算单元格的宽度
     const cellWidth = computeCellWidth(style, formattedValue)
     return Math.max(w, cellWidth)
   }, 0)
