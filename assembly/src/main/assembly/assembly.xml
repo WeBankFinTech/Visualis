@@ -30,7 +30,7 @@
     <fileSets>
         <fileSet>
             <directory>${project.parent.basedir}</directory>
-            <outputDirectory>/</outputDirectory>
+            <outputDirectory>${file.separator}</outputDirectory>
             <includes>
                 <include>README*</include>
             </includes>
