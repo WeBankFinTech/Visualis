@@ -34,7 +34,7 @@ export DWS_ENGINE_DEBUG="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,a
 export DWS_ENGINE_ANAGER_HEAP_SIZE="4G"
 export DWS_ENGINE_ANAGER_JAVA_OPTS="-Xms$DWS_ENGINE_ANAGER_HEAP_SIZE -Xmx$DWS_ENGINE_ANAGER_HEAP_SIZE -XX:+UseG1GC -XX:MaxPermSize=500m $DWS_ENGINE_DEBUG"
 
-nohup java $DWS_ENGINE_ANAGER_JAVA_OPTS -cp $HOME/conf:$HOME/lib/*:$JAVA_HOME/lib/* com.webank.wedatasphere.linkis.DataWorkCloudApplication 2>&1 > $DWS_ENGINE_ANAGER_LOG_PATH/linkis.out &
+nohup java $DWS_ENGINE_ANAGER_JAVA_OPTS -cp $HOME/conf:$HOME/lib/*:$JAVA_HOME/lib/* org.apache.linkis.DataWorkCloudApplication 2>&1 > $DWS_ENGINE_ANAGER_LOG_PATH/linkis.out &
 pid=$!
 if [[ -z "${pid}" ]]; then
     echo "visualis-server start failed!"
