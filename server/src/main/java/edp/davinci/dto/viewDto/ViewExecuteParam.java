@@ -20,6 +20,7 @@
 package edp.davinci.dto.viewDto;
 
 import com.alibaba.druid.util.StringUtils;
+import com.webank.wedatasphere.dss.visualis.query.model.VirtualView;
 import edp.core.utils.CollectionUtils;
 import edp.core.utils.SqlUtils;
 import lombok.Data;
@@ -39,6 +40,7 @@ public class ViewExecuteParam {
     private List<Aggregator> aggregators;
     private List<Order> orders;
     private List<String> filters;
+    private VirtualView view;
     private List<Param> params;
     private Boolean cache;
     private Long expired;
@@ -50,7 +52,30 @@ public class ViewExecuteParam {
 
     private boolean nativeQuery = false;
 
+    private String chartType = "";
+    private String engineType = "";
+
     public ViewExecuteParam() {
+    }
+
+    public ViewExecuteParam(List<String> groupList,
+                            List<Aggregator> aggregators,
+                            List<Order> orders,
+                            List<String> filterList,
+                            VirtualView view,
+                            List<Param> params,
+                            Boolean cache,
+                            Long expired,
+                            Boolean nativeQuery) {
+        this.groups = groupList;
+        this.aggregators = aggregators;
+        this.orders = orders;
+        this.filters = filterList;
+        this.view = view;
+        this.params = params;
+        this.cache = cache;
+        this.expired = expired;
+        this.nativeQuery = nativeQuery;
     }
 
     public ViewExecuteParam(List<String> groupList,
@@ -105,17 +130,17 @@ public class ViewExecuteParam {
                 String column = order.getColumn().trim();
                 Matcher matcher = PATTERN_SQL_AGGREGATE.matcher(order.getColumn().trim().toLowerCase());
                 if (!matcher.find()) {
-                    String prefix = SqlUtils.getKeywordPrefix(jdbcUrl, dbVersion);
-                    String suffix = SqlUtils.getKeywordSuffix(jdbcUrl, dbVersion);
-                    StringBuilder columnBuilder = new StringBuilder();
-                    if (!column.startsWith(prefix)) {
-                        columnBuilder.append(prefix);
-                    }
-                    columnBuilder.append(column);
-                    if (!column.endsWith(suffix)) {
-                        columnBuilder.append(suffix);
-                    }
-                    order.setColumn(columnBuilder.toString());
+//                    String prefix = SqlUtils.getKeywordPrefix(jdbcUrl, dbVersion);
+//                    String suffix = SqlUtils.getKeywordSuffix(jdbcUrl, dbVersion);
+//                    StringBuilder columnBuilder = new StringBuilder();
+//                    if (!column.startsWith(prefix)) {
+//                        columnBuilder.append(prefix);
+//                    }
+//                    columnBuilder.append(column);
+//                    if (!column.endsWith(suffix)) {
+//                        columnBuilder.append(suffix);
+//                    }
+                    order.setColumn(column);
                 }
                 list.add(order);
             }

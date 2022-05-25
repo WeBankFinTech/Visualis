@@ -102,8 +102,7 @@ public class ImageCropUtil {
                         ImageIO.write(cropImage, format.substring(1, format.length()), cropFile);
                         log.info("image_{}", n);
                     } catch (Exception e) {
-                        e.printStackTrace();
-                        log.info("crop image error");
+                        log.info("crop image error: ", e);
                         executorService.shutdownNow();
                     } finally {
                         countDownLatch.countDown();

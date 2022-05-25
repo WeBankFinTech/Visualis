@@ -21,6 +21,7 @@ package edp.davinci.service.impl;
 
 import com.alibaba.druid.util.StringUtils;
 import com.alibaba.fastjson.JSON;
+import com.webank.wedatasphere.dss.visualis.auth.ProjectAuth;
 import edp.core.exception.NotFoundException;
 import edp.core.exception.ServerException;
 import edp.core.exception.UnAuthorizedExecption;
@@ -75,6 +76,9 @@ public class DashboardServiceImpl extends VizCommonService implements DashboardS
 
     @Autowired
     private ShareService shareService;
+
+    @Autowired
+    private ProjectAuth projectAuth;
 
 
     @Override
@@ -213,6 +217,11 @@ public class DashboardServiceImpl extends VizCommonService implements DashboardS
         DashboardPortal dashboardPortal = dashboardPortalMapper.getById(dashboardCreate.getDashboardPortalId());
         if (dashboardPortal == null) {
             throw new NotFoundException("the dashboard portal is not found");
+        }
+
+
+        if(!projectAuth.isPorjectOwner(dashboardPortal.getProjectId(), user.getId())) {
+            throw new UnAuthorizedExecption("current user has no permission.");
         }
 
         ProjectDetail projectDetail = projectService.getProjectDetail(dashboardPortal.getProjectId(), user, false);

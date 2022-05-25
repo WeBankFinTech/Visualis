@@ -39,7 +39,7 @@ public class Constants extends Consts {
      */
     public static final String AUTH_API_PATH = "/auth/v3";
 
-    public static final String RESTFUL_BASE_PATH ="/visualis/";
+    public static final String RESTFUL_BASE_PATH = "/visualis/";
 
     /**
      * 用户激活 / 重发激活邮件模板
@@ -139,7 +139,7 @@ public class Constants extends Consts {
 
     public static final String REG_AUTHVAR = "\\([a-zA-Z0-9_.-[\\u4e00-\\u9fa5]*]+\\s*[\\w<>!=]*\\s*[a-zA-Z0-9_.-]*((\\(%s[a-zA-Z0-9_]+%s\\))|(%s[a-zA-Z0-9_]+%s))+\\s*\\)";
 
-    public static final String REG_QUERYVAR =  "\\$\\{([a-zA-Z0-9_.*]|[\\u4e00-\\u9fa5])+\\}";
+    public static final String REG_QUERYVAR = "\\$\\{([a-zA-Z0-9_.*]|[\\u4e00-\\u9fa5])+\\}";
 
     public static final String REG_CHINESE = "[\\u4e00-\\u9fa5]+";
 
@@ -150,6 +150,10 @@ public class Constants extends Consts {
     public static final String N0_AUTH_PERMISSION = "@DAVINCI_DATA_ACCESS_DENIED@";
 
     public static final String DAVINCI_TOPIC_CHANNEL = "DAVINCI_TOPIC_CHANNEL";
+    /**
+     * mysql text类型最大长度
+     */
+    public static final int TEXT_MAX_LENGTH = 65535;
 
 
     public static char getSqlTempDelimiter(String sqlTempDelimiter) {

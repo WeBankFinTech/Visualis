@@ -22,6 +22,7 @@ package edp.davinci.controller;
 import com.alibaba.druid.util.StringUtils;
 import edp.core.annotation.AuthIgnore;
 import edp.core.annotation.CurrentUser;
+import edp.core.annotation.MethodLog;
 import edp.davinci.common.controller.BaseController;
 import edp.davinci.core.common.Constants;
 import edp.davinci.core.common.ResultMap;
@@ -33,17 +34,12 @@ import edp.davinci.model.ShareDownloadRecord;
 import edp.davinci.model.User;
 import edp.davinci.service.DownloadService;
 import edp.davinci.service.ShareDownloadService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.common.io.Streams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -62,8 +58,6 @@ import java.util.List;
  * @Date 19/5/27 20:30
  * To change this template use File | Settings | File Templates.
  */
-@Api(value = "/download", tags = "download", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-@ApiResponses(@ApiResponse(code = 404, message = "download not found"))
 @Slf4j
 @RestController
 @RequestMapping(value = Constants.BASE_API_PATH + "/download")
@@ -75,16 +69,15 @@ public class DownloadController extends BaseController {
     @Autowired
     private ShareDownloadService shareDownloadService;
 
-    @ApiOperation(value = "get download record page")
-    @GetMapping(value = "/page", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public ResponseEntity getDownloadRecordPage(@ApiIgnore @CurrentUser User user,
+    @GetMapping(value = "/page", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity getDownloadRecordPage(@CurrentUser User user,
                                                 HttpServletRequest request) {
         List<DownloadRecord> records = downloadService.queryDownloadRecordPage(user.getId());
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(records));
     }
 
 
-    @ApiOperation(value = "get download record file")
+    @MethodLog
     @GetMapping(value = "/record/file/{id}/{token:.*}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     @AuthIgnore
     public ResponseEntity getDownloadRecordFile(@PathVariable Long id,
@@ -102,11 +95,11 @@ public class DownloadController extends BaseController {
     }
 
 
-    @ApiOperation(value = "get download record file")
-    @PostMapping(value = "/submit/{type}/{id}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @MethodLog
+    @PostMapping(value = "/submit/{type}/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity submitDownloadTask(@PathVariable String type,
                                              @PathVariable Long id,
-                                             @ApiIgnore @CurrentUser User user,
+                                             @CurrentUser User user,
                                              @Valid @RequestBody(required = false) DownloadViewExecuteParam[] params,
                                              HttpServletRequest request) {
         List<DownloadViewExecuteParam> downloadViewExecuteParams = Arrays.asList(params);
@@ -116,14 +109,14 @@ public class DownloadController extends BaseController {
     }
 
 
-    @ApiOperation(value = "submit share download")
-    @PostMapping(value = "/share/submit/{type}/{uuid}/{dataToken:.*}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @MethodLog
+    @PostMapping(value = "/share/submit/{type}/{uuid}/{dataToken:.*}", produces = MediaType.APPLICATION_JSON_VALUE)
     @AuthIgnore
     public ResponseEntity submitShareDownloadTask(@PathVariable(name = "type") String type,
                                                   @PathVariable(name = "uuid") String uuid,
                                                   @PathVariable(name = "dataToken") String dataToken,
                                                   @Valid @RequestBody(required = false) DownloadViewExecuteParam[] params,
-                                                  @ApiIgnore @CurrentUser User user,
+                                                  @CurrentUser User user,
                                                   HttpServletRequest request) {
 
 
@@ -139,12 +132,12 @@ public class DownloadController extends BaseController {
     }
 
 
-    @ApiOperation(value = "get share download record page")
-    @GetMapping(value = "/share/page/{uuid}/{token:.*}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @MethodLog
+    @GetMapping(value = "/share/page/{uuid}/{token:.*}", produces = MediaType.APPLICATION_JSON_VALUE)
     @AuthIgnore
     public ResponseEntity getShareDownloadRecordPage(@PathVariable(name = "uuid") String uuid,
                                                      @PathVariable(name = "token") String token,
-                                                     @ApiIgnore @CurrentUser User user,
+                                                     @CurrentUser User user,
                                                      HttpServletRequest request) {
         if (StringUtils.isEmpty(token)) {
             ResultMap resultMap = new ResultMap().fail().message("Invalid share token");
@@ -161,13 +154,13 @@ public class DownloadController extends BaseController {
     }
 
 
-    @ApiOperation(value = "get download record file")
+    @MethodLog
     @GetMapping(value = "/share/record/file/{id}/{uuid}/{token:.*}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     @AuthIgnore
     public ResponseEntity getShareDownloadRecordFile(@PathVariable(name = "id") String id,
                                                      @PathVariable(name = "uuid") String uuid,
                                                      @PathVariable(name = "token") String token,
-                                                     @ApiIgnore @CurrentUser User user,
+                                                     @CurrentUser User user,
                                                      HttpServletRequest request,
                                                      HttpServletResponse response) {
         if (StringUtils.isEmpty(token)) {

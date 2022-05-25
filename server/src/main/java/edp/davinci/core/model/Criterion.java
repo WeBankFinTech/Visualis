@@ -52,7 +52,7 @@ public class Criterion {
 
     public boolean isNeedApostrophe(){
         return !Arrays.stream(SqlFilter.NumericDataType.values())
-                .filter(value -> this.dataType.equalsIgnoreCase(value.getType())).findFirst()
+                .filter(value -> this.dataType != null && this.dataType.equalsIgnoreCase(value.getType())).findFirst()
                 .isPresent();
     }
 
