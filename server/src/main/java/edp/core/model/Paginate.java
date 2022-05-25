@@ -42,4 +42,8 @@ public class Paginate<T> implements Serializable {
     public void setResultList(List<T> resultList) {
         this.resultList = resultList;
     }
+
+    public void setTotalCount(long totalCount) {
+        this.totalCount = totalCount;
+    }
 }

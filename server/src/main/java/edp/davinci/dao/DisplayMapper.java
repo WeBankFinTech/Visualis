@@ -70,7 +70,7 @@ public interface DisplayMapper {
             "	p.visibility 'p.visibility'",
             "FROM",
             "	display d ",
-            "	LEFT JOIN dss_project p on d.project_id = p.id",
+            "	LEFT JOIN visualis_project p on d.project_id = p.id",
             "WHERE d.id = #{id}",
     })
     DisplayWithProject getDisplayWithProjectById(@Param("id") Long id);

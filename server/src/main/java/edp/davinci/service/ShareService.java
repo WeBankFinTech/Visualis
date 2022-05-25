@@ -49,7 +49,7 @@ public interface ShareService {
 
     ShareDashboard getShareDashboard(String token, User user) throws NotFoundException, ServerException, ForbiddenExecption, UnAuthorizedExecption;
 
-    Paginate<Map<String, Object>> getShareData(String token, ViewExecuteParam executeParam, User user) throws NotFoundException, ServerException, ForbiddenExecption, UnAuthorizedExecption, SQLException;
+    Paginate<Map<String, Object>> getShareData(String token, ViewExecuteParam executeParam, User user, HttpServletRequest request) throws NotFoundException, ServerException, ForbiddenExecption, UnAuthorizedExecption, SQLException;
 
     String generationShareDataCsv(ViewExecuteParam executeParam, User user, String token) throws NotFoundException, ServerException, ForbiddenExecption, UnAuthorizedExecption;
 

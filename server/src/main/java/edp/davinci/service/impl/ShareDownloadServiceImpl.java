@@ -50,6 +50,7 @@ public class ShareDownloadServiceImpl extends DownloadCommonService implements S
     @Autowired
     private ShareService shareService;
 
+    @SuppressWarnings("unchecked")
     @Override
     public boolean submit(DownloadType downloadType, String uuid, String token, User user, List<DownloadViewExecuteParam> params) {
         ShareInfo shareInfo = shareService.getShareInfo(token, user);

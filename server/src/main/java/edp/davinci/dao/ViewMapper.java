@@ -24,10 +24,7 @@ import edp.davinci.dto.viewDto.ViewWithProjectAndSource;
 import edp.davinci.dto.viewDto.ViewWithSource;
 import edp.davinci.dto.viewDto.ViewWithSourceBaseInfo;
 import edp.davinci.model.View;
-import org.apache.ibatis.annotations.Delete;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
+import org.apache.ibatis.annotations.*;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -35,7 +32,7 @@ import java.util.Set;
 
 @Component
 public interface ViewMapper {
-
+    @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(View view);
 
     @Select({"select id from `view` where project_id = #{projectId} and `name` = #{name}"})
@@ -51,21 +48,8 @@ public interface ViewMapper {
     @Select({"select * from `view` where id = #{id}"})
     View getById(Long id);
 
+    List<View> getByIds(@Param("list") Set<Long> ids);
 
-    @Update({
-            "update `view`",
-            "set `name` = #{name,jdbcType=VARCHAR},",
-            "`description` = #{description,jdbcType=VARCHAR},",
-            "`project_id` = #{projectId,jdbcType=BIGINT},",
-            "`source_id` = #{sourceId,jdbcType=BIGINT},",
-            "`sql` = #{sql,jdbcType=LONGVARCHAR},",
-            "`model` = #{model,jdbcType=LONGVARCHAR},",
-            "`variable` = #{variable,jdbcType=LONGVARCHAR},",
-            "`config` = #{config,jdbcType=LONGVARCHAR},",
-            "`update_by` = #{updateBy,jdbcType=BIGINT},",
-            "`update_time` = #{updateTime,jdbcType=TIMESTAMP}",
-            "where id = #{id,jdbcType=BIGINT}"
-    })
     int update(View view);
 
     @Select({"select * from `view` where source_id = #{sourceId}"})
@@ -112,4 +96,6 @@ public interface ViewMapper {
 
     Set<View> selectByWidgetIds(@Param("widgetIds") Set<Long> widgetIds);
 
+    @Select({"select * from `view` where project_id = #{projectId}"})
+    List<View> getByProject(@Param("projectId") Long projectId);
 }

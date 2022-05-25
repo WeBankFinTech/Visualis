@@ -21,6 +21,7 @@ package edp.davinci.controller;
 
 import com.github.pagehelper.PageInfo;
 import edp.core.annotation.CurrentUser;
+import edp.core.annotation.MethodLog;
 import edp.davinci.common.controller.BaseController;
 import edp.davinci.core.common.Constants;
 import edp.davinci.core.common.ResultMap;
@@ -32,28 +33,21 @@ import edp.davinci.dto.roleDto.RoleWithProjectPermission;
 import edp.davinci.model.User;
 import edp.davinci.service.ProjectService;
 import edp.davinci.service.RoleService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.Arrays;
 import java.util.List;
 
-@Api(value = "/project", tags = "project", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-@ApiResponses(@ApiResponse(code = 404, message = "project not found"))
 @Slf4j
 @RestController
-@RequestMapping(value = Constants.BASE_API_PATH + "/projects", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+@RequestMapping(value = Constants.BASE_API_PATH + "/projects", produces = MediaType.APPLICATION_JSON_VALUE)
 public class ProjectController extends BaseController {
 
     @Autowired
@@ -70,17 +64,16 @@ public class ProjectController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get projects")
+    @MethodLog
     @GetMapping
-    public ResponseEntity getProjects(@ApiIgnore @CurrentUser User user, HttpServletRequest request) {
+    public ResponseEntity getProjects(@CurrentUser User user, HttpServletRequest request) {
         List<ProjectInfo> projects = projectService.getProjects(user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(projects));
     }
 
-
-    @ApiOperation(value = "get roles where proejct is located")
+    @MethodLog
     @GetMapping("/{id}/roles")
-    public ResponseEntity getRolesOfProject(@ApiIgnore @CurrentUser User user,
+    public ResponseEntity getRolesOfProject(@CurrentUser User user,
                                             @PathVariable Long id,
                                             HttpServletRequest request) {
         if (invalidId(id)) {
@@ -92,10 +85,9 @@ public class ProjectController extends BaseController {
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(list));
     }
 
-
-    @ApiOperation(value = "get roles where proejct is located")
+    @MethodLog
     @GetMapping("/{id}/roles/{roleId}")
-    public ResponseEntity getRoleOfProject(@ApiIgnore @CurrentUser User user,
+    public ResponseEntity getRoleOfProject(@CurrentUser User user,
                                            @PathVariable Long id,
                                            @PathVariable Long roleId,
                                            HttpServletRequest request) {
@@ -117,11 +109,11 @@ public class ProjectController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get project info")
+    @MethodLog
     @GetMapping("/{id}")
     public ResponseEntity getProjectInfo(@PathVariable Long id,
-                                         @ApiIgnore @CurrentUser User user,
-                                         @ApiIgnore HttpServletRequest request) {
+                                         @CurrentUser User user,
+                                         HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid id");
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
@@ -137,22 +129,21 @@ public class ProjectController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get admins of project")
+    @MethodLog
     @GetMapping("/{id}/admins")
     public ResponseEntity getAdmins(@PathVariable Long id,
-                                    @ApiIgnore @CurrentUser User user,
+                                    @CurrentUser User user,
                                     HttpServletRequest request) {
         List<RelProjectAdminDto> admins = projectService.getAdmins(id, user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(admins));
     }
 
-
-    @ApiOperation(value = "search projects by keywords")
+    @MethodLog
     @GetMapping("/search")
     public ResponseEntity searchProjects(@RequestParam(value = "keywords", required = false) String keywords,
                                          @RequestParam(value = "pageNum", required = false, defaultValue = "1") int pageNum,
                                          @RequestParam(value = "pageSize", required = false, defaultValue = "10") int pageSize,
-                                         @ApiIgnore @CurrentUser User user,
+                                         @CurrentUser User user,
                                          HttpServletRequest request) {
 
         PageInfo<ProjectWithCreateBy> pageInfo = projectService.searchProjects(keywords, user, pageNum, pageSize);
@@ -168,11 +159,11 @@ public class ProjectController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "create project", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity createProject(@Valid @RequestBody ProjectCreat projectCreat,
-                                        @ApiIgnore BindingResult bindingResult,
-                                        @ApiIgnore @CurrentUser User user,
+                                        BindingResult bindingResult,
+                                        @CurrentUser User user,
                                         HttpServletRequest request) {
         if (bindingResult.hasErrors()) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message(bindingResult.getFieldErrors().get(0).getDefaultMessage());
@@ -192,12 +183,12 @@ public class ProjectController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "transfer projects", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PutMapping(value = "/{id}/transfer", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity transferProject(@PathVariable Long id,
                                           @Valid @RequestBody OrganizationTransfer organizationTransfer,
-                                          @ApiIgnore BindingResult bindingResult,
-                                          @ApiIgnore @CurrentUser User user,
+                                          BindingResult bindingResult,
+                                          @CurrentUser User user,
                                           HttpServletRequest request) {
 
 
@@ -223,10 +214,10 @@ public class ProjectController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "delete project")
+    @MethodLog
     @DeleteMapping("/{id}")
     public ResponseEntity deleteProject(@PathVariable Long id,
-                                        @ApiIgnore @CurrentUser User user,
+                                        @CurrentUser User user,
                                         HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid project id");
@@ -247,12 +238,12 @@ public class ProjectController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "update project", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateProjectBaseInfo(@PathVariable Long id,
                                                 @Valid @RequestBody ProjectUpdate projectUpdate,
-                                                @ApiIgnore BindingResult bindingResult,
-                                                @ApiIgnore @CurrentUser User user,
+                                                BindingResult bindingResult,
+                                                @CurrentUser User user,
                                                 HttpServletRequest request) {
 
         if (invalidId(id)) {
@@ -279,10 +270,10 @@ public class ProjectController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "favorite project", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PostMapping(value = "/favorite/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity favoriteProject(@PathVariable Long id,
-                                          @ApiIgnore @CurrentUser User user,
+                                          @CurrentUser User user,
                                           HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid project id");
@@ -301,9 +292,9 @@ public class ProjectController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get favorite projects")
+    @MethodLog
     @GetMapping(value = "/favorites")
-    public ResponseEntity getFavoriteProjects(@ApiIgnore @CurrentUser User user,
+    public ResponseEntity getFavoriteProjects(@CurrentUser User user,
                                               HttpServletRequest request) {
         List<ProjectInfo> favoriteProjects = projectService.getFavoriteProjects(user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(favoriteProjects));
@@ -316,9 +307,9 @@ public class ProjectController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "remove favorite projects")
+    @MethodLog
     @DeleteMapping(value = "/remove/favorites")
-    public ResponseEntity removeFavoriteProjects(@ApiIgnore @CurrentUser User user,
+    public ResponseEntity removeFavoriteProjects(@CurrentUser User user,
                                                  @RequestBody Long[] projectIds,
                                                  HttpServletRequest request) {
         for (Long id : projectIds) {
@@ -341,11 +332,11 @@ public class ProjectController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "add an admin for a project")
+    @MethodLog
     @PostMapping(value = "/{id}/admins")
     public ResponseEntity addProjectAdmin(@PathVariable Long id,
                                           @RequestBody Long[] adminIds,
-                                          @ApiIgnore @CurrentUser User user,
+                                          @CurrentUser User user,
                                           HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid project id");
@@ -370,11 +361,11 @@ public class ProjectController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "remove an admin from a project")
+    @MethodLog
     @DeleteMapping(value = "/{id}/admin/{relationId}")
     public ResponseEntity removeProjectAdmin(@PathVariable Long id,
                                              @PathVariable Long relationId,
-                                             @ApiIgnore @CurrentUser User user,
+                                             @CurrentUser User user,
                                              HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid project id");
@@ -400,11 +391,11 @@ public class ProjectController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "add project role relations")
+    @MethodLog
     @PostMapping(value = "/{id}/roles", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity addRoles(@PathVariable Long id,
                                    @RequestBody Long[] roleIds,
-                                   @ApiIgnore @CurrentUser User user,
+                                   @CurrentUser User user,
                                    HttpServletRequest request) {
 
         if (invalidId(id)) {

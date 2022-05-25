@@ -151,6 +151,7 @@ public class WebMvcConfig extends WebMvcConfigurationSupport {
     }
 
 
+    @SuppressWarnings("unchecked")
     @Override
     protected void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
         FastJsonHttpMessageConverter fastConverter = new FastJsonHttpMessageConverter();
@@ -170,7 +171,7 @@ public class WebMvcConfig extends WebMvcConfigurationSupport {
 
         //处理中文乱码问题
         List<MediaType> fastMediaTypes = new ArrayList<>();
-        fastMediaTypes.add(MediaType.APPLICATION_JSON_UTF8);
+        fastMediaTypes.add(MediaType.APPLICATION_JSON);
         fastMediaTypes.add(MediaType.IMAGE_PNG);
         fastConverter.setSupportedMediaTypes(fastMediaTypes);
         fastConverter.setFastJsonConfig(fastJsonConfig);

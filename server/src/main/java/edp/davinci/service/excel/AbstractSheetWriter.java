@@ -61,11 +61,11 @@ public abstract class AbstractSheetWriter {
     private int nextRowNum = 0;
 
     //用于记录表头对应数据格式
-    Map<String, CellStyle> headerFormatMap = new HashMap();
+    Map<String, CellStyle> headerFormatMap = new HashMap<>();
     //用于标记标记数字格式单位
-    Map<String, NumericUnitEnum> dataUnitMap = new HashMap();
+    Map<String, NumericUnitEnum> dataUnitMap = new HashMap<>();
     //记录列最大字符数
-    Map<String, Integer> columnWidthMap = new HashMap();
+    Map<String, Integer> columnWidthMap = new HashMap<>();
 
 
     protected void init(SheetContext context) throws Exception {
