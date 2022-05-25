@@ -80,18 +80,12 @@
                 <include>text</include>
             </includes>
         </fileSet>
-        <!--<fileSet>-->
-            <!--<directory>-->
-                <!--${project.parent.basedir}/davinci-ui-->
-            <!--</directory>-->
-            <!--<outputDirectory>davinci-ui</outputDirectory>-->
-        <!--</fileSet>-->
-        <!--<fileSet>-->
-            <!--<directory>-->
-                <!--${project.parent.basedir}/swagger-ui-->
-            <!--</directory>-->
-            <!--<outputDirectory>swagger-ui</outputDirectory>-->
-        <!--</fileSet>-->
+        <fileSet>
+            <directory>
+                ${project.parent.basedir}/davinci-ui
+            </directory>
+            <outputDirectory>davinci-ui</outputDirectory>
+        </fileSet>
 
     </fileSets>
 
@@ -104,11 +98,4 @@
             <useProjectArtifact>false</useProjectArtifact>
         </dependencySet>
     </dependencySets>
-
-    <!--<files>
-        <file>
-            <source>${project.parent.basedir}/server/target/davinci-server_2.11-${project.parent.version}-jar-with-dependencies.jar</source>
-            <outputDirectory>plugin</outputDirectory>
-        </file>
-    </files>-->
 </assembly>
