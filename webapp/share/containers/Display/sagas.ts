@@ -27,6 +27,7 @@ import request from 'utils/request'
 import api from 'utils/api'
 import { ActionTypes } from './constants'
 import ShareDisplayActions, { ShareDisplayActionType } from './actions'
+import { errorHandler } from '../../../app/utils/util'
 
 export function* getDisplay (action: ShareDisplayActionType) {
   if (action.type !== ActionTypes.LOAD_SHARE_DISPLAY) { return }
@@ -50,6 +51,28 @@ export function* getDisplay (action: ShareDisplayActionType) {
     yield put(loadDisplayFail(err))
     message.error('获取 Display 信息失败，请刷新重试')
     reject(err)
+  }
+}
+
+export function* getBaseInfo (action) {
+  const { resolve } = action.payload
+  const { getBaseInfoLoaded, loadGetBaseInfoFail } = ShareDisplayActions
+  // 这里比较特殊 是请求dss的接口 地址要换下
+  let url = api.projects
+  url = url.replace('rest_s', 'rest_j')
+  url = url.replace('visualis', 'dss/framework/workspace')
+  url = url.replace('projects', 'getBaseInfo')
+  try {
+    const asyncData = yield call(request, url)
+    yield put(getBaseInfoLoaded())
+    if (asyncData.data) {
+      resolve(asyncData.data)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    yield put(loadGetBaseInfoFail())
+    errorHandler(err)
   }
 }
 
@@ -91,9 +114,110 @@ export function* getData (action: ShareDisplayActionType) {
   }
 }
 
+export function* executeQuery (action: ShareDisplayActionType) {
+  if (action.type !== ActionTypes.EXECUTE_QUERY) { return }
+  const { payload } = action
+  const { renderType, layerId, dataToken, requestParams, resolve, reject } = payload
+  const {
+    filters,
+    tempFilters,
+    linkageFilters,
+    globalFilters,
+    variables,
+    linkageVariables,
+    globalVariables,
+    pagination,
+    ...rest
+  } = requestParams
+  const { pageSize, pageNo } = pagination || { pageSize: 0, pageNo: 0 }
+  const { executeQueryLoaded, loadExecuteQUeryFail } = ShareDisplayActions
+
+  try {
+    const url = payload.parameters ? `${api.share}/data/${dataToken}?parameters=${payload.parameters}` : `${api.share}/data/${dataToken}`
+    const asyncData = yield call(request, {
+      method: 'post',
+      url,
+      data: {
+        ...omit(rest, 'customOrders'),
+        filters: filters.concat(tempFilters).concat(linkageFilters).concat(globalFilters),
+        params: variables.concat(linkageVariables).concat(globalVariables),
+        pageSize,
+        pageNo
+      }
+    })
+    yield put(executeQueryLoaded(renderType, layerId, asyncData.payload, requestParams))
+    // asyncData.payload可能为""
+    if (asyncData.payload) {
+      resolve(asyncData.payload)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    yield put(loadExecuteQUeryFail(err))
+    reject(err)
+  }
+}
+
+export function* getProgress (action: ShareDisplayActionType) {
+  if (action.type !== ActionTypes.GET_PROGRESS) { return }
+
+  const { execId, resolve, reject } = action.payload
+  const { getProgressLoaded, loadGetProgressFail } = ShareDisplayActions
+
+  try {
+    const asyncData = yield call(request, {
+      method: 'post',
+      url: `${api.view}/${execId}/getprogress`,
+      data: {}
+    })
+    yield put(getProgressLoaded())
+    // asyncData.payload可能为""
+    if (asyncData.payload) {
+      resolve(asyncData.payload)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    yield put(loadGetProgressFail(err))
+    reject(err)
+  }
+}
+
+export function* getResult (action: ShareDisplayActionType) {
+  if (action.type !== ActionTypes.GET_RESULT) { return }
+  const { execId, renderType, layerId, requestParams, resolve, reject } = action.payload
+  const { getResultLoaded, loadGetResultFail } = ShareDisplayActions
+
+  try {
+    const asyncData = yield call(request, {
+      method: 'post',
+      url: `${api.view}/${execId}/getresult`,
+      data: {
+        pageNo: requestParams && requestParams.pagination && requestParams.pagination.pageNo ? requestParams.pagination.pageNo : 1,
+        pageSize: requestParams && requestParams.pagination && requestParams.pagination.pageSize ? requestParams.pagination.pageSize : 5000
+      }
+    })
+    yield put(getResultLoaded(renderType, layerId, asyncData.payload, requestParams))
+    // asyncData.payload可能为""
+    if (asyncData.payload) {
+      const { resultList } = asyncData.payload
+      asyncData.payload.resultList = (resultList && resultList.slice(0, 600)) || []
+      resolve(asyncData.payload)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    yield put(loadGetResultFail(err))
+    reject(err)
+  }
+}
 export default function* rootDisplaySaga (): IterableIterator<any> {
   yield [
     takeLatest(ActionTypes.LOAD_SHARE_DISPLAY, getDisplay),
-    takeEvery(ActionTypes.LOAD_LAYER_DATA, getData)
+    takeEvery(ActionTypes.GET_BASE_INFO, getBaseInfo as any),
+    takeEvery(ActionTypes.LOAD_LAYER_DATA, getData),
+    takeEvery(ActionTypes.EXECUTE_QUERY, executeQuery),
+    takeEvery(ActionTypes.GET_PROGRESS, getProgress),
+    takeEvery(ActionTypes.GET_RESULT, getResult)
   ]
 }

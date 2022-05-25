@@ -37,7 +37,9 @@ export function* getViews (action: ViewActionType) {
   const { viewsLoaded, loadViewsFail } = ViewActions
   let views: IViewBase[]
   try {
-    const asyncData = yield call(request, `${api.view}?projectId=${payload.projectId}`)
+    // 如果contextId是不为空的字符串，则要在url里带上这个值
+    const url = payload.contextId ? `${api.view}?projectId=${payload.projectId}&contextId=${payload.contextId}&nodeName=${payload.nodeName}` : `${api.view}?projectId=${payload.projectId}`
+    const asyncData = yield call(request, url)
     views = asyncData.payload
     yield put(viewsLoaded(views))
   } catch (err) {
@@ -174,8 +176,9 @@ export function* executeSql (action: ViewActionType) {
 /** View sagas for external usages */
 export function* getViewData (action: ViewActionType) {
   if (action.type !== ActionTypes.LOAD_VIEW_DATA) { return }
-  const { id, requestParams, resolve, reject } = action.payload
+  let { id, requestParams, resolve, reject } = action.payload
   const { viewDataLoaded, loadViewDataFail } = ViewActions
+  if (!id) id = 0
   try {
     const asyncData = yield call(request, {
       method: 'post',
@@ -183,13 +186,166 @@ export function* getViewData (action: ViewActionType) {
       data: requestParams
     })
     yield put(viewDataLoaded())
-    const { resultList } = asyncData.payload
-    asyncData.payload.resultList = (resultList && resultList.slice(0, 600)) || []
-    resolve(asyncData.payload)
+    // asyncData.payload可能为""
+    if (asyncData.payload) {
+      const { resultList } = asyncData.payload
+      asyncData.payload.resultList = (resultList && resultList.slice(0, 600)) || []
+      resolve(asyncData.payload)
+    } else {
+      resolve({})
+    }
   } catch (err) {
-    const { response } = err as AxiosError
+    let { response } = err as AxiosError
+    // 增加为空时的处理
+    if (!response) response = {data: {}}
     const { data } = response as AxiosResponse<IDavinciResponse<any>>
     yield put(loadViewDataFail(err))
+    reject(data.header)
+  }
+}
+
+export function* loadEngines (action: ViewActionType) {
+  if (action.type !== ActionTypes.LOAD_ENGINES) { return }
+  let { viewId, resolve } = action.payload
+  const { enginesLoaded, loadEnginesFail } = ViewActions
+  try {
+    const asyncData = yield call(request, {
+      method: 'get',
+      // 打包时用
+      url: `/api/rest_j/v1/visualis/view/enginetypes?id=${viewId}`,
+      // 本地开发时用
+      // url: `/restj/view/enginetypes?id=${viewId}`,
+    })
+    yield put(enginesLoaded())
+    // asyncData.payload可能为""
+    if (asyncData.data) {
+      resolve(asyncData.data)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    let { response } = err as AxiosError
+    // 增加为空时的处理
+    if (!response) response = {data: {}}
+    const { data } = response as AxiosResponse<IDavinciResponse<any>>
+    yield put(loadEnginesFail(err))
+    reject(data.header)
+  }
+}
+
+
+export function* executeQuery (action: ViewActionType) {
+  if (action.type !== ActionTypes.EXECUTE_QUERY) { return }
+  let { id, requestParams, resolve, reject } = action.payload
+  const { executeQueryLoaded, loadExecuteQueryFail } = ViewActions
+  if (!id) id = 0
+
+  try {
+    const asyncData = yield call(request, {
+      method: 'post',
+      url: `${api.view}/${id}/getdata`,
+      data: requestParams
+    })
+    yield put(executeQueryLoaded())
+    // asyncData.payload可能为""
+    if (asyncData.payload) {
+      resolve(asyncData.payload)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    let { response } = err as AxiosError
+    // 增加为空时的处理
+    if (!response) response = {data: {}}
+    const { data } = response as AxiosResponse<IDavinciResponse<any>>
+    yield put(loadExecuteQueryFail(err))
+    reject(data.header)
+  }
+}
+
+export function* getProgress (action: ViewActionType) {
+  if (action.type !== ActionTypes.GET_PROGRESS) { return }
+  const { execId, resolve, reject } = action.payload
+  const { getProgressLoaded, loadGetProgressFail } = ViewActions
+  try {
+    const asyncData = yield call(request, {
+      method: 'post',
+      url: `${api.view}/${execId}/getprogress`,
+      data: {}
+    })
+    yield put(getProgressLoaded())
+    // asyncData.payload可能为""
+    if (asyncData.payload) {
+      resolve(asyncData.payload)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    let { response } = err as AxiosError
+    // 增加为空时的处理
+    if (!response) response = {data: {}}
+    const { data } = response as AxiosResponse<IDavinciResponse<any>>
+    yield put(loadGetProgressFail(err))
+    reject(data.header)
+  }
+}
+
+export function* getResult (action: ViewActionType) {
+  if (action.type !== ActionTypes.GET_RESULT) { return }
+  const { execId, pageNo, pageSize, resolve, reject } = action.payload
+  const { getResultLoaded, loadGetResultFail } = ViewActions
+  try {
+    const asyncData = yield call(request, {
+      method: 'post',
+      url: `${api.view}/${execId}/getresult`,
+      data: {
+        pageNo,
+        pageSize
+      }
+    })
+    yield put(getResultLoaded())
+    // asyncData.payload可能为""
+    if (asyncData.payload) {
+      const { resultList } = asyncData.payload
+      asyncData.payload.resultList = (resultList && resultList.slice(0, 600)) || []
+      resolve(asyncData.payload)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    let { response } = err as AxiosError
+    
+    // 增加为空时的处理
+    if (!response) response = {data: {}}
+    const { data } = response as AxiosResponse<IDavinciResponse<any>>
+    yield put(loadGetResultFail(err))
+    reject(data.header)
+  }
+}
+
+export function* killExecute (action: ViewActionType) {
+  if (action.type !== ActionTypes.KILL_EXECUTE && action.type !== ActionTypes.VIEW_KILL_EXECUTE) { return }
+  const { execId, resolve, reject } = action.payload
+  const { getProgressLoaded, loadGetProgressFail } = ViewActions
+  try {
+    const asyncData = yield call(request, {
+      method: 'post',
+      url: `${api.view}/${execId}/kill`,
+      data: {}
+    })
+    yield put(getProgressLoaded())
+    // asyncData.payload可能为""
+    if (asyncData.payload) {
+      resolve(asyncData.payload)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    let { response } = err as AxiosError
+    // 增加为空时的处理
+    if (!response) response = {data: {}}
+    const { data } = response as AxiosResponse<IDavinciResponse<any>>
+    yield put(loadGetProgressFail(err))
     reject(data.header)
   }
 }
@@ -258,9 +414,10 @@ export function* getViewDistinctValue (action: ViewActionType) {
   }
 }
 
+// dashboard和display编辑页面都是这里请求widget数据
 export function* getViewDataFromVizItem (action: ViewActionType) {
   if (action.type !== ActionTypes.LOAD_VIEW_DATA_FROM_VIZ_ITEM) { return }
-  const { renderType, itemId, viewId, requestParams, vizType, cancelTokenSource } = action.payload
+  let { renderType, itemId, viewId, requestParams, vizType, cancelTokenSource } = action.payload
   const { viewDataFromVizItemLoaded, loadViewDataFromVizItemFail } = ViewActions
   const {
     filters,
@@ -274,6 +431,8 @@ export function* getViewDataFromVizItem (action: ViewActionType) {
     ...rest
   } = requestParams
   const { pageSize, pageNo } = pagination || { pageSize: 0, pageNo: 0 }
+
+  if (!viewId) viewId = 0
 
   try {
     const asyncData = yield call(request, {
@@ -293,6 +452,119 @@ export function* getViewDataFromVizItem (action: ViewActionType) {
     yield put(viewDataFromVizItemLoaded(renderType, itemId, requestParams, asyncData.payload, vizType, action.statistic))
   } catch (err) {
     yield put(loadViewDataFromVizItemFail(itemId, vizType, getErrorMessage(err)))
+  }
+}
+export function* viewExecuteQuery (action: ViewActionType) {
+  if (action.type !== ActionTypes.VIEW_EXECUTE_QUERY) { return }
+  let { renderType, itemId, viewId, requestParams, vizType, cancelTokenSource, resolve, reject } = action.payload
+  const { viewExecuteQueryLoaded, loadViewExecuteQueyFail } = ViewActions
+  const {
+    filters,
+    tempFilters,
+    linkageFilters,
+    globalFilters,
+    variables,
+    linkageVariables,
+    globalVariables,
+    pagination,
+    ...rest
+  } = requestParams
+  const { pageSize, pageNo } = pagination || { pageSize: 0, pageNo: 0 }
+
+  if (!viewId) viewId = 0
+
+  try {
+    const asyncData = yield call(request, {
+      method: 'post',
+      url: `${api.view}/${viewId}/getdata`,
+      data: {
+        ...omit(rest, 'customOrders'),
+        filters: filters.concat(tempFilters).concat(linkageFilters).concat(globalFilters),
+        params: variables.concat(linkageVariables).concat(globalVariables),
+        pageSize,
+        pageNo
+      },
+      cancelToken: cancelTokenSource.token
+    })
+    yield put(viewExecuteQueryLoaded(renderType, itemId, requestParams, asyncData.payload, vizType, action.statistic))
+    // asyncData.payload可能为""
+    if (asyncData.payload) {
+      resolve(asyncData.payload)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    yield put(loadViewExecuteQueyFail(itemId, vizType, getErrorMessage(err)))
+    reject(err)
+  }
+}
+
+export function* viewGetProgress (action: ViewActionType) {
+  if (action.type !== ActionTypes.VIEW_GET_PROGRESS) { return }
+  const { execId, resolve, reject } = action.payload
+  const { viewGetProgressLoaded, loadViewGetProgressFail } = ViewActions
+
+  try {
+    const asyncData = yield call(request, {
+      method: 'post',
+      url: `${api.view}/${execId}/getprogress`,
+      data: {},
+    })
+    yield put(viewGetProgressLoaded())
+    // asyncData.payload可能为""
+    if (asyncData.payload) {
+      resolve(asyncData.payload)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    yield put(loadViewGetProgressFail(getErrorMessage(err)))
+    reject(err)
+  }
+}
+
+export function* viewGetResult (action: ViewActionType) {
+  if (action.type !== ActionTypes.VIEW_GET_RESULT) { return }
+  const { execId, renderType, itemId, viewId, requestParams, vizType, cancelTokenSource, resolve, reject } = action.payload
+  const { viewGetResultLoaded, loadViewGetResultFail } = ViewActions
+  const {
+    filters,
+    tempFilters,
+    linkageFilters,
+    globalFilters,
+    variables,
+    linkageVariables,
+    globalVariables,
+    pagination,
+    ...rest
+  } = requestParams
+  const { pageSize, pageNo } = pagination || { pageSize: 0, pageNo: 0 }
+
+  try {
+    const asyncData = yield call(request, {
+      method: 'post',
+      url: `${api.view}/${execId}/getresult`,
+      data: {
+        ...omit(rest, 'customOrders'),
+        filters: filters.concat(tempFilters).concat(linkageFilters).concat(globalFilters),
+        params: variables.concat(linkageVariables).concat(globalVariables),
+        pageSize,
+        pageNo
+      },
+      cancelToken: cancelTokenSource.token
+    })
+    yield put(viewGetResultLoaded(renderType, itemId, requestParams, asyncData.payload, vizType, action.statistic))
+    // asyncData.payload可能为""
+    if (asyncData.payload) {
+      const { resultList } = asyncData.payload
+      asyncData.payload.resultList = (resultList && resultList.slice(0, 600)) || []
+      resolve(asyncData.payload)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    yield put(loadViewGetResultFail(itemId, vizType, getErrorMessage(err)))
+    reject(err)
   }
 }
 /** */
@@ -349,9 +621,18 @@ export default function* rootViewSaga () {
     takeLatest(ActionTypes.EXECUTE_SQL, executeSql),
 
     takeEvery(ActionTypes.LOAD_VIEW_DATA, getViewData),
+    takeEvery(ActionTypes.LOAD_ENGINES, loadEngines),
+    takeEvery(ActionTypes.EXECUTE_QUERY, executeQuery),
+    takeEvery(ActionTypes.GET_PROGRESS, getProgress),
+    takeEvery(ActionTypes.GET_RESULT, getResult),
+    takeEvery(ActionTypes.KILL_EXECUTE, killExecute),
     takeEvery(ActionTypes.LOAD_SELECT_OPTIONS, getSelectOptions),
     takeEvery(ActionTypes.LOAD_VIEW_DISTINCT_VALUE, getViewDistinctValue),
     takeEvery(ActionTypes.LOAD_VIEW_DATA_FROM_VIZ_ITEM, getViewDataFromVizItem),
+    takeEvery(ActionTypes.VIEW_EXECUTE_QUERY, viewExecuteQuery),
+    takeEvery(ActionTypes.VIEW_GET_PROGRESS, viewGetProgress),
+    takeEvery(ActionTypes.VIEW_GET_RESULT, viewGetResult),
+    takeEvery(ActionTypes.VIEW_KILL_EXECUTE, killExecute),
 
     takeEvery(ActionTypes.LOAD_DAC_CHANNELS, getDacChannels),
     takeEvery(ActionTypes.LOAD_DAC_TENANTS, getDacTenants),

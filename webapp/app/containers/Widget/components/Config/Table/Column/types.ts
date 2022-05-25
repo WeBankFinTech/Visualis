@@ -28,6 +28,7 @@ export interface ITableColumnConfig {
   alias: string
   sort?: boolean
   showAsPercent?: boolean
+  width: number
   visualType: ViewModelVisualTypes
   styleType: TableCellStyleTypes
   style: ITableCellStyle

@@ -1,6 +1,7 @@
 import React from 'react'
 import classnames from 'classnames'
 import set from 'lodash/set'
+import _ from 'lodash'
 
 import widgetlibs from '../../config'
 import { IDataRequestParams } from 'app/containers/Dashboard/Grid'
@@ -28,6 +29,7 @@ import LegendSection, { ILegendConfig } from './ConfigSections/LegendSection'
 import VisualMapSection, { IVisualMapConfig } from './ConfigSections/VisualMapSection'
 import ToolboxSection, { IToolboxConfig } from './ConfigSections/ToolboxSection'
 import DoubleYAxisSection, { IDoubleYAxisConfig } from './ConfigSections/DoubleYAxisSection'
+import GapSection, { IGapConfig } from './ConfigSections/GapSection'
 import AreaSelectSection, { IAreaSelectConfig } from './ConfigSections/AreaSelectSection'
 import ScorecardSection, { IScorecardConfig } from './ConfigSections/ScorecardSection'
 import IframeSection, { IframeConfig } from './ConfigSections/IframeSection'
@@ -42,7 +44,7 @@ import PivotTypes from '../../config/pivot/PivotTypes'
 import { uuid } from 'utils/util'
 
 import { RadioChangeEvent } from 'antd/lib/radio'
-import { Row, Col, Icon, Menu, Radio, InputNumber, Dropdown, Modal, Popconfirm, Checkbox, notification, Tooltip, Select, message } from 'antd'
+import { Row, Col, Icon, Menu, Radio, InputNumber, Dropdown, Modal, Popconfirm, Checkbox, notification, Tooltip, Select, message, Button } from 'antd'
 import { IDistinctValueReqeustParams } from 'app/components/Filters/types'
 import { WorkbenchQueryMode } from './types'
 import { CheckboxChangeEvent } from 'antd/lib/checkbox'
@@ -69,7 +71,9 @@ export interface IDataParams {
 }
 
 interface IOperatingPanelProps {
+  id: number
   views: IViewBase[]
+  widgetProps: IWidgetProps
   originalWidgetProps: IWidgetProps
   selectedView: IFormedView
   distinctColumnValues: any[]
@@ -82,7 +86,12 @@ interface IOperatingPanelProps {
   multiDrag: boolean
   computed: any[]
   originalComputed: any[]
-  onViewSelect: (viewId: number) => void
+  view: object
+  isFold: boolean
+  collapsed: boolean
+  onChangeIsFold: () => void
+  onSetView: (view: object) => void
+  onViewSelect: (view: object) => void
   onSetControls: (controls: any[]) => void
   onCacheChange: (e: RadioChangeEvent) => void
   onChangeAutoLoadData: (e: RadioChangeEvent) => void
@@ -96,8 +105,29 @@ interface IOperatingPanelProps {
     resolve: (data) => void,
     reject: (error) => void
   ) => void
+  onLoadEngines: (
+    viewId: number,
+    resolve: (data) => void,
+  ) => void
+  // widget页面 提交查询数据接口
+  onExecuteQuery: (
+    viewId: number,
+    requestParams: IDataRequestParams,
+    resolve: (data) => void,
+    reject: (error) => void
+  ) => void
+  // widget页面 进度查询接口
+  onGetProgress: (execId: string, resolve: (data) => void, reject: (error) => void) => void
+  // widget页面 获取结果集接口
+  onGetResult: (execId: string, pageNo: number, pageSize: number, resolve: (data) => void, reject: (error) => void) => void
+  // widget页面 进度查询接口
+  onKillExecute: (execId: string, resolve: (data) => void, reject: (error) => void) => void
+  onSetQueryData: (data: object) => void
   onLoadDistinctValue: (viewId: number, params: Partial<IDistinctValueReqeustParams>) => void,
   onBeofreDropColunm: (view: IView, resolve: () => void) => void
+  changeGetProgressPercent: (percent: number) => void
+  setEngine: (val: string) => void
+  engine: string
 }
 
 interface IOperatingPanelStates {
@@ -133,6 +163,7 @@ interface IOperatingPanelStates {
 
   computedConfigModalVisible: boolean
   selectedComputed: object
+  engines: []
 }
 
 export class OperatingPanel extends React.Component<IOperatingPanelProps, IOperatingPanelStates> {
@@ -141,11 +172,11 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     this.state = {
       dragged: null,
       showColsAndRows: false,
-      mode: 'pivot',
-      currentWidgetlibs: widgetlibs['pivot'],
+      mode: 'chart',
+      currentWidgetlibs: widgetlibs['chart'],
       chartModeSelectedChart: getTable(),
       selectedTab: 'data',
-      dataParams: Object.entries(getPivot().data)
+      dataParams: Object.entries(getTable().data)
         .reduce((params: IDataParams, [key, value]) => {
           params[key] = { ...value, items: []}
           return params
@@ -168,7 +199,8 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       categoryDragItems: [],
       valueDragItems: [],
       computedConfigModalVisible: false,
-      selectedComputed: null
+      selectedComputed: null,
+      engines: []
     }
   }
 
@@ -193,12 +225,20 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
 
   public componentWillMount () {
     this.setState({
-      ...this.getChartDataConfig(getPivotModeSelectedCharts([]))
+      ...this.getChartDataConfig([getTable()])
     })
   }
 
-  public componentWillReceiveProps (nextProps: IOperatingPanelProps, prevProps: IOperatingPanelProps) {
-    const { selectedView, originalWidgetProps } = nextProps
+  public componentDidMount () {
+    const { collapsed, onChangeIsFold } = this.props
+    if (collapsed) {
+      onChangeIsFold()
+    }
+  }
+
+  public componentWillReceiveProps (nextProps: IOperatingPanelProps) {
+    const { selectedView, originalWidgetProps, widgetProps } = nextProps
+    const { dataParams } = this.state
     if (selectedView && selectedView !== this.props.selectedView) {
       const model = selectedView.model
       const categoryDragItems = []
@@ -228,13 +268,62 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       })
     }
 
-    if ((originalWidgetProps && selectedView) &&
-      (originalWidgetProps !== this.props.originalWidgetProps || selectedView !== this.props.selectedView)) {
-      const { cols, rows, metrics, secondaryMetrics, filters, color, label, size, xAxis, tip, chartStyles, mode, selectedChart } = originalWidgetProps
+    // 只要widgetProps.cols和widgetProps.metrics里有任何一列的width,widthChanged,alreadySetWidth,oldColumnCounts这四个属性中的任意一个变化了之后，就要更新dataParams
+    // needUpdate为true的情况是指，在 图表驱动表格 下，有任何一个维度列或者指标列的width,widthChanged,alreadySetWidth,oldColumnCounts四个值中的至少一个改变了
+    let needUpdate = false
+    // 判断当前是在 图表驱动-表格 下 this.state.styleParams && this.state.styleParams.table
+    if (this.state.styleParams && this.state.styleParams.table) {
+      // 如果widgetProps（下一个状态）和dataParams（当前状态）中的cols和metrics在列宽相关的属性上有区别，在下面就要更新（通过将needUpdate设为true）
+      if (widgetProps.cols && dataParams && dataParams.cols && dataParams.cols.items && typeof dataParams.cols.items.length === 'number') {
+        widgetProps.cols.forEach((col) => {
+          for (let i = 0; i < dataParams.cols.items.length; i++) {
+            const tempCol = dataParams.cols.items[i]
+            if (col.name === tempCol.name) {
+              if (col.width !== tempCol.width || col.widthChanged !== tempCol.widthChanged || col.alreadySetWidth !== tempCol.alreadySetWidth || col.oldColumnCounts !== tempCol.oldColumnCounts) {
+                needUpdate = true
+                break
+              }
+            }
+          }
+        })
+      }
+      if (widgetProps.metrics && dataParams && dataParams.metrics && dataParams.metrics.items && typeof dataParams.metrics.items.length === 'number') {
+        widgetProps.metrics.forEach((col) => {
+          for (let i = 0; i < dataParams.metrics.items.length; i++) {
+            const tempMetric = dataParams.metrics.items[i]
+            if (col.name === tempMetric.name) {
+              if (col.width !== tempMetric.width || col.widthChanged !== tempMetric.widthChanged || col.alreadySetWidth !== tempMetric.alreadySetWidth || col.oldColumnCounts !== tempMetric.oldColumnCounts) {
+                needUpdate = true
+                break
+              }
+            }
+          }
+        })
+      }
+    }
+
+      // 此时可能是新建widget页面，originalWidgetProps为null；也可能是从其他图表切换到图表驱动表格时，Object.keys(this.state.styleParams)[0] !== Object.keys(originalWidgetProps.chartStyles)[0]。需要改动dataParams里的cols和metrics属性，不然在新建widget页面中，表格数据设置弹框中的width这些为undefined，因为dataParams里不设置的话，dataParams里就没有cols和metrics的width值，传到ColumnConfigModal.tsx中的localConfig里也没有width值
+    if ((!originalWidgetProps || originalWidgetProps && this.state.styleParams && Object.keys(this.state.styleParams)[0] !== Object.keys(originalWidgetProps.chartStyles)[0]) && selectedView && needUpdate) {
+      // needUpdate如果为true是说在图表驱动的表格下，有任何一个维度列或者指标列的width,widthChanged,alreadySetWidth,oldColumnCounts四个值中的至少一个改变了
+      const { dataParams } = this.state
+      const { cols, metrics } = widgetProps
+
+      dataParams.cols.items = cols
+      dataParams.metrics.items = metrics
+      this.setState({dataParams})
+    }
+
+    if ((originalWidgetProps && selectedView && this.state.styleParams) && (originalWidgetProps !== this.props.originalWidgetProps || selectedView !== this.props.selectedView || needUpdate)) {
+      // 初始的时候有一次默认值的设置，那时候originalWidgetProps不为空但this.props.originalWidgetProps为null，所以在第一次this.props.originalWidgetProps为null时不进行Object.keys(this.state.styleParams)[0] !== Object.keys(originalWidgetProps.chartStyles)[0]的判断
+      if (this.props.originalWidgetProps && Object.keys(this.state.styleParams)[0] !== Object.keys(originalWidgetProps.chartStyles)[0]) return
+      // Object.keys(this.state.styleParams)[0] === Object.keys(originalWidgetProps.chartStyles)[0] 是保证当前操作的图表的类型和originalWidgetProps里对应的图表类型是一致的，比如从透视驱动表格切到图表驱动表格后，originalWidgetProps.chartStyles里是pivot，但是this.state.styleParams里是table，这个时候就不需要执行这个if里的逻辑了，因为下面是用originalWidgetProps来更新的，执行的话就会出现透视驱动表格切换到图表驱动表格然后拖拽字段后自动切回透视驱动的bug
+      const { rows, secondaryMetrics, filters, color, label, size, xAxis, tip, chartStyles, mode, selectedChart } = originalWidgetProps
+      const { cols, metrics, engine } = widgetProps
+
       const { dataParams } = this.state
       const model = selectedView.model
-      const currentWidgetlibs = widgetlibs[mode || 'pivot'] // FIXME 兼容 0.3.0-beta.1 之前版本
-
+      const currentWidgetlibs = widgetlibs[mode || 'chart'] // FIXME 兼容 0.3.0-beta.1 之前版本
+      dataParams.cols.items = []
       cols.forEach((c) => {
         const modelColumn = model[c.name]
         if (modelColumn) {
@@ -247,6 +336,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         }
       })
 
+      dataParams.rows.items = []
       rows.forEach((r) => {
         const modelColumn = model[r.name]
         if (modelColumn) {
@@ -267,6 +357,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         }
       }
 
+      dataParams.metrics.items = []
       metrics.forEach((m) => {
         const modelColumn = model[decodeMetricName(m.name)]
         if (modelColumn) {
@@ -286,6 +377,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
           type: 'value',
           items: []
         }
+        dataParams.secondaryMetrics.items = []
         secondaryMetrics.forEach((m) => {
           const modelColumn = model[decodeMetricName(m.name)]
           if (modelColumn) {
@@ -299,8 +391,9 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         })
       }
 
+      dataParams.filters.items = []
       filters.forEach((f) => {
-        const modelColumn = model[f.name]
+        const modelColumn = model[f.name] ? model[f.name] : model[f.name.split('@')[0]]
         if (modelColumn) {
           dataParams.filters.items = dataParams.filters.items.concat({
             ...f,
@@ -318,22 +411,50 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         ...tip && {tip}
       }
       this.setState({
-        mode: mode || 'pivot', // FIXME 兼容 0.3.0-beta.1 之前版本
+        // 要用widgetProps而不是originalProps里的数据，不然在还未查询出数据时就切换图表驱动和透视驱动就会报错
+        mode: widgetProps.mode || 'chart', // FIXME 兼容 0.3.0-beta.1 之前版本
         currentWidgetlibs,
         ...selectedChart && {chartModeSelectedChart: widgetlibs['chart'].find((wl) => wl.id === selectedChart)},
         dataParams: mergedDataParams,
-        styleParams: chartStyles,
+        // 要用widgetProps而不是originalProps里的数据，不然在还未查询出数据时就切换图表驱动和透视驱动就会报错
+        styleParams: widgetProps.chartStyles,
         showColsAndRows: !!rows.length
       }, () => {
-        this.setWidgetProps(mergedDataParams, chartStyles)
+        // 这里需要widgetProps.chartStyles.table.headerConfig而不是originalWidgetProps.chartStyles.table.headerCon而不是
+        if (chartStyles.table && widgetProps && widgetProps.chartStyles.table) chartStyles.table.headerConfig = widgetProps.chartStyles.table.headerConfig
+        // 要用widgetProps而不是originalProps里的数据，不然在还未查询出数据时就切换图表驱动和透视驱动就会报错
+        this.setWidgetProps(mergedDataParams, widgetProps.chartStyles, {engine})
+      })
+    }
+
+    if (selectedView) {
+      const tempId = selectedView.id ? selectedView.id : 0
+      this.props.onLoadEngines(tempId, (data) => {
+        // 切换view时不用清空this.props.engine
+        this.setState({
+          engines: data.engineTypes ? data.engineTypes : []
+        })
       })
     }
   }
 
-  public componentWillUnmount () {
-    notification.destroy()
+  private execIds = []
+
+  private deleteExecId = (execId) => {
+    const index = this.execIds.indexOf(execId);
+    if (index > -1) this.execIds.splice(index, 1)
   }
 
+  public componentWillUnmount () {
+    this.timeout.forEach(item => clearTimeout(item))
+    this.execIds.forEach((execId) => {
+      this.props.onKillExecute(execId, () => {}, () => {})
+    })
+    notification.destroy()
+    window.removeEventListener('message', this.listenerHanlder)
+  }
+
+  // 获取各种图表类型的数据 dataParams 和 styleParams
   private getChartDataConfig = (selectedCharts: IChartInfo[]) => {
     const { mode } = this.state
     const { dataParams, styleParams } = this.state
@@ -464,7 +585,11 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     switch (name) {
       case 'filters':
         if (cachedItem.visualType !== 'number' && cachedItem.visualType !== 'date') {
-          onLoadDistinctValue(selectedView.id, { columns: [cachedItem.name] })
+          const tempParams = {
+            columns: cachedItem.name.split('@').length > 0 ? [cachedItem.name.split('@')[0]] : [cachedItem.name]
+          }
+          if (typeof this.props.view === 'object' && Object.keys(this.props.view).length > 0) tempParams.view = this.props.view
+          onLoadDistinctValue(selectedView.id, tempParams)
         }
         this.setState({
           modalCachedData: cachedItem,
@@ -474,7 +599,11 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         })
         break
       case 'color':
-        onLoadDistinctValue(selectedView.id, { columns: [cachedItem.name] })
+        const tempParams = {
+          columns: [cachedItem.name]
+        }
+        if (typeof this.props.view === 'object' && Object.keys(this.props.view).length > 0) tempParams.view = this.props.view
+        onLoadDistinctValue(selectedView.id, tempParams)
         this.setState({
           modalCachedData: cachedItem,
           modalCallback: resolve,
@@ -510,7 +639,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     }
   }
 
-  // 拖拽某一个维度或指标或筛选之后在盒子里放下时
+  // 拖拽一个或多个维度或指标或筛选之后在盒子里放下时
   private drop = (name: string, dropIndex: number, dropType: DropType, changedItems: IDataParamSource[], config?: IDataParamConfig) => {
     const { multiDrag } = this.props
     const {
@@ -529,7 +658,6 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
 
     const multiDragCategoryDropboxNames = ['cols', 'rows']
     const multiDragValueDropboxNames = ['metrics', 'secondaryMetrics']
-
     if (multiDrag
         && dropType === 'outside'
         && multiDragCategoryDropboxNames.concat(multiDragValueDropboxNames).includes(name)) {
@@ -537,20 +665,26 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       if (multiDragCategoryDropboxNames.includes(name)) {
         selectedItems = selectedItems.concat(
           categoryDragItems
-            .filter((item) => item.checked && item.name !== dragged.name && !items.find((i) => i.name === item.name))
+            .filter((item) => item.checked && !items.find((i) => i.name === item.name))
             .map(({ checked, ...rest }) => ({...rest}))
-            .concat(dragged)
         )
+        const tempNames = []
+        selectedItems.forEach((obj) => tempNames.push(obj.name))
+        // 多选时，dragged会重复一次，所以要先判断
+        if (!tempNames.includes(dragged.name)) selectedItems = selectedItems.concat(dragged)
         this.setState({
           categoryDragItems: categoryDragItems.map((item) => ({ ...item, checked: false }))
         })
       } else if (multiDragValueDropboxNames.includes(name)) {
         selectedItems = selectedItems.concat(
           valueDragItems
-            .filter((item) => item.checked && item.name !== decodeMetricName(dragged.name))
+            .filter((item) => item.checked)
             .map(({ checked, ...rest }): IDataParamSource => ({...rest, name: encodeMetricName(rest.name), agg: 'sum', chart: getPivot()}))
-            .concat({...dragged, chart: getPivot()})
           )
+        const tempNames = []
+        selectedItems.forEach((obj) => tempNames.push(decodeMetricName(obj.name)))
+        // 多选时，dragged会重复一次，所以要先判断
+        if (!tempNames.includes(decodeMetricName(dragged.name))) selectedItems = selectedItems.concat({...dragged, chart: getPivot()})
         this.setState({
           valueDragItems: valueDragItems.map((item) => ({ ...item, checked: false }))
         })
@@ -594,7 +728,6 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       dragged: null,
       modalCachedData: null
     })
-
     this.setWidgetProps(dataParams, styleParams)
   }
 
@@ -629,7 +762,15 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
 
   // 清除某一个指标或维度或筛选
   private removeDropboxItem = (from: string) => (name: string) => () => {
-    const { dataParams, styleParams } = this.state
+    const { dataParams, styleParams, chartModeSelectedChart } = this.state
+    if (chartModeSelectedChart && chartModeSelectedChart.name === 'relationGraph') {
+      // 关系图下，删除掉第一个维度的筛选条件时，顶层节点数变回为五个
+      const firstCol = dataParams.cols.items[0].name
+      if (firstCol === name) {
+        styleParams.spec.rootNodeCount = 5
+        styleParams.spec.rootNodeName = ''
+      }
+    }
     const prop = dataParams[from]
     prop.items = prop.items.filter((i) => i.name !== name)
     this.setWidgetProps(dataParams, styleParams)
@@ -645,7 +786,11 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       this.setWidgetProps(dataParams, styleParams)
     } else {
       const { selectedView, onLoadDistinctValue } = this.props
-      onLoadDistinctValue(selectedView.id, { columns: [item.name] })
+      const tempParams = {
+        columns: [item.name]
+      }
+      if (typeof this.props.view === 'object' && Object.keys(this.props.view).length > 0) tempParams.view = this.props.view
+      onLoadDistinctValue(selectedView.id, tempParams)
       this.setState({
         currentEditingCommonParamKey: from,
         currentEditingItem: item,
@@ -692,7 +837,6 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       fieldModalVisible: false
     })
   }
-
 
   private dropboxItemChangeFormatConfig = (from: string) => (item: IDataParamSource) => {
     this.setState({
@@ -745,7 +889,12 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
   private dropboxItemChangeColorConfig = (item: IDataParamSource) => {
     const { selectedView, onLoadDistinctValue } = this.props
     const { dataParams, styleParams } = this.state
-    onLoadDistinctValue(selectedView.id, { columns: [item.name] })
+    const tempParams = {
+      columns: [item.name]
+    }
+    if (typeof this.props.view === 'object' && Object.keys(this.props.view).length > 0) tempParams.view = this.props.view
+
+    onLoadDistinctValue(selectedView.id, tempParams)
     this.setState({
       modalCachedData: item,
       modalDataFrom: 'color',
@@ -771,7 +920,11 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     const { selectedView, onLoadDistinctValue } = this.props
     const { dataParams, styleParams } = this.state
     if (item.type === 'category') {
-      onLoadDistinctValue(selectedView.id, { columns: [item.name] })
+      const tempParams = {
+        columns: [item.name]
+      }
+      if (typeof this.props.view === 'object' && Object.keys(this.props.view).length > 0) tempParams.view = this.props.view
+      onLoadDistinctValue(selectedView.id, tempParams)
     }
     this.setState({
       modalCachedData: item,
@@ -779,6 +932,15 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       modalCallback: (config) => {
         if (config) {
           item.config = config as IDataParamConfig
+          // 保持dataParams.filters.items[i]和item一致，这样才能更换config
+          if (dataParams && dataParams.filters && dataParams.filters.items) {
+            for (let i = 0; i < dataParams.filters.items.length; i++) {
+              if (dataParams.filters.items[i].name === item.name) {
+                dataParams.filters.items[i] = item
+                break
+              }
+            }
+          }
           this.setWidgetProps(dataParams, styleParams)
         }
       },
@@ -806,6 +968,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     const { dataParams, styleParams, pagination } = this.state
     this.setWidgetProps(dataParams, styleParams, {
       renderType: 'rerender',
+      // 翻页的时候，更新updatedPagination
       updatedPagination: {
         ...pagination,
         pageNo,
@@ -816,8 +979,150 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     })
   }
 
+  private timeout = []
+
+  private executeQuery(dataParams, execId, updatedPagination, selectedCharts, renderType, orders, that) {
+    const { cols, rows, metrics, secondaryMetrics, filters, color, label, size, xAxis, tip, yAxis } = dataParams
+    const { onSetWidgetProps, onGetProgress, onGetResult, selectedView } = that.props
+    const { mode, chartModeSelectedChart } = that.state
+    onGetProgress(execId, (result) => {
+      const { progress, status } = result
+      if (status === 'Failed') {
+        // 提示 查询失败（显示表格头，就和现在的暂无数据保持一致的交互，只是提示换成“查询失败”）
+        // -2表示查询失败
+        that.props.changeGetProgressPercent(-2)
+        that.deleteExecId(execId)
+        return message.error('查询失败！')
+      } else if (status === 'Succeed' && progress === 1) {
+        // 查询成功，调用 结果集接口，status为success时，progress一定为1
+        const pageNoReal = updatedPagination && updatedPagination.pageNo ? updatedPagination.pageNo : 0
+        const pageSizeReal = updatedPagination && updatedPagination.pageSize ? updatedPagination.pageSize : 0
+        onGetResult(execId, pageNoReal, pageSizeReal, (result) => {
+          // 后续一样，执行数据显示的逻辑
+          const { resultList: data, pageNo, pageSize, totalCount } = result
+          updatedPagination = !updatedPagination.withPaging ? updatedPagination : {
+            ...updatedPagination,
+            pageNo,
+            pageSize,
+            totalCount
+          }
+          const mergedParams = that.getChartDataConfig(selectedCharts)
+          const mergedDataParams = mergedParams.dataParams
+          const mergedStyleParams = mergedParams.styleParams
+          const requestParamsFilters = filters.items.reduce((a, b) => {
+            return a.concat(b.config.sqlModel)
+          }, [])
+
+          // 关系图下
+          if (selectedCharts[0].name === 'relationGraph' && mergedStyleParams.spec) {
+            if (Array.isArray(requestParamsFilters) && requestParamsFilters[0] && cols.items && cols.items[0]) {
+              // 值筛选 && 选的是第一个维度 && 只选了一个值
+              if (requestParamsFilters[0].operator === 'in' && requestParamsFilters[0].name === cols.items[0].name && Array.isArray(requestParamsFilters[0].value) && requestParamsFilters[0].value.length === 1) {
+                // 值筛选一个值，后端返回全量数据，前端根据全量数据，顶层节点变为只有一个，为筛选的这个值
+                mergedStyleParams.spec.rootNodeCount = 1
+                // requestParamsFilters[0].value[0]的值是带了单引号的字符串
+                mergedStyleParams.spec.rootNodeName = requestParamsFilters[0].value[0].replace(/'/g, '')
+              } else if (requestParamsFilters[0].operator === '=' && requestParamsFilters[0].name === cols.items[0].name) {
+                // 条件筛选选的等于操作 && 选的是第一个维度 && 值是data里有的值
+                for (let i = 0; i < data.length; i++) {
+                  if (requestParamsFilters[0].value.replace(/'/g, '') === data[i][requestParamsFilters[0].name]) {
+                    mergedStyleParams.spec.rootNodeCount = 1
+                    // requestParamsFilters[0].value的值是带了单引号的字符串
+                    mergedStyleParams.spec.rootNodeName = requestParamsFilters[0].value.replace(/'/g, '')
+                    break
+                  }
+                }
+              }
+            }
+          }
+
+          onSetWidgetProps({
+            cols: cols.items.map((item) => ({
+              ...item,
+              field: item.field || getDefaultFieldConfig(),
+              format: item.format || getDefaultFieldFormatConfig(),
+              sort: item.sort
+            })),
+            rows: rows.items.map((item) => ({
+              ...item,
+              field: item.field || getDefaultFieldConfig(),
+              format: item.format || getDefaultFieldFormatConfig(),
+              sort: item.sort
+            })),
+            metrics: metrics.items.map((item) => ({
+              ...item,
+              agg: item.agg || 'sum',
+              chart: item.chart || getPivot(),
+              field: item.field || getDefaultFieldConfig(),
+              format: item.format || getDefaultFieldFormatConfig()
+            })),
+            ...secondaryMetrics && {
+              secondaryMetrics: secondaryMetrics.items.map((item) => ({
+                ...item,
+                agg: item.agg || 'sum',
+                chart: item.chart || getPivot(),
+                field: item.field || getDefaultFieldConfig(),
+                format: item.format || getDefaultFieldFormatConfig()
+              }))
+            },
+            filters: filters.items.map(({name, type, config}) => ({ name, type, config })),
+            ...color && {color},
+            ...label && {label},
+            ...size && {size},
+            ...xAxis && {xAxis},
+            ...tip && {tip},
+            ...yAxis && {yAxis},
+            chartStyles: mergedStyleParams,
+            selectedChart: mode === 'pivot' ? chartModeSelectedChart.id : selectedCharts[0].id,
+            data,
+            pagination: updatedPagination,
+            dimetionAxis: that.getDimetionAxis(selectedCharts),
+            renderType: renderType || 'rerender',
+            orders,
+            mode,
+            model: selectedView.model
+          })
+          that.setState({
+            chartModeSelectedChart: mode === 'pivot' ? chartModeSelectedChart : selectedCharts[0],
+            pagination: updatedPagination,
+            styleParams: mergedStyleParams
+          }, () => {
+            const mergedParams = that.getChartDataConfig(selectedCharts)
+            const mergedDataParams = mergedParams.dataParams
+            that.setState({
+              dataParams: mergedDataParams,
+            })
+          })
+          that.props.changeGetProgressPercent(progress)
+          that.deleteExecId(execId)
+        }, (err) => {
+          // -2表示查询失败
+          that.props.changeGetProgressPercent(-2)
+          that.deleteExecId(execId)
+          return message.error('查询失败！')
+        })
+      } else {
+        // 说明还在运行中
+        // 更新进度条
+        that.props.changeGetProgressPercent(progress)
+        // 三秒后再请求一次进度查询接口
+        const t = setTimeout(that.executeQuery, 3000, dataParams, execId, updatedPagination, selectedCharts, renderType, orders, that)
+        that.timeout.push(t)
+      }
+    }, (err) => {
+      // -2表示查询失败
+      that.props.changeGetProgressPercent(-2)
+      that.deleteExecId(execId)
+      return message.error('查询失败！')
+    })
+  }
+
+  private manuallyQuery = false
+
+  // 点击手动查询按钮
   private forceSetWidgetProps = () => {
     const { dataParams, styleParams, pagination } = this.state
+    this.manuallyQuery = true
     this.setWidgetProps(dataParams, styleParams, {
       renderType: 'rerender',
       updatedPagination: pagination,
@@ -832,11 +1137,12 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       renderType?: RenderType,
       updatedPagination?: IPaginationParams,
       queryMode?: WorkbenchQueryMode,
+      engine?: string,
       orders?
     }
   ) => {
     const { cols, rows, metrics, secondaryMetrics, filters, color, label, size, xAxis, tip, yAxis } = dataParams
-    const { selectedView, onLoadData, onSetWidgetProps } = this.props
+    const { selectedView, onLoadData, onExecuteQuery, onSetWidgetProps, onSetQueryData, view, cache, expired, widgetProps } = this.props
     const { mode, chartModeSelectedChart, pagination } = this.state
     let renderType
     let updatedPagination
@@ -867,6 +1173,8 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     }
     if (color) {
       groups = groups.concat(color.items.map((c) => c.name))
+      // 去重
+      groups = Array.from(new Set(groups))
     }
     if (label) {
       groups = groups.concat(label.items
@@ -946,9 +1254,6 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         ? getPivotModeSelectedCharts([])
         : [getTable()]
     }
-    const mergedParams = this.getChartDataConfig(selectedCharts)
-    const mergedDataParams = mergedParams.dataParams
-    const mergedStyleParams = mergedParams.styleParams
 
     let noAggregators = false
     if (styleParams.table) { // @FIXME pagination in table style config
@@ -956,8 +1261,8 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       noAggregators = withNoAggregators
       if (!fromPagination) {
         if (withPaging) {
-          updatedPagination.pageNo = 1
-          updatedPagination.pageSize = +pageSize
+          updatedPagination.pageNo = widgetProps && widgetProps.pagination && widgetProps.pagination.pageNo ? widgetProps.pagination.pageNo : 1
+          updatedPagination.pageSize = widgetProps && widgetProps.pagination && widgetProps.pagination.pageSize ? widgetProps.pagination.pageSize : +pageSize
         } else {
           updatedPagination.pageNo = 0
           updatedPagination.pageSize = 0
@@ -979,9 +1284,25 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       pageNo: updatedPagination.pageNo,
       pageSize: updatedPagination.pageSize,
       nativeQuery: noAggregators,
-      cache: false,
-      expired: 0,
-      flush: false
+      cache,
+      expired,
+      // 只有清除缓存时flush为true，其他所有时候都为false
+      flush: this.clearCacheStatus
+    }
+
+    // 关系图下的请求都要加上这个参数
+    if (selectedCharts[0].name === 'relationGraph') requestParams.chartType = 'relation_graph'
+
+    // 如果有view，就把view放进requestParams才能正常请求
+    if (Object.keys(view).length > 0) requestParams.view = view
+
+    // 第一次进入编辑页面时，如果本身选了引擎，但这时候可能因为this.props.engine还没更新，所以this.props.engine为''，但this.props.originalWidgetProps.engine不为''
+    // 如果this.props.engine和this.props.originalWidgetProps.engine都为''，说明没有选过引擎，用this.props.engine就行了
+    // 如果this.props.engine不为''，则使用this.props.engine的值
+    if (this.props.engine === '' && this.props.originalWidgetProps && this.props.originalWidgetProps.engine !== '') {
+      requestParams.engineType = this.props.originalWidgetProps.engine
+    } else {
+      if (this.props.engine) requestParams.engineType = this.props.engine
     }
 
     if (options) {
@@ -995,87 +1316,114 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
                        && selectedView
                        && requestParamString !== this.lastRequestParamString
                        && queryMode === WorkbenchQueryMode.Immediately
+                       || this.manuallyQuery
+    this.manuallyQuery = false
 
     if (needRequest) {
       this.lastRequestParamString = requestParamString
-      onLoadData(selectedView.id, requestParams, (result) => {
-        const { resultList: data, pageNo, pageSize, totalCount } = result
-        updatedPagination = !updatedPagination.withPaging ? updatedPagination : {
-          ...updatedPagination,
-          pageNo,
-          pageSize,
-          totalCount
-        }
-        onSetWidgetProps({
-          cols: cols.items.map((item) => ({
-            ...item,
-            field: item.field || getDefaultFieldConfig(),
-            format: item.format || getDefaultFieldFormatConfig(),
-            sort: item.sort
-          })),
-          rows: rows.items.map((item) => ({
-            ...item,
-            field: item.field || getDefaultFieldConfig(),
-            format: item.format || getDefaultFieldFormatConfig(),
-            sort: item.sort
-          })),
-          metrics: metrics.items.map((item) => ({
+      onSetQueryData(requestParams)
+
+      // 在查询数据之前，清空所有之前的请求
+      if (!this.clearCacheStatus) {
+        // 清理缓存请求不影响正常查询
+        this.timeout.forEach(item => clearTimeout(item))
+        this.execIds.forEach((execId) => {
+          this.props.onKillExecute(execId, () => {}, () => {})
+        })
+      }
+
+      const mergedParams = this.getChartDataConfig(selectedCharts)
+      const mergedDataParams = mergedParams.dataParams
+      const mergedStyleParams = mergedParams.styleParams
+
+      onSetWidgetProps({
+        data: null,
+        cols: cols.items.map((item) => ({
+          ...item,
+          field: item.field || getDefaultFieldConfig(),
+          format: item.format || getDefaultFieldFormatConfig(),
+          sort: item.sort
+        })),
+        rows: rows.items.map((item) => ({
+          ...item,
+          field: item.field || getDefaultFieldConfig(),
+          format: item.format || getDefaultFieldFormatConfig(),
+          sort: item.sort
+        })),
+        metrics: metrics.items.map((item) => ({
+          ...item,
+          agg: item.agg || 'sum',
+          chart: item.chart || getPivot(),
+          field: item.field || getDefaultFieldConfig(),
+          format: item.format || getDefaultFieldFormatConfig()
+        })),
+        ...secondaryMetrics && {
+          secondaryMetrics: secondaryMetrics.items.map((item) => ({
             ...item,
             agg: item.agg || 'sum',
             chart: item.chart || getPivot(),
             field: item.field || getDefaultFieldConfig(),
             format: item.format || getDefaultFieldFormatConfig()
-          })),
-          ...secondaryMetrics && {
-            secondaryMetrics: secondaryMetrics.items.map((item) => ({
-              ...item,
-              agg: item.agg || 'sum',
-              chart: item.chart || getPivot(),
-              field: item.field || getDefaultFieldConfig(),
-              format: item.format || getDefaultFieldFormatConfig()
-            }))
-          },
-          filters: filters.items.map(({name, type, config}) => ({ name, type, config })),
-          ...color && {color},
-          ...label && {label},
-          ...size && {size},
-          ...xAxis && {xAxis},
-          ...tip && {tip},
-          ...yAxis && {yAxis},
-          chartStyles: mergedStyleParams,
-          selectedChart: mode === 'pivot' ? chartModeSelectedChart.id : selectedCharts[0].id,
-          data,
-          pagination: updatedPagination,
-          dimetionAxis: this.getDimetionAxis(selectedCharts),
-          renderType: renderType || 'rerender',
-          orders,
-          mode,
-          model: selectedView.model
-        })
-        this.setState({
-          chartModeSelectedChart: mode === 'pivot' ? chartModeSelectedChart : selectedCharts[0],
-          pagination: updatedPagination,
-          dataParams: mergedDataParams,
-          styleParams: mergedStyleParams
-        })
-      }, (error) => {
-        notification.destroy()
-        notification.error({
-          message: '执行失败',
-          description: (
-            <Tooltip
-              placement="bottom"
-              trigger="click"
-              title={error.msg}
-              overlayClassName={styles.errorMessage}
-            >
-              <a>点击查看错误信息</a>
-            </Tooltip>
-          ),
-          duration: null
-        })
+          }))
+        },
+        filters: filters.items.map(({name, type, config}) => ({ name, type, config })),
+        ...color && {color},
+        ...label && {label},
+        ...size && {size},
+        ...xAxis && {xAxis},
+        ...tip && {tip},
+        ...yAxis && {yAxis},
+        chartStyles: mergedStyleParams,
+        selectedChart: mode === 'pivot' ? chartModeSelectedChart.id : selectedCharts[0].id,
+        pagination: updatedPagination,
+        dimetionAxis: this.getDimetionAxis(selectedCharts),
+        renderType: renderType || 'clear',
+        orders,
+        mode,
+        model: selectedView ? selectedView.model : {}
       })
+      this.setState({
+        chartModeSelectedChart: mode === 'pivot' ? chartModeSelectedChart : selectedCharts[0],
+        pagination: updatedPagination,
+        dataParams: mergedDataParams,
+        styleParams: mergedStyleParams
+      })
+
+      // 执行查询数据接口
+      // 虚拟view切换分类型和数值型时，会执行到这里，要加上判断，切换操作不调用查询数据的接口
+      if (!this.changeValueCategory) {
+        // 图表驱动里的excel类型，不走visualis里的查询数据逻辑，而是改动接dataWrangler的iframe的url
+        if (mode === 'chart' && selectedCharts[0].id === 19) return this.lastRequestParamString = ''
+        onExecuteQuery(selectedView.id, requestParams, (result) => {
+          const { execId } = result
+          this.execIds.push(execId)
+          if (this.clearCacheStatus) {
+            // 说明此时是清理缓存调用的getdata接口，并且不调用progress和result接口
+            this.clearCacheStatus = false
+            return message.success('清理缓存成功！')
+          } else {
+            // 此时不是清理缓存，是正常查询数据
+            // 每隔三秒执行一次查询进度接口
+            this.executeQuery(dataParams, execId, updatedPagination, selectedCharts, renderType, orders, this)
+          }
+        }, () => {
+          if (this.clearCacheStatus) {
+            // 说明此时是清理缓存调用的getdata接口
+            this.clearCacheStatus = false
+            this.props.changeGetProgressPercent(-2)
+            return message.error('清理缓存失败！')
+          } else {
+            this.props.changeGetProgressPercent(-2)
+            return message.error('查询失败！')
+          }
+        })
+      } else {
+        this.changeValueCategory = false
+      }
     } else {
+      const mergedParams = this.getChartDataConfig(selectedCharts)
+      const mergedDataParams = mergedParams.dataParams
+      const mergedStyleParams = mergedParams.styleParams
       onSetWidgetProps({
         data: null,
         cols: cols.items.map((item) => ({
@@ -1131,6 +1479,19 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     }
   }
 
+  // 虚拟view切换分类型和数值型时，会执行到这里，要加上判断，切换操作不调用查询数据的接口
+  private changeValueCategory = false
+
+  // 清除缓存时，用来控制flush=true和只请求getdata不请求progress和结果集
+  private clearCacheStatus = false
+
+  // 清理缓存
+  private clearCache = () => {
+    const { dataParams, styleParams } = this.state
+    this.clearCacheStatus = true
+    this.setWidgetProps(dataParams, styleParams)
+  }
+
   private getDimetionAxis = (selectedCharts): DimetionType => {
     const pivotChart = getPivot()
     const onlyPivot = !selectedCharts.filter((sc) => sc.id !== pivotChart.id).length
@@ -1156,17 +1517,50 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         this.setWidgetProps(selectedParams.dataParams, selectedParams.styleParams)
       }
     } else {
+      // 编辑widget页面里，每次从excel类型切到其他类型时，要删掉DataWrangler里面名为visualis_widget_{widgetId}的表格
+      if (chart.id !== 19 && document.getElementById('dataWrangler') && this.props.id !== 0) {
+        // this.props.id === 0是新建widget的时候，新建widget的时候只有保存widget时，如果是excel类型就要在DataWrangler里面保存表格
+        // 从excel类型切换到另外的类型时，要删除DataWrangler里的表格
+        document.getElementById('dataWrangler').contentWindow.postMessage({type: 'delete', id: this.props.id},'*')
+        this.chart = chart
+        // 那边删除成功之后调用这个deleteVisualisWidgetListener再切换类型
+        window.addEventListener('message', this.listenerHanlder)
+      } else {
+        this.setState({
+          chartModeSelectedChart: chart,
+          pagination: { pageNo: 0, pageSize: 0, withPaging: false, totalCount: 0 }
+        }, () => {
+          const selectedParams = this.getChartDataConfig([chart])
+          this.setWidgetProps(selectedParams.dataParams, selectedParams.styleParams)
+        })
+      }
+    }
+  }
+
+  private chart = null
+
+  private listenerHanlder = (event) => {
+    if (event.data.type === 'delete') {
       this.setState({
-        chartModeSelectedChart: chart,
+        chartModeSelectedChart: this.chart,
         pagination: { pageNo: 0, pageSize: 0, withPaging: false, totalCount: 0 }
       }, () => {
-        const selectedParams = this.getChartDataConfig([chart])
+        const selectedParams = this.getChartDataConfig([this.chart])
         this.setWidgetProps(selectedParams.dataParams, selectedParams.styleParams)
       })
     }
   }
 
-  private viewSelect = (viewId: number) => {
+  private viewSelect = (name: string) => {
+    const { views } = this.props
+    let view = null
+    for (let i = 0; i < views.length; i++) {
+      if (name === views[i].name) {
+        view = views[i]
+        break
+      }
+    }
+    const viewId = view.id
     const { mode, dataParams } = this.state
     const hasItems = Object.values(dataParams)
       .filter((param) => !!param.items.length)
@@ -1175,11 +1569,11 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         title: '切换 View 会清空所有配置项，是否继续？',
         onOk: () => {
           this.resetWorkbench(mode)
-          this.props.onViewSelect(viewId)
+          this.props.onViewSelect(view)
         }
       })
     } else {
-      this.props.onViewSelect(viewId)
+      this.props.onViewSelect(view)
     }
     sessionStorage.setItem('viewId', viewId.toString());
   }
@@ -1216,6 +1610,14 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
 
   // 如切换 透视驱动和图表驱动 时，重置各配置
   private resetWorkbench = (mode) => {
+    // 重置时，清空所有之前的请求
+    this.timeout.forEach(item => clearTimeout(item))
+    this.execIds.forEach((execId) => {
+      this.props.onKillExecute(execId, () => {}, () => {})
+    })
+    // 让进度条消失，如果设成-2，会显示查询失败，所以这里设成-3，进度条只是消失
+    this.props.changeGetProgressPercent(-3)
+
     const { dataParams } = this.state
     Object.values(dataParams).forEach((param) => {
       param.items = []
@@ -1231,6 +1633,8 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       ? getPivotModeSelectedCharts([])
       : [getTable()]
     const resetedParams = this.getChartDataConfig(selectedCharts)
+    // 这样清空了选项之后，重新切回到excel类型，才不会自动请求
+    this.props.onSetQueryData(null)
     this.setWidgetProps(resetedParams.dataParams, resetedParams.styleParams)
   }
 
@@ -1257,8 +1661,6 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
           size.value[key] = value
         }
     }
-    console.log('dropboxValueChange')
-    this.setWidgetProps(dataParams, styleParams, { renderType: 'refresh' })
   }
 
   // 更改 样式 配置里的内容
@@ -1283,6 +1685,36 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       case 'smooth':
         renderType = 'clear'
         break
+    }
+    if (name === 'table') {
+      // 如果是图表驱动表格，就要更新dataParams里的cols和metrics的width, alreadySetWidth, oldColumnCounts, widthChanged属性
+      if (dataParams.cols && dataParams.cols.items) {
+        dataParams.cols.items.forEach((item, index) => {
+          for (let i = 0; i < value.length; i++) {
+            if (item.name === value[i].columnName) {
+              dataParams.cols.items[index].width = value[i].width
+              dataParams.cols.items[index].alreadySetWidth = value[i].alreadySetWidth
+              dataParams.cols.items[index].oldColumnCounts = value[i].oldColumnCounts
+              dataParams.cols.items[index].widthChanged = value[i].widthChanged
+              break
+            }
+          }
+        })
+      }
+      if (dataParams.metrics && dataParams.metrics.items) {
+        dataParams.metrics.items.forEach((item, index) => {
+          for (let i = 0; i < value.length; i++) {
+            if (item.name === value[i].columnName) {
+              dataParams.metrics.items[index].width = value[i].width
+              dataParams.metrics.items[index].alreadySetWidth = value[i].alreadySetWidth
+              dataParams.metrics.items[index].oldColumnCounts = value[i].oldColumnCounts
+              dataParams.metrics.items[index].widthChanged = value[i].widthChanged
+              break
+            }
+          }
+        })
+      }
+      this.setState({dataParams})
     }
     this.setWidgetProps(dataParams, styleParams, { renderType })
     // const { layerType } = styleParams.spec
@@ -1341,6 +1773,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     })
   }
 
+  // 筛选框的保存
   private confirmFilterModal = (config) => {
     this.state.modalCallback(config)
     this.closeFilterModal()
@@ -1510,6 +1943,10 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     )
   }
 
+  private changeEngine = (value) => {
+    this.props.setEngine(value)
+  }
+
   public render () {
     const {
       views,
@@ -1527,7 +1964,11 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       onChangeAutoLoadData,
       onExpiredChange,
       originalWidgetProps,
-      originalComputed
+      originalComputed,
+      isFold,
+      onChangeIsFold,
+      view,
+      engine
     } = this.props
     const {
       dragged,
@@ -1551,9 +1992,9 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       controlConfigVisible,
       valueDragItems,
       computedConfigModalVisible,
-      selectedComputed
+      selectedComputed,
+      engines
     } = this.state
-
     const widgetPropsModel = selectedView && selectedView.model ? selectedView.model : {}
 
     const { metrics } = dataParams
@@ -1566,12 +2007,12 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     if (mode === 'pivot'
       && valueDragItems.length
       && dataParams.metrics.items.every((item) => item.chart.id === getPivot().id)) {
-      categoryDragItems = categoryDragItems.concat({
-        name: '指标名称',
-        type: 'category',
-        visualType: ViewModelVisualTypes.String,
-        checked: false
-      })
+      // categoryDragItems = categoryDragItems.concat({
+      //   name: '指标名称',
+      //   type: 'category',
+      //   visualType: ViewModelVisualTypes.String,
+      //   checked: false
+      // })
     }
 
     const coustomFieldSelectMenu = (
@@ -1580,6 +2021,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       </Menu>
     )
 
+    // 拖拽框
     const dropboxes = Object.entries(dataParams)
       .map(([k, v]) => {
         if (k === 'rows' && !showColsAndRows) {
@@ -1652,6 +2094,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
 
     let queryInfo: string[] = []
     if (selectedView) {
+      if (!selectedView.variable) selectedView.variable = []
       if (typeof selectedView.variable !== 'object') selectedView.variable = JSON.parse(selectedView.variable)
       queryInfo = selectedView.variable.map((v) => v.name)
     }
@@ -1663,7 +2106,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
       mapLabelLayerType = !(layerType && layerType === 'heatmap')
       mapLegendLayerType = !(layerType && (layerType === 'heatmap' || layerType === 'map' || layerType === 'scatter'))
     }
-
+    // 中间栏的数据/样式/配置里的内容
     let tabPane
     switch (selectedTab) {
       case 'data':
@@ -1818,7 +2261,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
               <div className={styles.blockBody}>
                 <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
                   <Col span={24}>
-                    <RadioGroup size="small" value={cache} onChange={onCacheChange}>
+                    <RadioGroup size="small" value={cache} onChange={onCacheChange} disabled>
                       <RadioButton value={false}>关闭</RadioButton>
                       <RadioButton value={true}>开启</RadioButton>
                     </RadioGroup>
@@ -1832,6 +2275,29 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
                 <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
                   <Col span={24}>
                     <InputNumber value={expired} disabled={!cache} onChange={onExpiredChange} />
+                  </Col>
+                </Row>
+              </div>
+            </div>
+            <div className={styles.paneBlock}>
+              <div className={styles.blockBody}>
+                <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
+                  <Col span={24}>
+                    <Button size="small" onClick={this.clearCache} disabled>清理缓存</Button>
+                  </Col>
+                </Row>
+              </div>
+            </div>
+            <div className={styles.paneBlock}>
+              <h4>查询引擎</h4>
+              <div className={styles.blockBody}>
+                <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
+                  <Col span={24}>
+                    <Select size="small" style={{ width: 150 }} defaultValue={engine} placeholder="请选择引擎" onChange={this.changeEngine}>
+                      {engines.map((o) => {
+                        return <Option key={o} value={o}>{o}</Option>
+                      })}
+                    </Select>
                   </Col>
                 </Row>
               </div>
@@ -1896,11 +2362,24 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         let selectedView = this.props.selectedView;
         const propName = draggedItem.name;
         draggedItem.modelType = 'value';
-        if (selectedView) {
+        draggedItem.name = propName;
+        // selectedView.id小于等于0或者为null，就是虚拟view
+        if (selectedView && selectedView.id) {
+          // 实体view，调用更新view的接口
           if (typeof selectedView.model !== 'object') selectedView.model = JSON.parse(selectedView.model)
           selectedView.model[propName] = draggedItem;
+          this.props.onBeofreDropColunm(selectedView, () => {})
+        } else {
+          // 虚拟view，不调用更新view的接口，直接更新widget的view
+          const tempView = this.props.view
+          if (typeof tempView.model !== 'object') tempView.model = JSON.parse(tempView.model)
+          // 从category变为value
+          tempView.model[propName].modelType = 'value'
+          this.changeValueCategory = true
+          this.props.onSetView(tempView)
+          // 取消掉拖拽时的样式
+          this.setState({dragged: null})
         }
-        this.props.onBeofreDropColunm(selectedView, () => {})
       }
     }
     const valueAreaProps = {
@@ -1927,11 +2406,23 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
         const propName = decodeMetricName(draggedItem.name);
         draggedItem.modelType = 'category';
         draggedItem.name = propName;
-        if (selectedView) {
+        // selectedView.id小于等于0或者为null，就是虚拟view
+        if (selectedView && selectedView.id) {
+          // 实体view，调用更新view的接口
           if (typeof selectedView.model !== 'object') selectedView.model = JSON.parse(selectedView.model)
           selectedView.model[propName] = draggedItem;
+          this.props.onBeofreDropColunm(selectedView, () => {})
+        } else {
+          // 虚拟view，不调用更新view的接口，直接更新widget的view
+          const tempView = this.props.view
+          if (typeof tempView.model !== 'object') tempView.model = JSON.parse(tempView.model)
+          // 从value变为category
+          tempView.model[propName].modelType = 'category'
+          this.changeValueCategory = true
+          this.props.onSetView(tempView)
+          // 取消掉拖拽时的样式
+          this.setState({dragged: null})
         }
-        this.props.onBeofreDropColunm(selectedView, () => {})
       }
     }
 
@@ -1952,25 +2443,39 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
     //   }
     // })
 
+    // widget编辑页的左、中两栏
     return (
       <div className={styles.operatingPanel}>
-        <div className={styles.model}>
+        {/* 最左栏 */}
+        <div className={styles.model} style={{display: isFold ? 'none' : ''}}>
+          {/* view选择下拉框 */}
           <div className={styles.viewSelect}>
-            <Select
-              size="small"
-              placeholder="选择一个View"
-              showSearch
-              dropdownMatchSelectWidth={false}
-              value={selectedView && selectedView.id}
-              onChange={this.viewSelect}
-              filterOption={this.filterView}
-            >
-              {(views || []).map(({ id, name }) => <Option key={id} value={id}>{name}</Option>)}
-            </Select>
+            {
+              Object.keys(view).length > 0 ?
+              <Select
+                size="small"
+                value={view.name}
+                disabled
+              >
+              </Select>
+              :
+              <Select
+                size="small"
+                placeholder="选择一个View"
+                showSearch
+                dropdownMatchSelectWidth={false}
+                value={selectedView && selectedView.name}
+                onChange={this.viewSelect}
+                filterOption={this.filterView}
+              >
+                {(views || []).map(({ id, name }) => <Option key={name} value={name}>{name}</Option>)}
+              </Select>
+            }
             {/* <Dropdown overlay={coustomFieldSelectMenu} trigger={['click']} placement="bottomRight">
               <Icon type="plus" />
             </Dropdown> */}
           </div>
+          {/* 分类型 */}
           <div className={styles.columnContainer}>
             <div className={styles.title}>
               <h4>分类型</h4>
@@ -2012,6 +2517,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
             </ul>
             <DropArea {...valueAreaProps}/>
           </div>
+          {/* 数值型 */}
           <div className={styles.columnContainer}>
             <div className={styles.title}>
               <h4>数值型</h4>
@@ -2054,7 +2560,8 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
             <DropArea {...categoryAreaProps}/>
           </div>
         </div>
-        <div className={styles.config}>
+        {/* 中间栏 */}
+        <div className={styles.config} style={{display: isFold ? 'none' : ''}}>
           <div className={styles.mode}>
             <RadioGroup
               size="small"
@@ -2080,7 +2587,12 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
               </RadioButton>
             </RadioGroup>
           </div>
+
+
+          {/* 各类图表的图标 */}
           <div className={styles.charts}>
+            {/* currentWidgetlibs是指在“透视驱动”或者“图表驱动”下有哪些图表类型 */}
+            {/* ChartIndicator是增加了tooltip之后的图标 */}
             {currentWidgetlibs.map((c) => (
               <ChartIndicator
                 key={c.id}
@@ -2094,6 +2606,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
           </div>
           {
             queryMode === WorkbenchQueryMode.Manually && (
+              // widget编辑页面里，中间的配置栏，手动查询时会显示的查询按钮
               <div className={styles.manualQuery} onClick={this.forceSetWidgetProps}>
                 <Icon type="caret-right" />查询
               </div>
@@ -2104,8 +2617,8 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
             {tabPane}
           </div>
         </div>
+        <div className={styles.toggleContainer}><div className={styles.toggle} onClick={onChangeIsFold}><Icon type={isFold ? "double-right" : "double-left"} /></div></div>
         <Modal
-          wrapClassName="ant-modal-small"
           visible={colorModalVisible}
           onCancel={this.cancelColorModal}
           afterClose={this.afterColorModalClose}
@@ -2187,6 +2700,7 @@ export class OperatingPanel extends React.Component<IOperatingPanelProps, IOpera
             fieldConfig={currentEditingItem.field}
             onSave={this.saveFieldConfig}
             onCancel={this.cancelFieldConfig}
+            currentEditingItemName={this.state.currentEditingItem ? this.state.currentEditingItem.name : ''}
           />
         ), (
           <FormatConfigModal

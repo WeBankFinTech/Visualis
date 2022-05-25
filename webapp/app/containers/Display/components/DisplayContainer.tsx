@@ -38,6 +38,7 @@ export enum Keys {
 interface IDisplayContainerProps {
   slideParams: any
   zoomRatio: number
+  sliderValue: number
   children: JSX.Element[],
   onScaleChange: (scale: number) => void
   onCoverCutCreated: (blob: Blob) => void
@@ -69,39 +70,27 @@ export class DisplayContainer extends React.Component<IDisplayContainerProps, ID
 
   public componentDidMount () {
     document.addEventListener('keydown', this.keyDown, false)
-    window.addEventListener('resize', this.containerResize, false)
     const { zoomRatio, slideParams, onScaleChange } = this.props
     this.updateStyle(zoomRatio, slideParams, onScaleChange)
   }
 
   public componentWillUnmount () {
     document.removeEventListener('keydown', this.keyDown, false)
-    window.removeEventListener('resize', this.containerResize, false)
   }
 
   public componentWillReceiveProps (nextProps: IDisplayContainerProps) {
-    const { zoomRatio, slideParams, onScaleChange } = nextProps
-    if (zoomRatio !== this.props.zoomRatio || slideParams !== this.props.slideParams) {
-      this.updateStyle(zoomRatio, slideParams, onScaleChange)
+    const { zoomRatio, slideParams, sliderValue, onScaleChange } = nextProps
+    if (zoomRatio !== this.props.zoomRatio || slideParams !== this.props.slideParams || sliderValue !== this.props.sliderValue) {
+      this.updateStyle(zoomRatio, slideParams, onScaleChange, sliderValue)
     }
   }
 
-  private containerResize = () => {
-    const { zoomRatio, slideParams, onScaleChange } = this.props
-    this.updateStyle(zoomRatio, slideParams, onScaleChange)
-  }
-
-  private updateStyle = (zoomRatio: number, slideParams: any, onScaleChange: (scale: number) => void) => {
+  private updateStyle = (zoomRatio: number, slideParams: any, onScaleChange: (scale: number) => void, sliderValue?: number) => {
     const { clientWidth, clientHeight } = this.container.current
     const [containerWidth, containerHeight] = [clientWidth, clientHeight].map((item) => Math.max(zoomRatio, 1) * item)
     const { width: slideWidth, height: slideHeight } = slideParams
 
-    let scale = (slideWidth / slideHeight > containerWidth / containerHeight) ?
-      // landscape
-      (containerWidth - 64) / slideWidth * zoomRatio :
-      // portrait
-      (containerHeight - 64) / slideHeight * zoomRatio
-    scale = +(Math.floor(scale / 0.05) * 0.05).toFixed(2)
+    let scale = sliderValue ? sliderValue / 100 : 1
     const translateX = (Math.max(clientWidth - slideWidth * scale, 64)) / (2 * slideWidth) * 100
     const translateY = (Math.max(clientHeight - slideHeight * scale, 64)) / (2 * slideHeight) * 100
     const translate = `translate(${translateX}%, ${translateY}%)`
@@ -175,7 +164,8 @@ export class DisplayContainer extends React.Component<IDisplayContainerProps, ID
         onKeyDown(Keys.Right)
         break
       case 'Delete':
-      case 'Backspace':
+      // case 'Backspace':
+      // 要取消掉这个Backspace能删除layerItem的快捷键，不然有时候在输入框里操作时会误操作
         onKeyDown(Keys.Delete)
         break
       case 'c':

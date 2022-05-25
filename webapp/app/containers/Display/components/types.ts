@@ -24,4 +24,5 @@ export interface ISlideParams {
   scaleMode: 'noScale' | 'scaleWidth' | 'scaleHeight' | 'scaleFull'
   backgroundColor: [number, number, number, number]
   backgroundImage: string
+  displayMode: 'dynamic' | 'static'
 }
