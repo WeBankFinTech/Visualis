@@ -7,15 +7,9 @@
     <packaging>jar</packaging>
 
     <parent>
-<!--<<<<<<< HEAD-->
-        <!--<groupId>edp.davinci</groupId>-->
-        <!--<artifactId>davinci-parent_3.01</artifactId>-->
-        <!--<version>0.3.1-SNAPSHOT</version>-->
-        <!--<relativePath>../pom.xml</relativePath>-->
-<!--=======-->
         <artifactId>visualis</artifactId>
         <groupId>com.webank.wedatasphere.dss</groupId>
-        <version>0.5.0</version>
+        <version>1.0.0-rc1</version>
     </parent>
 
     <properties>
