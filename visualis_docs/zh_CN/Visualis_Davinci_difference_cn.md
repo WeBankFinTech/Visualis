@@ -34,13 +34,15 @@ http://ip:port/dws/visualis/#/projects?withHeader=true
 ## 6. 项目
 
 &nbsp;&nbsp;&nbsp;&nbsp;与Davinci不同，Visualis的项目可以没有所属组织，允许只属于个人的项目存在。
-&nbsp;&nbsp;&nbsp;&nbsp;Visualis的项目与DSS的项目保持完全同步，在数据库层面，从dss_project表中读取。
+&nbsp;&nbsp;&nbsp;&nbsp;Visualis的项目与DSS的项目保持完全同步，在数据库层面，从visualis_project表中读取。
 
 ## 7. SQL分割提交
 
 &nbsp;&nbsp;&nbsp;&nbsp;Davinci中通过JDBC执行SQL时，如果一个View中包含多个SQL语句，这些语句将被按顺序分隔，每次仅提交执行一条语句。
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis中，通过JDBC执行的逻辑保持不变。但通过Linkis提交Spark-SQL对Hive数据源进行查询时，为了保证同一个View的SQL被提交到同一个引擎执行，在Visualis中不再对SQL语句进行分隔，即每个View中的语句将被一起提交给Linkis，在分配给具体的引擎进行执行后，由引擎按顺序分割执行。
 
-
+## 8. 与DSS工作流打通
+&nbsp;&nbsp;&nbsp;&nbsp;Davinci不支持工作流调度。
+&nbsp;&nbsp;&nbsp;&nbsp;DSS支持拖拽式开发visualis可视化报表，支持与DSS数据开发节点协调widget, display, dashboard节点开发。并且可以一键发布执行调度，并发送邮件。
 
 
