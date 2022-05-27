@@ -16,7 +16,7 @@
 
 
 # 2. 组件使用介绍
-##2.1. 数据源-Source
+## 2.1. 数据源-Source
 
 &nbsp;&nbsp;&nbsp;&nbsp;Source指连接的数据源，通常在Visualis里面默认有一个Hive的数据源，获取用户在大数据集群中的库表信息，同时用户也可以新增JDBC数据源和CSV文件作为数据源。
 ![](../images/use/3.jpg)
@@ -32,7 +32,7 @@
 
 
 
-##2.3. 可视化组件-Widget
+## 2.3. 可视化组件-Widget
 
 &nbsp;&nbsp;&nbsp;&nbsp;View可以理解为数据模型，类似于SQL中的视图，通过对数据源进行加工，产生符合业务报表的数据模型。
 ![](../images/use/5.jpg)
