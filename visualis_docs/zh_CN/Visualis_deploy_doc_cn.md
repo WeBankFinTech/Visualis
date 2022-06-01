@@ -260,17 +260,17 @@ npm run build # 编译前端包
 # 在webapp目录下会生成一个build文件目录，该目录即编译完成的前端包文件
 ```
 
-## 4. 启动应用
+## 5. 启动应用
 
 &nbsp;&nbsp;&nbsp;&nbsp;在配置和前端包编译完成后，可以尝试启动服务。Visualis目前和DSS集成，使用了DSS的登录及权限体系，使用前需部署完成DSS1.0.3版本，可以参考DSS1.0.3一键安装部署。（由于此次visualis-1.0.0-rc1版本属于内测版，如需正常使用，请编译最新的DSS master分支代码）
 
-### 4.1 执行启动脚本
+### 5.1 执行启动脚本
 
 &nbsp;&nbsp;&nbsp;&nbsp;进入Visualis的安装目录，找到bin文件夹，在此文件夹下执行一下命令。
 ```
 sh ./start-server.sh
 ```
-### 4.1 确认应用启动成功
+### 5.1 确认应用启动成功
 
 &nbsp;&nbsp;&nbsp;&nbsp;打开Eureka页面，在注册的服务列表中，找到visualis服务的实例，即可认为服务启动成功。同时也可以查看visualis的服务启动日志，如果没有报错，及服务顺利启动。
 ```
@@ -278,7 +278,7 @@ sh ./start-server.sh
 less logs/linkis.out
 ```
 
-## 5. 部署前端页面
+## 6. 部署前端页面
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis当前使用前后端分离的部署方案，完成第4步的编译后，把前端包放置在nginx前端包安装路径的dss/visualis路径对应的服务器目录下，启动nginx即可。
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis的nginx的前端配置可以参考如下：
 ```shell
@@ -305,7 +305,7 @@ mv * ./../ # 把前端文件移动到上一个目录
 sudo nginx # 启动nginx
 ```
 
-## 6. 字体库
+## 7. 字体库
 &nbsp;&nbsp;&nbsp;&nbsp;对于邮件报表而言，需要渲染中文字体，其中Visualis截图功能依赖中文字体，在部署的机器上/usr/share/fonts目录下。新建一个visualis文件夹，上传Visualis源码包中ext目录下的pf.ttf文件到visualis文件夹下，执行fc-cache –fv命令刷新字体缓存即可。
 ```shell
 # 需要切换到root用户
