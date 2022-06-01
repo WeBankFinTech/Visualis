@@ -2,49 +2,49 @@ Visualis编译部署文档
 ------
 
 ## 1. 下载源码包及编译打包
-&nbsp;&nbsp;&nbsp;&nbsp;Visualis源码安装时，需要下载对应的源码包进行编译，目前Visualis在依赖的DSS 1.0.1版本和Linkis1.0.6版本已经上传到Maven中央仓库。
+&nbsp;&nbsp;&nbsp;&nbsp;Visualis源码安装时，需要下载对应的源码包进行编译，目前Visualis在依赖的DSS 1.0.1版本和Linkis1.0.3版本已经上传到Maven中央仓库，只需Maven配置正常即可拉取相关依赖。
 ```shell
-## 1. 下载源码
+
+# 1. 下载源码
 git clone https://github.com/WeDataSphere/Visualis.git
 
-## 2. 切换到1.0.0-rc1分支
+# 2. 切换到1.0.0-rc1分支
 git checkout 1.0.0-rc1
 
-## 3. 执行编译打包
+# 3. 执行编译打包
+cd Visualis
 mvn -N install
 mvn clean package -DskipTests=true
 ```
 
 ## 2. 安装Visualis包
-&nbsp;&nbsp;&nbsp;&nbsp;在编译完成后，进入到Visualis/assembly/target目录下，可以找到编译完成后的Visualis-server.zip包。
+&nbsp;&nbsp;&nbsp;&nbsp;Visualis使用assembly作为打包插件，在编译完成后，进入到Visualis/assembly/target目录下，可以找到编译完成后的Visualis-server.zip包。
 ````bash
- ## 1. 解压安装包
+ # 1. 解压安装包
 unzip visualis-server.zip
 cd visualis-server
 ````
-&nbsp;&nbsp;&nbsp;&nbsp;解压完成visualis包后，进入目录可以看到以下文件目录。
+&nbsp;&nbsp;&nbsp;&nbsp;解压完成visualis编译包后，进入目录可以看到以下文件目录。
 ```
 visualis-server
-    --- bin   #服务启停脚本
-    --- conf  #服务配置目录
-    --- davinvi-ui    #前端模板，有无并不影响使用
-    --- lib   #服务jar包存放位置
-    --- logs  #日志目录
+    --- bin   # 服务启停脚本
+    --- conf  # 服务配置目录
+    --- davinvi-ui    # 前端模板，有无并不影响使用
+    --- lib   # 服务jar包存放位置
+    --- logs  # 日志目录
 ```
-
 
 ## 2. 修改配置
 
-&nbsp;&nbsp;&nbsp;&nbsp;安装完成后，在使用前需要修改配置，配置主要修改conf目录下的application.yml和linkis.properties两个文件。
+&nbsp;&nbsp;&nbsp;&nbsp;解压包安装完成后，在使用前需要修改配置，配置主要修改conf目录下的application.yml和linkis.properties两个文件，其中application.yml文件需要符合yaml的配置规范（键值对间冒号后需要空格隔开）。
 
 ### 2.1 修改application.yml
-
 ```yaml
 server:
   protocol: http
   address: 127.0.0.1 # Visualis部署的服务器IP
   port:  9008 # Visualis服务端口
-  url: http://127.0.0.1:8088/dss/visualis #Visualis前端访问路径
+  url: http://127.0.0.1:8088/dss/visualis #Visualis前端页面根路径
   access:
     address: 127.0.0.1 # 前端部署的服务器IP
     port: 8088 # 前端端口
@@ -75,8 +75,8 @@ spring:
   main:
     allow-bean-definition-overriding: true
   application:
-    name: visualis #服务模块名，用于做高可用（必须）
-  ## visualis mysql数据库连接配置
+    name: visualis-dev #服务模块名，用于做高可用
+  # visualis mysql数据库连接配置
   datasource:
     url: jdbc:mysql://127.0.0.1:3306/visualis?characterEncoding=UTF-8&allowMultiQueries=true
     username: hadoop
@@ -113,7 +113,6 @@ spring:
 
   mvc:
     static-path-pattern: /**
-
 
   thymeleaf:
     mode: HTML5
@@ -185,7 +184,8 @@ phantomjs_home: ${DAVINCI3_HOME}/bin/phantomjs
 email:
   suffix: ""
 screenshot:
-  default_browser: PHANTOMJS                    # 选择PHANTOMJS or CHROME作为报表发送工具，Visualis该版本使用PhantomJS
+  # 选择PHANTOMJS or CHROME作为报表发送工具
+  default_browser: PHANTOMJS  # PHANTOMJS or CHROME
   timeout_second: 1800
   phantomjs_path: ${DAVINCI3_HOME}/bin/phantomjs
   chromedriver_path: $your_chromedriver_path$
@@ -193,14 +193,12 @@ screenshot:
 ```
 
 ### 2.2 修改linkis.properties
-
-
 ```properties
-#是否启动测试默认
+# 是否启动测试默认
 wds.linkis.rpc.eureka.client.refresh.wait.time.max=60s
 wds.linkis.test.mode=false
 wds.linkis.test.user=test
-#Restful扫描的package
+# Restful扫描的package
 wds.linkis.server.restful.scan.packages=com.webank.wedatasphere.linkis.entrance.restful,com.webank.wedatasphere.dss.visualis.restful
 wds.linkis.engine.application.name=sparkEngine
 wds.linkis.enginemanager.application.name=sparkEngineManager
@@ -236,44 +234,90 @@ wds.dss.visualis.creator=nodeexecution
 ```
 
 ## 3. 初始化数据库
-&nbsp;&nbsp;&nbsp;&nbsp;在使用前，需要创建好Visualis数据库，建好Visualis所依赖的表，进入到源码的跟目录，找到db文件夹。
-```
-davinci.sql # visualis需要使用到的davinci的表
-ddl.sql # visualis额外依赖的表
+&nbsp;&nbsp;&nbsp;&nbsp;在使用前，需要创建好Visualis数据库，建好Visualis所依赖的表，进入到源码的跟目录，找到db文件夹，在链接到对应的数据库后，需要执行以下SQL文件，建立Visualis使用时需用到的表。
+```shell
+# 链接visualis数据库
+mysql -h 127.0.0.1 -u hadoop -d visualis -P3306 -p
+
+source ${visualis_home}/davinci.sql
+source ${visualis_home}/ddl.sql
+
+# 其中davinci.sql是visualis需要使用到的davinci的表
+# ddl.sql是visualis额外依赖的表
 ```
 
 ## 4. 编译前端文件
-&nbsp;&nbsp;&nbsp;&nbsp;Visualis是一个前后端分离项目，前端文件可以单独编译打包，因为存在一些依赖国外源的文件，理想情况下，需要在电脑上部署好vpn打包。
+&nbsp;&nbsp;&nbsp;&nbsp;Visualis是一个前后端分离项目，前端文件可以单独编译打包，在电脑上需要安装npm工具。
 ```shell
+# 查看npm是否安装完成
+npm -v
+>> 8.1.0
+
 cd webapp # 进入前端文件路径
 npm i # 下载前端依赖
 npm run build # 编译前端包
 
-# 在webapp目录下会生成一个build文件目录，该目录及编译完成的前端包文件
+# 在webapp目录下会生成一个build文件目录，该目录即编译完成的前端包文件
 ```
 
 ## 4. 启动应用
 
-&nbsp;&nbsp;&nbsp;&nbsp;在配置和前端包编译完成后，可以尝试启动服务。
+&nbsp;&nbsp;&nbsp;&nbsp;在配置和前端包编译完成后，可以尝试启动服务。Visualis目前和DSS集成，使用了DSS的登录及权限体系，使用前需部署完成DSS1.0.3版本，可以参考DSS1.0.3一键安装部署。（由于此次visualis-1.0.0-rc1版本属于内测版，如需正常使用，请编译最新的DSS master分支代码）
 
 ### 4.1 执行启动脚本
 
-&nbsp;&nbsp;&nbsp;&nbsp;进入bin目录，执行
+&nbsp;&nbsp;&nbsp;&nbsp;进入Visualis的安装目录，找到bin文件夹，在此文件夹下执行一下命令。
 ```
-   ./start-server.sh
+sh ./start-server.sh
 ```
 ### 4.1 确认应用启动成功
 
 &nbsp;&nbsp;&nbsp;&nbsp;打开Eureka页面，在注册的服务列表中，找到visualis服务的实例，即可认为服务启动成功。同时也可以查看visualis的服务启动日志，如果没有报错，及服务顺利启动。
+```
+# 查看服务启动日志
+less logs/linkis.out
+```
 
 ## 5. 部署前端页面
-&nbsp;&nbsp;&nbsp;&nbsp;Visualis当前使用前后端分离的部署方案，完成第4步的编译后，把前端包放置在dss/visualis这个URL路径对应的服务器目录下，启动nginx即可。
+&nbsp;&nbsp;&nbsp;&nbsp;Visualis当前使用前后端分离的部署方案，完成第4步的编译后，把前端包放置在nginx前端包安装路径的dss/visualis路径对应的服务器目录下，启动nginx即可。
+&nbsp;&nbsp;&nbsp;&nbsp;Visualis的nginx的前端配置可以参考如下：
 ```shell
-mkdir visualis # 建立好文件目录后，长传build.zip包到该文件夹下
+# 在nginx配置参考
+server {
+    listen       8088; # 访问端口
+    server_name  localhost;
+    client_max_body_size 100M;
+    location /dss/visualis { # url路径
+    root   /data/dss/web; # Visualis前端静态资源文件目录，可自由指定
+    autoindex off;
+  }
+}
+
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;在配置好相应的ngixn配置后，即可安装相应的前端文件。
+```shell
+cd /data/dss/web # 进入静态资源安装路径
+mkdir -p dss/visualis # 建立好文件目录后，上传build.zip包到该文件夹下
 unzip build.zip # 解压前端包
 cd build
 mv * ./../ # 把前端文件移动到上一个目录
-sudo nginx
+sudo nginx # 启动nginx
+```
+
+## 6. 字体库
+&nbsp;&nbsp;&nbsp;&nbsp;对于邮件报表而言，需要渲染中文字体，其中Visualis截图功能依赖中文字体，在部署的机器上/usr/share/fonts目录下。新建一个visualis文件夹，上传Visualis源码包中ext目录下的pf.ttf文件到visualis文件夹下，执行fc-cache –fv命令刷新字体缓存即可。
+```shell
+# 需要切换到root用户
+sudo su
+cd /usr/share/fonts
+mkdir visualis
+
+# 上传pf.ttf中文字体库
+rz -ybe
+
+# 刷新字体库缓存
+fc-cache –fv
 ```
 
 
