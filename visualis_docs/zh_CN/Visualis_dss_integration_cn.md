@@ -34,12 +34,3 @@ select * from students where class = ${className}
 1. 根据在application.yml中的配置的default_browser，确认已经将对应的selenium driver放在部署的服务器的目录下
 1. 确认selenium driver已配置在application.yml的phantomjs_path或chromedriver_path中(默认为安装路径的bin目录下)
 1. 确认启动Visualis的用户对selenium driver文件具有执行权限
-
-
-
-
-
-
-
-
-

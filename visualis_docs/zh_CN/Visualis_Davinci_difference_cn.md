@@ -44,5 +44,3 @@ http://ip:port/dws/visualis/#/projects?withHeader=true
 ## 8. 与DSS工作流打通
 &nbsp;&nbsp;&nbsp;&nbsp;Davinci不支持工作流调度。
 &nbsp;&nbsp;&nbsp;&nbsp;DSS支持拖拽式开发visualis可视化报表，支持与DSS数据开发节点协调widget, display, dashboard节点开发。并且可以一键发布执行调度，并发送邮件。
-
-
