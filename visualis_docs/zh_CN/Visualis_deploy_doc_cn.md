@@ -40,10 +40,12 @@ visualis-server
 
 ### 2.1 修改application.yml
 ```yaml
+# 必须根据服务的实际情况配置
 server:
   protocol: http
   address: 127.0.0.1 # Visualis部署的服务器IP
   port:  9008 # Visualis服务端口
+  # 2. 前端配置需要简化，无效的要删掉
   url: http://127.0.0.1:8088/dss/visualis #Visualis前端页面根路径
   access:
     address: 127.0.0.1 # 前端部署的服务器IP
@@ -62,6 +64,19 @@ management:
       exposure:
         include: refresh,info
 
+
+
+
+
+################### The install Configuration of all Linkis's Micro-Services #####################
+#
+#    NOTICE:
+#       1. If you just wanna try, the following micro-service configuration can be set without any settings.
+#            These services will be installed by default on this machine.
+#       2. In order to get the most complete enterprise-level features, we strongly recommend that you install
+#          the following microservice parameters
+#
+# 可以参用默认配置，不介意修改，
 logging:
   config: classpath:log4j2.xml
 
@@ -182,13 +197,14 @@ custom-datasource-driver-path: ${DAVINCI3_HOME}/conf/datasource_driver.yml
 phantomjs_home: ${DAVINCI3_HOME}/bin/phantomjs
 
 email:
-  suffix: ""
+  suffix: ""  email.suffix
 screenshot:
-  # 选择PHANTOMJS or CHROME作为报表发送工具
+  # 选择PHANTOMJS or CHROME作为报表发送工具 --1. chromer 删掉
   default_browser: PHANTOMJS  # PHANTOMJS or CHROME
   timeout_second: 1800
   phantomjs_path: ${DAVINCI3_HOME}/bin/phantomjs
   chromedriver_path: $your_chromedriver_path$
+
 
 ```
 
@@ -200,8 +216,8 @@ wds.linkis.test.mode=false
 wds.linkis.test.user=test
 # Restful扫描的package
 wds.linkis.server.restful.scan.packages=com.webank.wedatasphere.linkis.entrance.restful,com.webank.wedatasphere.dss.visualis.restful
-wds.linkis.engine.application.name=sparkEngine
-wds.linkis.enginemanager.application.name=sparkEngineManager
+3. 删掉# wds.linkis.engine.application.name=sparkEngine
+3. 删掉# wds.linkis.enginemanager.application.name=sparkEngineManager
 
 wds.linkis.query.application.name=linkis-ps-jobhistory
 
@@ -210,18 +226,18 @@ wds.linkis.engine.creation.wait.time.max=20m
 wds.linkis.server.socket.mode=false
 
 wds.linkis.server.distinct.mode=true
-wds.linkis.filesystem.root.path=file:///mnt/bdap/
-wds.linkis.filesystem.hdfs.root.path=hdfs:///tmp/linkis
+4. 确认下删掉#wds.linkis.filesystem.root.path=file:///mnt/bdap/
+4. 确认下删掉#wds.linkis.filesystem.hdfs.root.path=hdfs:///tmp/linkis
 
-wds.dss.visualis.project.name=default
+5.删除默认项目 #wds.dss.visualis.project.name=default
 
 wds.linkis.server.version=v1
 
-wds.dss.visualis.gateway.ip=127.0.0.1
-wds.dss.visualis.gateway.port=9001
+# wds.dss.visualis.gateway.ip=127.0.0.1
+# wds.dss.visualis.gateway.port=9001
 wds.dss.visualis.query.timeout=1200000
 
-wds.linkis.gateway.url=http://127.0.0.1:9001/
+#wds.linkis.gateway.url=http://127.0.0.1:9001/
 wds.linkis.gateway.ip=127.0.0.1
 wds.linkis.gateway.port=9001
 
