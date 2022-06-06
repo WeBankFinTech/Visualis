@@ -45,4 +45,6 @@
 &nbsp;&nbsp;&nbsp;&nbsp;由于PhantomJS属于不维护状态，未来存在迁移到Chrome的可能性，同样可以在Selenium官网上下载到对应的driver，但使用Chrome需要在Linux机器上安装真正的Chrome浏览器，如需切换为Chromer需要进行适配测试和兼容性测试。
 
 ## 3. 预览优化
-&nbsp;&nbsp;&nbsp;&nbsp;在实际的生产使用时，偶发场景会出现截图出现空白页的情况，目前
+&nbsp;&nbsp;&nbsp;&nbsp;在实际的生产使用时，偶发场景会出现截图出现错执行误页面的情况，导致邮件发送时，会偶发出现报表为错误结果。这是使用场景上存在的一个生产问题，为了解决这个问题，我们引入失败标签监控机制，在前后端加入**WidgetExecuteFailedTag**前端标签元素，并由后端进行检测。
+![预览结果](../images/preview_bug_fix_1.png)
+

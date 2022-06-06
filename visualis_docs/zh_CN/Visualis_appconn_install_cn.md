@@ -50,3 +50,13 @@
 ...
 
 ```
+&nbsp;&nbsp;&nbsp;&nbsp;当然如果需要更加灵活的安装方式，可以单独执行Visualis AppConn的相关SQL，其中涉及的表如下，可参考如下表，如果在安装时，请注意需要，由于篇幅有限，DSS插入表的相关SQL可以在一键全家桶中找到在DSS AppConn lib包下的Visualis的init.sql，该SQL脚本存在一些变量，需替换后进行插入。
+|表名|作用|备注|
+|-----|-----|-----|
+|dss_application|DSS快捷应用商店配置|需要配置Visualis的工程前端访问地址|
+|dss_menu|DSS快捷应用商店|配置应用商店的各个分类信息|
+|dss_onestop_menu_application|应用的菜单表|配置Visualis应用属于什么菜单|
+|dss_appconn|DSS AppConn配置表|AppConn的相关配置信息|
+|dss_appconn_instance|AppConn实例信息表|配置各个AppConn实例相关信息|
+|dss_workflow_node|工作流节点配置表|配置需加入DSS工作流的相关节点配置|
+|dss_workflow_node_to_ui|工作流各节点所需配置表|配置各个节点在DSS中需要的配置项|
