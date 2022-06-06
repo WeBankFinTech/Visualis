@@ -151,7 +151,8 @@ public class SourceServiceImpl implements SourceService {
             sourceMapper.insert(hiveSource);
             totalSources.add(hiveDBHelper.sourceToHiveSource(hiveSource));
         }
-        if(getAvailableEngineTypes(user.username).contains(VisualisUtils.PRESTO().getValue()) && sources.stream().noneMatch(s -> VisualisUtils.isPrestoDataSource(s))){
+        if(getAvailableEngineTypes(user.username).contains(VisualisUtils.PRESTO().getValue()) && sources.stream().noneMatch(
+                s -> VisualisUtils.isPrestoDataSource(s))){
             Source prestoSource = sourceMapper.getById(VisualisUtils.getPrestoDataSourceId());
             prestoSource.setId(null);
             prestoSource.setProjectId(projectId);
