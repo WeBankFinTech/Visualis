@@ -5,7 +5,8 @@
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis作为一个可视化报表系统，目前已与DSS工作流打通，可以通过拖拽的方式来新建Visualis节点，进行可视化开发。对于传统的Visualis使用方式，可视化组件Widget，需要创建一个类似视图的组件View来提供图形渲染的数据源。对于Widget而言，只要是结果集为结构化的数据集，都能作为Widget的数据源进行可视化图形开发。
 
 ## 2. 使用方式
-&nbsp;&nbsp;&nbsp;&nbsp;如果需要在DSS中使用Visualis的节点，需要参考[Visualis AppConn安装部署文档]()，目前DSS的数据节点，只要能产生结构化数据结果集的节点都能支持与Visualis的Widget节点绑定成功。Widget绑定DSS数据节点的说明可以参考下表：  
+&nbsp;&nbsp;&nbsp;&nbsp;如果需要在DSS中使用Visualis的节点，需要参考[Visualis AppConn安装部署文档]()，目前DSS的数据节点，只要能产生结构化数据结果集的节点都能支持与Visualis的Widget节点绑定成功。Widget绑定DSS数据节点的说明可以参考下表：
+
 |节点名|任务类型|备注|
 |-----|-----|-----|
 |sql|Spark SQL任务|不支持多结果集|
