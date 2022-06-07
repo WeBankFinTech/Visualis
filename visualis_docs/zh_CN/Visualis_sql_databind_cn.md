@@ -12,6 +12,7 @@
 |sql|Spark SQL任务|不支持多结果集|
 |pyspark|Python Spark任务|见备注|
 |hql|Hive SQL任务|不支持多结果集|
+
 &nbsp;&nbsp;&nbsp;&nbsp;对于Sql节点和Hql节点，只要不是多结果集查询，在执行完成后，其产生的结果集会注册到linkis的cs服务中，并生成一个临时表，其Dataframe结果集会注册到服务中，作为临时表存储。**在使用pyspark节点作为上游表时需要注意**，在使用Spark的Python来实现数据查询及作为Widget的数据源时，需要产生一个Dataframe的结果集，并调用show方法，其中Widget会显示为一个df的维度信息，对于表格而言，其属于一个多维度的表格，即列为多个。
 ```python
 df = spark.sql("select * from default.demo")
