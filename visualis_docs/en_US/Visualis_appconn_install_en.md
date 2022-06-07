@@ -6,7 +6,7 @@
 * In order to connect with DSS project, the organization structure specification is realized
 * In order to realize the interworking with DSS workflow development, the application development specification is implemented
 
-&nbsp;&nbsp;&nbsp;&nbsp;Appconn is a JVM process running inside its DSS and linkis. For each third-party application accessed, there is a unique appconn instance, which is similar to a proxy client of a third-party application in the DSS. If the DSS needs to use interaction with the third-party system, it can call the relevant appconn to request the third-party application in the appconn to realize the interaction, You can directly understand the role of appconn through the following figure.
+&nbsp;&nbsp;&nbsp;&nbsp;Appconn is a JVM process running inside its DSS and linkis. For each third-party application accessed, there is a unique appconn instance, which is similar to a proxy client of a third-party application in the DSS. If the DSS needs to use interaction with the third-party system, it can call the relevant appconn to request the third-party application in the appconn to realize the interaction, You can directly understand the role of appconn through the following figure.  
 ![AppConn](../images/appconn.png)
 
 &nbsp;&nbsp;&nbsp;&nbsp;In order to use the relevant functions of visualis in DSS workflow, you need to install the corresponding appconn to develop visualis visual reports in DSS workflow.
