@@ -45,6 +45,6 @@
 &nbsp;&nbsp;&nbsp;&nbsp;Since phantomjs is not maintained, it is possible to migrate to chrome in the future. You can also download the corresponding driver on the selenium official website. However, to use chrome, you need to install a real Chrome browser on the Linux machine. If you need to switch to chrome, you need to perform adaptation test and compatibility test.
 
 ## 3. Preview optimization
-&nbsp;&nbsp;&nbsp;&nbsp;In the actual production and use, there will be an occasional case where the screenshot is wrong and the page is wrong. As a result, the report will occasionally appear as an error result when the e-mail is sent. This is a production problem in the usage scenario. In order to solve this problem, we introduce the failure tag monitoring mechanism, add * * widgetexecutefailedtag * * front-end tag elements in the front and back-end, and the back-end detects them.
+&nbsp;&nbsp;&nbsp;&nbsp;In the actual production and use, there will be an occasional case where the screenshot is wrong and the page is wrong. As a result, the report will occasionally appear as an error result when the e-mail is sent. This is a production problem in the usage scenario. In order to solve this problem, we introduce the failure tag monitoring mechanism, add **widgetexecutefailedtag** front-end tag elements in the front and back-end, and the back-end detects them.
 ![预览结果](../images/preview_bug_fix_1.png)
 
