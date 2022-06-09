@@ -47,7 +47,7 @@
 
 ## 2.2. Workflow integration
 
-&nbsp;&nbsp;&nbsp;&nbsp;Visualis implements the secondary and tertiary specifications of DSS, accesses DSS engineering and orchestration (workflow), configures the workflow nodes of DSS, and supports the use of visualis by dragging and dropping in DSS workflow.
+&nbsp;&nbsp;&nbsp;&nbsp;Visualis implements the secondary and tertiary specifications of DSS, accesses DSS engineering and orchestration (workflow), configures the workflow nodes of DSS, and supports the use of visualis by dragging and dropping in DSS workflow.  
 ![](../images/3.jpg)
 
 
