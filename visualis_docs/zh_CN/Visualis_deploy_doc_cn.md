@@ -39,22 +39,28 @@ visualis-server
 &nbsp;&nbsp;&nbsp;&nbsp;解压包安装完成后，在使用前需要修改配置，配置主要修改conf目录下的application.yml和linkis.properties两个文件，其中application.yml文件需要符合yaml的配置规范（键值对间冒号后需要空格隔开）。
 
 ### 2.1 修改application.yml
+&nbsp;&nbsp;&nbsp;&nbsp;在配置application.yml文件中，必须要配置的有1、2、3快配置项，其中第1项中，需要配置一些部署IP和端口信息，第2项需要配置eureka的信息，第3项中只需要配置数据库的链接信息即可（其它参数可以保持默认值）。
 ```yaml
-# 必须根据服务的实际情况配置
+# ##################################
+# 1. Visualis Service configuration
+# ##################################
 server:
   protocol: http
-  address: 127.0.0.1 # Visualis部署的服务器IP
-  port:  9008 # Visualis服务端口
-  # 2. 前端配置需要简化，无效的要删掉
-  url: http://127.0.0.1:8088/dss/visualis #Visualis前端页面根路径
+  address: 127.0.0.1 # server ip address
+  port:  9008 # server port
+  url: http://127.0.0.1:8088/dss/visualis # frontend index page full path
   access:
-    address: 127.0.0.1 # 前端部署的服务器IP
-    port: 8088 # 前端端口
+    address: 127.0.0.1 # frontend address
+    port: 8088 # frontend port
 
+
+# ##################################
+# 2. eureka configuration
+# ##################################
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://127.0.0.1:20303/eureka/ # eureka注册地址
+      defaultZone: http://127.0.0.1:20303/eureka/ # Configuration required
   instance:
     metadata-map:
       test: wedatasphere
@@ -65,35 +71,16 @@ management:
         include: refresh,info
 
 
-
-
-
-################### The install Configuration of all Linkis's Micro-Services #####################
-#
-#    NOTICE:
-#       1. If you just wanna try, the following micro-service configuration can be set without any settings.
-#            These services will be installed by default on this machine.
-#       2. In order to get the most complete enterprise-level features, we strongly recommend that you install
-#          the following microservice parameters
-#
-# 可以参用默认配置，不介意修改，
-logging:
-  config: classpath:log4j2.xml
-
-file:
-  userfiles-path: ${DAVINCI3_HOME}/userfiles
-  web_resources: ${DAVINCI3_HOME}/davinci-ui/
-  phantomJs-path: ${DAVINCI3_HOME}/bin/phantom.js
-  base-path: ${DAVINCI3_HOME}
-
+# ##################################
+# 3. Spring configuration
+# ##################################
 spring:
   main:
     allow-bean-definition-overriding: true
   application:
-    name: visualis-dev #服务模块名，用于做高可用
-  # visualis mysql数据库连接配置
+    name: visualis-dev
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/visualis?characterEncoding=UTF-8&allowMultiQueries=true
+    url: jdbc:mysql://127.0.0.1:3306/dss?characterEncoding=UTF-8&allowMultiQueries=true # Configuration required
     username: hadoop
     password: hadoop
     driver-class-name: com.mysql.jdbc.Driver
@@ -162,14 +149,25 @@ spring:
         smtp:
           ssl:
             enable: false
-
-springfox:
-  documentation:
-    swagger:
-      v2:
-        path: /api-doc
+logging:
+  config: classpath:log4j2.xml
 
 
+# ##################################
+# 4. static resource configuration
+# ##################################
+file:
+  userfiles-path: ${DAVINCI3_HOME}/userfiles
+  web_resources: ${DAVINCI3_HOME}/davinci-ui/
+  base-path: ${DAVINCI3_HOME}
+
+sql_template_delimiter: $
+custom-datasource-driver-path: ${DAVINCI3_HOME}/conf/datasource_driver.yml
+
+
+# ##################################
+# 5. SQL configuration
+# ##################################
 pagehelper:
   supportMethodsArguments: true
   reasonable: true
@@ -190,67 +188,65 @@ mapper:
   not-empty: false
   mappers: edp.davinci.dao
 
-sql_template_delimiter: $
 
-custom-datasource-driver-path: ${DAVINCI3_HOME}/conf/datasource_driver.yml
-
-phantomjs_home: ${DAVINCI3_HOME}/bin/phantomjs
-
+# ##################################
+# 6. Screenshot drive
+# ##################################
 email:
-  suffix: ""  email.suffix
+  suffix: ""
 screenshot:
-  # 选择PHANTOMJS or CHROME作为报表发送工具 --1. chromer 删掉
-  default_browser: PHANTOMJS  # PHANTOMJS or CHROME
+  default_browser: PHANTOMJS
   timeout_second: 1800
   phantomjs_path: ${DAVINCI3_HOME}/bin/phantomjs
   chromedriver_path: $your_chromedriver_path$
-
-
 ```
 
 ### 2.2 修改linkis.properties
 ```properties
+# ##################################
+# 1. need configuration
+#    需要配置
+# ##################################
+wds.dss.visualis.gateway.ip=127.0.0.1
+wds.dss.visualis.gateway.port=9001
+wds.dss.visualis.query.timeout=1200000
+
+wds.linkis.gateway.url=http://127.0.0.1:9001/
+wds.linkis.gateway.ip=127.0.0.1
+wds.linkis.gateway.port=9001
+
+
+# ##################################
+# 2. can keep the default configuration
+#    可以保持默认配置
+# ##################################
 # 是否启动测试默认
 wds.linkis.rpc.eureka.client.refresh.wait.time.max=60s
 wds.linkis.test.mode=false
 wds.linkis.test.user=test
-# Restful扫描的package
+
 wds.linkis.server.restful.scan.packages=com.webank.wedatasphere.linkis.entrance.restful,com.webank.wedatasphere.dss.visualis.restful
-3. 删掉# wds.linkis.engine.application.name=sparkEngine
-3. 删掉# wds.linkis.enginemanager.application.name=sparkEngineManager
-
 wds.linkis.query.application.name=linkis-ps-jobhistory
-
 wds.linkis.console.config.application.name=linkis-ps-publicservice
 wds.linkis.engine.creation.wait.time.max=20m
 wds.linkis.server.socket.mode=false
 
 wds.linkis.server.distinct.mode=true
-4. 确认下删掉#wds.linkis.filesystem.root.path=file:///mnt/bdap/
-4. 确认下删掉#wds.linkis.filesystem.hdfs.root.path=hdfs:///tmp/linkis
+wds.linkis.filesystem.root.path=file:///mnt/bdap/
+wds.linkis.filesystem.hdfs.root.path=hdfs:///tmp/linkis
 
-5.删除默认项目 #wds.dss.visualis.project.name=default
-
+wds.dss.visualis.project.name=default
 wds.linkis.server.version=v1
-
-# wds.dss.visualis.gateway.ip=127.0.0.1
-# wds.dss.visualis.gateway.port=9001
-wds.dss.visualis.query.timeout=1200000
-
-#wds.linkis.gateway.url=http://127.0.0.1:9001/
-wds.linkis.gateway.ip=127.0.0.1
-wds.linkis.gateway.port=9001
 
 wds.dss.engine.allowed.creators=Visualis,nodeexecution,IDE
 wds.linkis.max.ask.executor.time=45m
 wds.linkis.server.component.exclude.classes=com.webank.wedatasphere.linkis.entrance.parser.SparkJobParser
+wds.dss.visualis.creator=Schedulis
 
-wds.dss.visualis.enable.password.encrypt=false
-wds.dss.visualis.creator=nodeexecution
 ```
 
 ## 3. 初始化数据库
-&nbsp;&nbsp;&nbsp;&nbsp;在使用前，需要创建好Visualis数据库，建好Visualis所依赖的表，进入到源码的跟目录，找到db文件夹，在链接到对应的数据库后，需要执行以下SQL文件，建立Visualis使用时需用到的表。
+&nbsp;&nbsp;&nbsp;&nbsp;在使用前，需要创建好Visualis数据库，建好Visualis所依赖的表，进入到源码的跟目录，找到db文件夹，在链接到对应的数据库后，需要执行以下SQL文件，建立Visualis使用时需用到的表(需要把)。
 ```shell
 # 链接visualis数据库
 mysql -h 127.0.0.1 -u hadoop -d visualis -P3306 -p
