@@ -1,7 +1,7 @@
 > Visualis AppConn安装
 
 ## 1. 简介
-&nbsp;&nbsp;&nbsp;&nbsp;Visualis是基于开源项目Davinci二次开发的一个数据可视化系统，为了实现与DSS打通，Visualis实现了DSS AppConn接入的相关规范，对于App Conn接入规范可以参考[DSS AppConn接入规范]()，Visualis作为数据可视化节点接入DSS，其需要满足三级规范，即：  
+&nbsp;&nbsp;&nbsp;&nbsp;Visualis是基于开源项目Davinci二次开发的一个数据可视化系统，为了实现与DSS打通，Visualis实现了DSS AppConn接入的相关规范，对于App Conn接入规范可以参考[DSS AppConn接入规范](https://github.com/WeBankFinTech/DataSphereStudio-Doc/blob/main/zh_CN/%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/VisualisAppConn%E6%8F%92%E4%BB%B6%E5%AE%89%E8%A3%85%E6%96%87%E6%A1%A3.md)，Visualis作为数据可视化节点接入DSS，其需要满足三级规范，即：  
 * 为了实现与DSS免密互通，实现了SSO规范
 * 为了实现与DSS工程打通，实现了组织结构规范
 * 为了实现与DSS工作流开发互通，实现了应用开发规范  
