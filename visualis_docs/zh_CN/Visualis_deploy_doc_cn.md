@@ -299,10 +299,16 @@ server {
     listen       8088; # 访问端口
     server_name  localhost;
     client_max_body_size 100M;
+
+    # ...
+
     location /dss/visualis { # url路径
     root   /data/dss/web; # Visualis前端静态资源文件目录，可自由指定
     autoindex off;
   }
+  
+  # ...
+
 }
 
 ```
