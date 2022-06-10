@@ -39,7 +39,7 @@ visualis-server
 &nbsp;&nbsp;&nbsp;&nbsp;解压包安装完成后，在使用前需要修改配置，配置主要修改conf目录下的application.yml和linkis.properties两个文件，其中application.yml文件需要符合yaml的配置规范（键值对间冒号后需要空格隔开）。
 
 ### 2.1 修改application.yml
-&nbsp;&nbsp;&nbsp;&nbsp;在配置application.yml文件中，必须要配置的有1、2、3快配置项，其中第1项中，需要配置一些部署IP和端口信息，第2项需要配置eureka的信息，第3项中只需要配置数据库的链接信息即可（其它参数可以保持默认值）。
+&nbsp;&nbsp;&nbsp;&nbsp;在配置application.yml文件中，必须要配置的有1、2、3配置项，其中第1项中，需要配置一些部署IP和端口信息，第2项需要配置eureka的信息，第3项中只需要配置数据库的链接信息即可（其它参数可以保持默认值）。
 ```yaml
 # ##################################
 # 1. Visualis Service configuration
@@ -241,8 +241,34 @@ wds.linkis.server.version=v1
 wds.dss.engine.allowed.creators=Visualis,nodeexecution,IDE
 wds.linkis.max.ask.executor.time=45m
 wds.linkis.server.component.exclude.classes=com.webank.wedatasphere.linkis.entrance.parser.SparkJobParser
-wds.dss.visualis.creator=Schedulis
+wds.dss.visualis.creator=Visualis
 
+```
+
+### 2.3 其它配置文件修改
+&nbsp;&nbsp;&nbsp;&nbsp;在实际的使用场景中，依赖于linkis.out日志输出场景比较不符合规范，日志文件不回滚，长时间运行容易造成生产服务器磁盘容量告警，从而带来生产问题，目前我们可以通过修改日志配置，来优化日志打印，日志配置可以参考如下修改：
+```properties
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration status="error" monitorInterval="30">
+    <appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <ThresholdFilter level="trace" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{36} %L %M - %msg%xEx%n"/>
+        </Console>
+        <RollingFile name="RollingFile" fileName="/data/logs/visualis/visualis.log"
+                     filePattern="/data/logs/visualis/$${date:yyyy-MM}/visualis-log-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{36} %L %M - %msg%xEx%n"/>
+            <SizeBasedTriggeringPolicy size="100MB"/>
+            <DefaultRolloverStrategy max="20"/>
+        </RollingFile>
+    </appenders>
+    <loggers>
+        <root level="INFO">
+            <appender-ref ref="RollingFile"/>
+            <appender-ref ref="Console"/> # 去掉该配置即会取消掉linkis.out日志输出。
+        </root>
+    </loggers>
+</configuration>
 ```
 
 ## 3. 初始化数据库
@@ -274,7 +300,7 @@ npm run build # 编译前端包
 
 ## 5. 启动应用
 
-&nbsp;&nbsp;&nbsp;&nbsp;在配置和前端包编译完成后，可以尝试启动服务。Visualis目前和DSS集成，使用了DSS的登录及权限体系，使用前需部署完成DSS1.0.3版本，可以参考DSS1.0.3一键安装部署。（由于此次visualis-1.0.0-rc1版本属于内测版，如需正常使用，请编译最新的DSS master分支代码）
+&nbsp;&nbsp;&nbsp;&nbsp;在配置和前端包编译完成后，可以尝试启动服务。Visualis目前和DSS集成，使用了DSS的登录及权限体系，使用前需部署完成DSS1.0.1版本，可以参考DSS1.0.1一键安装部署。（由于此次visualis-1.0.0-rc1版本属于内测版，如需正常使用，请编译最新的DSS master分支代码）
 
 ### 5.1 执行启动脚本
 
@@ -282,9 +308,11 @@ npm run build # 编译前端包
 ```
 sh ./start-server.sh
 ```
+备注：**如果启动服务时，报启动脚本的换行符无法识别，需要在服务器上对脚本进行编码转换使用：dos2unix xxx.sh 命令进行转换**
+
 ### 5.1 确认应用启动成功
 
-&nbsp;&nbsp;&nbsp;&nbsp;打开Eureka页面，在注册的服务列表中，找到visualis服务的实例，即可认为服务启动成功。同时也可以查看visualis的服务启动日志，如果没有报错，及服务顺利启动。
+&nbsp;&nbsp;&nbsp;&nbsp;打开Eureka页面，在注册的服务列表中，找到visualis服务的实例，即可认为服务启动成功。同时也可以查看visualis的服务启动日志，如果没有报错，即服务顺利启动。
 ```
 # 查看服务启动日志
 less logs/linkis.out
