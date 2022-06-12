@@ -24,6 +24,7 @@ INSERT INTO dss_appconn_instance (
 ```
 
 &nbsp;&nbsp;&nbsp;&nbsp;邮件发送的过程需要上下有节点相互配合，在SendEmail执行前，数据可视化节点执行时就已经把相关的发送结果准备完成，在DSS工作流侧，Display和Dashboard执行实际上是去请求preview接口，相关实现可以参考[Display Dashboard预览原理]()，使用Linlis的DownloadAction来请求大的结果集（我们默认请求preview的图片是属于大的结果集）。下面是Display和Dashboard的在DSS AppConn执行的核心逻辑。
+![SendEmail](./../images/sendemail.png)
 ```scala
  private ResponseRef executePreview(AsyncExecutionRequestRef ref, String previewUrl, String metaUrl) 
          throws ExternalOperationFailedException {
@@ -41,4 +42,57 @@ HttpResult metaResult = this.ssoRequestOperation.requestWithSSO(ssoUrlBuilderOpe
  }
 ```
 
-&nbsp;&nbsp;&nbsp;&nbsp;在可视化节点Dispaly和Dashboard执行预览后，其结果集会写入到Linkis的CS服务中，有了需要发送的结果，在SendEmail执行时，只需要从Linkis CS服务中获取相应的内容即可，邮件节点
+&nbsp;&nbsp;&nbsp;&nbsp;在可视化节点Dispaly和Dashboard执行预览后，其结果集会写入到Linkis的CS服务中，有了需要发送的结果，在SendEmail执行时，只需要从Linkis CS服务中获取相应的内容即可，邮件节点，大概有两块核心逻辑，第一，通过上线文，从工作流的上线文CS中获取各个节点的id，在代码中为NodeIDs数组，然后把该数据进行遍历获取到每个节点任务的id，在代码中为jobIds，相关核心代码如下：
+
+```scala
+  def getJobIds(refContext: ExecutionRequestRefContext): Array[Long] = {
+    val contextIDStr = ContextServiceUtils.getContextIDStrByMap(refContext.getRuntimeMap)
+    val nodeIDs = refContext.getRuntimeMap.get("content") match {
+      case string: String => JSONUtils.gson.fromJson(string, classOf[java.util.List[String]])
+      case list: java.util.List[String] => list
+    }
+    if (null == nodeIDs || nodeIDs.length < 1){
+      throw new EmailSendFailedException(80003 ,"empty result set is not allowed")
+    }
+    info(s"From cs to getJob ids $nodeIDs.")
+    val jobIds = nodeIDs.map(ContextServiceUtils.getNodeNameByNodeID(contextIDStr, _)).map{ nodeName =>
+      val contextKey = new CommonContextKey
+      contextKey.setContextScope(ContextScope.PUBLIC)
+      contextKey.setContextType(ContextType.DATA)
+      contextKey.setKey(CSCommonUtils.NODE_PREFIX + nodeName + CSCommonUtils.JOB_ID)
+      LinkisJobDataServiceImpl.getInstance().getLinkisJobData(contextIDStr, SerializeHelper.serializeContextKey(contextKey))
+    }.map(_.getJobID).toArray
+    if (null == jobIds || jobIds.length < 1){
+      throw new EmailSendFailedException(80003 ,"empty result set is not allowed")
+    }
+    info(s"Job IDs is ${jobIds.toList}.")
+    jobIds
+  }
+```
+&nbsp;&nbsp;&nbsp;&nbsp;第二步，由于运行时，其job的任务id在cs服务中对应着运行的结果集路径，通过调用fetchLinkisJobResultSetPaths方法，可以得到任务执行的结果集路径，其结果集路路径，即在任务执行时存入到CS服务中的任务结果记录，获取得到相关结果集后，即可进行邮件发送，邮件发送属于DSS的核心功能之一，是DSS数据输出的功能，在这里对Visualis和DSS报表邮件交互的核心代码进行了描述，其它的相关逻辑需要参考DSS SendEmail代码的相关逻辑。
+```scala
+  override protected def generateEmailContent(requestRef: ExecutionRequestRef, email: AbstractEmail): Unit = email match {
+    case multiContentEmail: MultiContentEmail =>
+      val runtimeMap = getRuntimeMap(requestRef)
+      val refContext = getExecutionRequestRefContext(requestRef)
+      runtimeMap.get("category") match {
+        case "node" =>
+          val resultSetFactory = ResultSetFactory.getInstance
+          EmailCSHelper.getJobIds(refContext).foreach { jobId =>
+            refContext.fetchLinkisJobResultSetPaths(jobId).foreach { fsPath =>
+              val resultSet = resultSetFactory.getResultSetByPath(fsPath)
+              val emailContent = resultSet.resultSetType() match {
+                case ResultSetFactory.PICTURE_TYPE => new PictureEmailContent(fsPath)
+                case ResultSetFactory.HTML_TYPE => throw new EmailSendFailedException(80003 ,"html result set is not allowed")//new HtmlEmailContent(fsPath)
+                case ResultSetFactory.TABLE_TYPE => throw new EmailSendFailedException(80003 ,"table result set is not allowed")//new TableEmailContent(fsPath)
+                case ResultSetFactory.TEXT_TYPE => throw new EmailSendFailedException(80003 ,"text result set is not allowed")//new FileEmailContent(fsPath)
+              }
+              multiContentEmail.addEmailContent(emailContent)
+            }
+          }
+        case "file" => throw new EmailSendFailedException(80003 ,"file content is not allowed") //addContentEmail(c => new FileEmailContent(new FsPath(c)))
+        case "text" => throw new EmailSendFailedException(80003 ,"text content is not allowed")//addContentEmail(new TextEmailContent(_))
+        case "link" => throw new EmailSendFailedException(80003 ,"link content is not allowed")//addContentEmail(new UrlEmailContent(_))
+      }
+  }
+```
