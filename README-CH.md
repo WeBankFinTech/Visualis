@@ -7,7 +7,7 @@
 
 ## 简介
 
-Visualis是一个基于宜信的开源项目[Davinci](https://github.com/edp963/davinci)开发的数据可视化BI工具。现已被集成到数据应用开发门户[DataSphere Studio](https://github.com/WeBankFinTech/DataSphereStudio)中。
+Visualis是一个基于宜信的开源项目[Davinci](https://github.com/edp963/davinci)开发的数据可视化BI工具。现已被集成到数据应用开发门户[DataSphere Studio](https://github.com/WeBankFinTech/DataSphereStudio)中，此次发布的版本Visualis1.0.0-rc1版本支持Linkis1.1.1和DSS1.0.1版本。
 
 Visualis支持拖拽式报表定义、图表联动、钻取、全局筛选、多维分析、实时查询等数据开发探索的分析模式，并做了水印、数据质量校验等金融级增强。
 
@@ -50,13 +50,13 @@ Visualis同时支持以下Davinci的原生功能：
   * 支持仪表板授权分享
 
 
-## 与DataSphere Studio继承
+## 与DataSphere Studio集成
 
 Visualis与DataSphere Studio的数据开发、工作流调度和数据质量校验等模块无缝衔接，实现数据应用开发全流程的连贯顺滑用户体验。
 
-更多信息请访问[DataSphere Studio documentations]().
+更多信息请访问[DataSphere Studio documentations](https://github.com/WeBankFinTech/DataSphereStudio-Doc).
 
-![Visualis](images/Visualis_AppJoint.gif)
+![Visualis](images/visualis_workflow.gif)
 
  
 
@@ -66,12 +66,27 @@ Visualis与DataSphere Studio的数据开发、工作流调度和数据质量校�
 
 ## 文档
 
-[单独部署文档](visualis_docs/zh_CN/Visualis_deploy_doc_cn.md)
-
-[快速对接DSS和Linkis](visualis_docs/zh_CN/Visualis_deploy_doc_cn.md)
+[编译部署文档](visualis_docs/zh_CN/Visualis_deploy_doc_cn.md)
 
 [Visualis与Davinci的区别](visualis_docs/zh_CN/Visualis_Davinci_difference_cn.md)
 
+[AppConn安装文档](visualis_docs/zh_CN/Visualis_appconn_install_cn.md)
+
+[Visualis设计文档](visualis_docs/zh_CN/Visualis_design_cn.md)
+
+[Display和DashBoard预览原理](visualis_docs/zh_CN/Visualis_display_dashboard_privew_cn.md)
+
+[Visualis接入DSS/Linkis注意点](visualis_docs/zh_CN/Visualis_dss_integration_cn.md)
+
+[集成LinkisDatasource](visualis_docs/zh_CN/Visualis_linkisdatasource_cn.md)
+
+[发送邮件实现原理](visualis_docs/zh_CN/Visualis_sendemail_cn.md)
+
+[绑定sql节点原理](visualis_docs/zh_CN/Visualis_sql_databind_cn.md)
+
+[虚拟视图设计文档](visualis_docs/zh_CN/Visualis_visual_doc_cn.md)
+
+[用户使用文档](visualis_docs/zh_CN/Visualis_user_manul_cn.md)
 ## 交流贡献
 
 ![communication](images/communication.png)
