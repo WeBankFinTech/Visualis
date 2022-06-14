@@ -55,7 +55,7 @@ Visualis seamlessly integrates with the data develoment, workflow scheduling and
 
 For more detail, please visit [DataSphere Studio documentations]().
 
-![Visualis](images/Visualis_AppJoint.gif)
+![Visualis](images/visualis_workflow.gif)
  
 ## Quick start
 
