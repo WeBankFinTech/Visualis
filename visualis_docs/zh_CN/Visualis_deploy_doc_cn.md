@@ -34,11 +34,11 @@ visualis-server
     --- logs  # 日志目录
 ```
 
-## 2. 修改配置
+## 3. 修改配置
 
 &nbsp;&nbsp;&nbsp;&nbsp;解压包安装完成后，在使用前需要修改配置，配置主要修改conf目录下的application.yml和linkis.properties两个文件，其中application.yml文件需要符合yaml的配置规范（键值对间冒号后需要空格隔开）。
 
-### 2.1 修改application.yml
+### 3.1 修改application.yml
 &nbsp;&nbsp;&nbsp;&nbsp;在配置application.yml文件中，必须要配置的有1、2、3配置项，其中第1项中，需要配置一些部署IP和端口信息，第2项需要配置eureka的信息，第3项中只需要配置数据库的链接信息即可（其它参数可以保持默认值）。**需要注意，由于历史原因Visualis复用了DSS的用户权限体系，及使用了DSS的linkis_user表，所以在部署时，Visualis需要配置和DSS一样的数据库，如果分库实现，在使用时需要定时同步DSS用户到Visualis库的linkis_user表中。**
 ```yaml
 # ##################################
@@ -201,7 +201,7 @@ screenshot:
   chromedriver_path: $your_chromedriver_path$
 ```
 
-### 2.2 修改linkis.properties
+### 3.2 修改linkis.properties
 ```properties
 # ##################################
 # 1. need configuration
@@ -245,7 +245,7 @@ wds.dss.visualis.creator=Visualis
 
 ```
 
-### 2.3 其它配置文件修改
+### 3.3 其它配置文件修改
 &nbsp;&nbsp;&nbsp;&nbsp;在实际的使用场景中，依赖于linkis.out日志输出场景比较不符合规范，日志文件不回滚，长时间运行容易造成生产服务器磁盘容量告警，从而带来生产问题，目前我们可以通过修改日志配置，来优化日志打印，日志配置可以参考如下修改：
 ```properties
 <?xml version="1.0" encoding="UTF-8"?>
@@ -271,8 +271,8 @@ wds.dss.visualis.creator=Visualis
 </configuration>
 ```
 
-## 3. 初始化数据库
-&nbsp;&nbsp;&nbsp;&nbsp;在使用前，需要创建好Visualis数据库（目前建议，由于历史原因Visualis复用了DSS的用户权限体系，及使用了DSS的linkis_user表，所以在部署时，Visualis需要配置和DSS一样的数据库，如果分库实现，在使用时需要定时同步DSS用户到Visualis库的linkis_user表中。），建好Visualis所依赖的表，进入到源码的跟目录，找到db文件夹，在链接到对应的数据库后，需要执行以下SQL文件，建立Visualis使用时需用到的表()。
+## 4. 初始化数据库
+&nbsp;&nbsp;&nbsp;&nbsp;在使用前，需要创建好Visualis数据库（目前建议，需要注意，由于历史原因Visualis复用了DSS的用户权限体系，及使用了DSS的linkis_user表，所以在部署时，Visualis需要配置和DSS一样的数据库，如果分库实现，在使用时需要定时同步DSS用户到Visualis库的linkis_user表中。），建好Visualis所依赖的表，进入到源码的跟目录，找到db文件夹，在链接到对应的数据库后，需要执行以下SQL文件，建立Visualis使用时需用到的表()。
 ```shell
 # 链接visualis数据库
 mysql -h 127.0.0.1 -u hadoop -d visualis -P3306 -p
@@ -284,7 +284,7 @@ source ${visualis_home}/ddl.sql
 # ddl.sql是visualis额外依赖的表
 ```
 
-## 4. 编译前端文件
+## 5. 编译前端文件
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis是一个前后端分离项目，前端文件可以单独编译打包，在电脑上需要安装npm工具。
 ```shell
 # 查看npm是否安装完成
@@ -298,11 +298,11 @@ npm run build # 编译前端包
 # 在webapp目录下会生成一个build文件目录，该目录即编译完成的前端包文件
 ```
 
-## 5. 启动应用
+## 6. 启动应用
 
 &nbsp;&nbsp;&nbsp;&nbsp;在配置和前端包编译完成后，可以尝试启动服务。Visualis目前和DSS集成，使用了DSS的登录及权限体系，使用前需部署完成DSS1.0.1版本，可以参考DSS1.0.1一键安装部署。（由于此次visualis-1.0.0-rc1版本属于内测版，如需正常使用，请编译最新的DSS master分支代码）
 
-### 5.1 执行启动脚本
+### 6.1 执行启动脚本
 
 &nbsp;&nbsp;&nbsp;&nbsp;进入Visualis的安装目录，找到bin文件夹，在此文件夹下执行一下命令。
 ```
@@ -310,7 +310,7 @@ sh ./start-server.sh
 ```
 备注：**如果启动服务时，报启动脚本的换行符无法识别，需要在服务器上对脚本进行编码转换使用：dos2unix xxx.sh 命令进行转换**
 
-### 5.1 确认应用启动成功
+### 6.2 确认应用启动成功
 
 &nbsp;&nbsp;&nbsp;&nbsp;打开Eureka页面，在注册的服务列表中，找到visualis服务的实例，即可认为服务启动成功。同时也可以查看visualis的服务启动日志，如果没有报错，即服务顺利启动。
 ```
@@ -318,7 +318,7 @@ sh ./start-server.sh
 less logs/linkis.out
 ```
 
-## 6. 部署前端页面
+## 7. 部署前端页面
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis当前使用前后端分离的部署方案，完成第4步的编译后，把前端包放置在nginx前端包安装路径的dss/visualis路径对应的服务器目录下，启动nginx即可。
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis的nginx的前端配置可以参考如下：
 ```shell
@@ -351,7 +351,7 @@ mv * ./../ # 把前端文件移动到上一个目录
 sudo nginx # 启动nginx
 ```
 
-## 7. 字体库
+## 8. 字体库
 &nbsp;&nbsp;&nbsp;&nbsp;对于邮件报表而言，需要渲染中文字体，其中Visualis截图功能依赖中文字体，在部署的机器上/usr/share/fonts目录下。新建一个visualis文件夹，上传Visualis源码包中ext目录下的pf.ttf文件到visualis文件夹下，执行fc-cache –fv命令刷新字体缓存即可。
 ```shell
 # 需要切换到root用户
