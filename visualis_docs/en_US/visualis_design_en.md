@@ -40,22 +40,17 @@
 ## 2.1. App store integration
 
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis implements the first level specification of DSS, connects to the application store of DSS, supports switching from DSS to visualis, and implements SSO specification, which allows secret free interworking.
-![](../images/2.png)
-
+![](../images/visualis_dss_1.png)
 
 
 
 ## 2.2. Workflow integration
 
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis implements the secondary and tertiary specifications of DSS, accesses DSS engineering and orchestration (workflow), configures the workflow nodes of DSS, and supports the use of visualis by dragging and dropping in DSS workflow.  
-![](../images/3.jpg)
+![](../images/visualis_dss_2.png)
 
 
-
-
-
-
-3.1. architecture design
+## 3. architecture design
 
 &nbsp;&nbsp;&nbsp;&nbsp;It is designed around the two core concepts of view (data view) and widget (visual component). View is a structured form of data, and all logic / permissions / services are expanded from view (as a virtual view in the spark SQL node of DSS workflow). A widget is a visual form of data. All display / interaction / guidance, etc. are carried out from the widget. The following figure shows the functional component modules of visualis.
 ![](../images/4.png)

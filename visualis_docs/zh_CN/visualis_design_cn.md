@@ -48,9 +48,9 @@
 
 
 
-## 3.1. 架构设计
+## 3. 架构设计
 &nbsp;&nbsp;&nbsp;&nbsp;围绕 View（数据视图）与 Widget（可视化组件）两个核心概念设计，View 是数据的结构化形态，一切逻辑/权限/服务等相关都是从 View 展开（在DSS工作流Spark SQL节点作为虚拟View）。Widget 是数据的可视化形态，一切展示/交互/引导等都是从 Widget 展开。下图是Visualis的功能组件模块。
-![](../images/4.png)
+![](./../../images/architecture.png)
 
 
 
