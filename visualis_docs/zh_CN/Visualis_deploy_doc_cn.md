@@ -39,7 +39,7 @@ visualis-server
 &nbsp;&nbsp;&nbsp;&nbsp;解压包安装完成后，在使用前需要修改配置，配置主要修改conf目录下的application.yml和linkis.properties两个文件，其中application.yml文件需要符合yaml的配置规范（键值对间冒号后需要空格隔开）。
 
 ### 2.1 修改application.yml
-&nbsp;&nbsp;&nbsp;&nbsp;在配置application.yml文件中，必须要配置的有1、2、3配置项，其中第1项中，需要配置一些部署IP和端口信息，第2项需要配置eureka的信息，第3项中只需要配置数据库的链接信息即可（其它参数可以保持默认值）。
+&nbsp;&nbsp;&nbsp;&nbsp;在配置application.yml文件中，必须要配置的有1、2、3配置项，其中第1项中，需要配置一些部署IP和端口信息，第2项需要配置eureka的信息，第3项中只需要配置数据库的链接信息即可（其它参数可以保持默认值）。**需要注意，由于历史原因Visualis复用了DSS的用户权限体系，及使用了DSS的linkis_user表，所以在部署时，Visualis需要配置和DSS一样的数据库，如果分库实现，在使用时需要定时同步DSS用户到Visualis库的linkis_user表中。**
 ```yaml
 # ##################################
 # 1. Visualis Service configuration
@@ -272,7 +272,7 @@ wds.dss.visualis.creator=Visualis
 ```
 
 ## 3. 初始化数据库
-&nbsp;&nbsp;&nbsp;&nbsp;在使用前，需要创建好Visualis数据库，建好Visualis所依赖的表，进入到源码的跟目录，找到db文件夹，在链接到对应的数据库后，需要执行以下SQL文件，建立Visualis使用时需用到的表(需要把)。
+&nbsp;&nbsp;&nbsp;&nbsp;在使用前，需要创建好Visualis数据库（目前建议，由于历史原因Visualis复用了DSS的用户权限体系，及使用了DSS的linkis_user表，所以在部署时，Visualis需要配置和DSS一样的数据库，如果分库实现，在使用时需要定时同步DSS用户到Visualis库的linkis_user表中。），建好Visualis所依赖的表，进入到源码的跟目录，找到db文件夹，在链接到对应的数据库后，需要执行以下SQL文件，建立Visualis使用时需用到的表()。
 ```shell
 # 链接visualis数据库
 mysql -h 127.0.0.1 -u hadoop -d visualis -P3306 -p
