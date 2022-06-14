@@ -12,26 +12,25 @@
 
 # 2. 组件使用介绍
 ## 2.1. 数据源-Source
-&nbsp;&nbsp;&nbsp;&nbsp;Source指连接的数据源，通常在Visualis里面默认有一个Hive的数据源，获取用户在大数据集群中的Hive库表信息，同时用户也可以新增JDBC数据源和CSV文件作为数据源。
+&nbsp;&nbsp;&nbsp;&nbsp;Source指连接的数据源，通常在Visualis里面默认有一个Hive的数据源，获取用户在大数据集群中的Hive库表信息，同时也可以新增JDBC数据源和CSV文件作为数据源。不过在使用时，需要把对应的数据源JDBC连接驱动放置到类加载路径下。提供的默认HiveDatasource数据源实际上是一个虚拟的数据源，其不会影响到最终的任务执行和提交。
 ![](../images/visualis_source.png)
 
 
 ## 2.2. 数据模型-View
 &nbsp;&nbsp;&nbsp;&nbsp;View可以理解为数据模型，类似于SQL中的视图，通过对数据源进行加工，产生符合业务报表的数据模型。
 ![](../images/visualis_view_1.png)
-&nbsp;&nbsp;&nbsp;&nbsp;在View中定义好数据模型后，需要执行，产生各个维度和指标字段，Visualis会自动识别字段类型，并进行默认区分，当然，Visualis支持更加灵活的方式，即系统产生指标维度后，还能由人为自由设置。如下图第一个，当编写完成SQL后，执行完成V，并可以产生结果集，该结果集为Widget所需要引用的数据源。
+&nbsp;&nbsp;&nbsp;&nbsp;在View中定义好数据模型后，需要提交给Visualis执行，产生各个维度和指标字段，Visualis会自动识别字段类型，并进行默认区分，当然，Visualis支持更加灵活的方式，即系统产生指标维度后，还能由人为自由设置。如下图第一个，当编写完成SQL后，执行完成，并可以产生结果集，该结果集为Widget所需要引用的数据源。当点击下一步后，提供一个查询结果集指标维度的配置页，可以根据需要配置的图形，对各个字段属性进行自由配置。
 ![](../images/visualis_view_2.png)
 ![](../images/visualis_view_3.png)
 
 ## 2.3. 可视化组件-Widget
-&nbsp;&nbsp;&nbsp;&nbsp;View可以理解为数据模型，类似于SQL中的视图，通过对数据源进行加工，产生符合业务报表的数据模型。
+&nbsp;&nbsp;&nbsp;&nbsp;Visualis中，每个可视化的小组件的单元称为一个Widget，创建的Widget需要绑定一个View，用来作为渲染可视化图形的数据源。创建Widget后，会自动把绑定的View中指标维度进行划分，拖动对应的指标和维度才能渲染相匹配的图形小组件。Widget提供了各种图形细节上的配置，目前Visualis支持透视图和图标，基本上涵盖了基本报表表格的功能和使用场景。
 ![](../images/visualis_widget_1.png)
 ![](../images/visualis_widget_2.png)
 
 
 ## 2.4. DashBoard和Display
-&nbsp;&nbsp;&nbsp;&nbsp;DashBoard的图表以更加有序统一的形式组织在屏幕上，并提供图表联动和全局筛选等高级功能。
-&nbsp;&nbsp;&nbsp;&nbsp;Display的编辑器拥有更高的自由度，支持背景颜色、图层顺序、自定义标签等常用的排版选项，方便定制出更加具有艺术个性的可视化大屏。
+&nbsp;&nbsp;&nbsp;&nbsp;Visualis提供了两个数据展示组件，用来组织Widget，两者较为相似，却在功能场景上有极大的不同，DashBoard即大屏，DashBoard的图表以更加有序统一的形式组织在屏幕上，并提供图表联动和全局筛选等高级功能。Display即看板，Display的编辑器拥有更高的自由度，支持背景颜色、图层顺序、自定义标签等常用的排版选项，方便定制出更加具有艺术个性的可视化大屏。
 ![](../images/visualis_display_1.png)
 ![](../images/visualis_dashboard_1.png)
 
