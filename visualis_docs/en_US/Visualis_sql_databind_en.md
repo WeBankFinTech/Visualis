@@ -19,7 +19,8 @@ df = spark.sql("select * from default.demo")
 show(df)
 ```
 &nbsp;&nbsp;&nbsp;&nbsp;The following figure shows how to use the visualis node upstream of binding in DSS.
-![Widget绑定上游表]()
+![Widget绑定上游表](./../images/widget_databind_sql.gif)
+
 
 ## 3. Implementation principle
 &nbsp;&nbsp;&nbsp;&nbsp;In the DSS workflow, after dragging the data development node, it will generate a_ tmp_ sql_ 5643_ The temporary table of RC1. When dragging a widget node to bind a data development node, in the DSS workflow JSON, the JSON of the widegt node will be set to configure the bindviewkey as the upstream bound data development node nodeid. The DSS backend will find its CS cache table through the bound nodeid, and when requesting to synchronously create a widget node of visualis, pass the CS ID of its CS table as the data source used by the widget node.
