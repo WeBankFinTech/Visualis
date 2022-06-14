@@ -36,6 +36,18 @@
 
 # 在执行AppConn安装脚本工具后，会插入相关第三方AppConn的配置信息
 ```
+&nbsp;&nbsp;&nbsp;&nbsp;**需要额外注意，由于linkis-gateway支持多活服务请求转发，会通过名称进行匹配转发，在实际使用过程中，如果需要走前端接口去请求服务，需要在求中配置相应的标签，使得请求转发成功，由于DSS1.0.1的Visualis AppConn去请求Visualis服务时，暂未加上标签，会导致请求被拦截，所以DSS1.0.1版本中，需要手动修改dss_appconn_instance表的url字段，使Visualis AppConn请求走服务端请求路径，来支持DSS工作流和Visualis服务的交互（下个版本我们会修复这个问题）。相关表修改记录参考如下：**
+![表修改](./../images/visualis_appconn_fix.png)
+```sql
+-- 1. 找到visualis appconn instance
+-- 通过AppConn来找到instance
+-- 即visualis的appconn表中id为10，appconn_instance表中id为15则为visualis的配置
+
+-- ${ip}: 服务端IP
+-- ${port}: 服务端端口
+update dss_appconn_instance set url 'http://${ip}:${port}/' where appconn_id = 10;
+```
+
 
 ## 3. 独立安装
 &nbsp;&nbsp;&nbsp;&nbsp;如果是独立部署的DSS和Linkis服务，需要额外的新增Visualis来使用，可以选择独立安装AppConn。下载DSS一键安装全家桶，解压后，在dss/bin中找到appconn-install.sh脚本，把该脚本放置在安装完成的DSS路径下的bin目录下(需要确保源码编译安装的DSS其AppConn的包也是完好的)。
