@@ -31,7 +31,7 @@ show(df)
   "desc": ""
 }
 ```
-&nbsp;&nbsp;&nbsp;&nbsp;其创建过程可以如下图所示：
+&nbsp;&nbsp;&nbsp;&nbsp;其创建过程可以如下图所示：  
 ![绑定数据节点](../images/sql_databind.png)
 
 ## 3.1. 与DSS对接实现细节
