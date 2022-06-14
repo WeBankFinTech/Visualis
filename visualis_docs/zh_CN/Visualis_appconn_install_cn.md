@@ -21,7 +21,7 @@
 >> ls
 >> appconn-install.sh  checkEnv.sh  excecuteSQL.sh  install.sh
 ```
-&nbsp;&nbsp;&nbsp;&nbsp;为了能够安装顺利，首先我们需要部署和启动Visualis服务。Visualis的安装部署可以参考[Visualis安装部署文档]()，使用AppConn安装脚本工具时步骤如下：
+&nbsp;&nbsp;&nbsp;&nbsp;为了能够安装顺利，首先我们需要部署和启动Visualis服务。Visualis的安装部署可以参考[Visualis安装部署文档](./Visualis_deploy_doc_cn.md)，使用AppConn安装脚本工具时步骤如下：
 ```shell
 >> sh appconn-install.sh
 
