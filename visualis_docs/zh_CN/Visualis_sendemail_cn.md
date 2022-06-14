@@ -23,7 +23,7 @@ INSERT INTO dss_appconn_instance (
 );
 ```
 
-&nbsp;&nbsp;&nbsp;&nbsp;邮件发送的过程需要上下有节点相互配合，在SendEmail执行前，数据可视化节点执行时就已经把相关的发送结果准备完成，在DSS工作流侧，Display和Dashboard执行实际上是去请求preview接口，相关实现可以参考[Display Dashboard预览原理]()，使用Linlis的DownloadAction来请求大的结果集（我们默认请求preview的图片是属于大的结果集）。下面是Display和Dashboard的在DSS AppConn执行的核心逻辑。
+&nbsp;&nbsp;&nbsp;&nbsp;邮件发送的过程需要上下有节点相互配合，在SendEmail执行前，数据可视化节点执行时就已经把相关的发送结果准备完成，在DSS工作流侧，Display和Dashboard执行实际上是去请求preview接口，相关实现可以参考[Display Dashboard预览原理]()，使用Linlis的DownloadAction来请求大的结果集（我们默认请求preview的图片是属于大的结果集）。下面是Display和Dashboard的在DSS AppConn执行的核心逻辑。  
 ![SendEmail](./../images/sendemail.png)
 ```scala
  private ResponseRef executePreview(AsyncExecutionRequestRef ref, String previewUrl, String metaUrl) 
