@@ -1,6 +1,6 @@
 > Visualis AppConn Install
 
-## 1. 简介
+## 1. Introduction
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis is a data visualization system based on the secondary development of the open source project DaVinci. In order to connect with DSS, visualis has implemented the relevant specifications for DSS appconn access. For the app conn access specification, please refer to [dss appconn Access Specification] (). Visualis is connected to DSS as a data visualization node, which needs to meet the three-level specifications, namely:
 * In order to realize secret free interworking with DSS, SSO specification is implemented
 * In order to connect with DSS project, the organization structure specification is realized
@@ -50,6 +50,10 @@
 ...
 
 ```
+&nbsp;&nbsp;&nbsp;&nbsp;**Additional attention is required. Since linkis-gateway supports multi-active service request forwarding, it will be matched and forwarded by name. In actual use, if you need to use the front-end interface to request services, you need to ask Configure the corresponding label in the DSS1.0.1 to make the request forwarding successfully. Since the Visualis AppConn of DSS1.0.1 requests the Visualis service, the label is not added yet, which will cause the request to be intercepted. Therefore, in the DSS1.0.1 version, you need to manually modify the url of the dss_appconn_instance table field, so that Visualis AppConn requests go through the server-side request path to support the interaction between DSS workflows and Visualis services (we will fix this problem in the next version). The relevant table modification records are referenced as follows:**
+![表修改](./../images/visualis_appconn_fix.png)
+
+
 &nbsp;&nbsp;&nbsp;&nbsp;Of course, if you need a more flexible installation method, you can execute the relevant SQL of visualis appconn separately. The tables involved are as follows. Please refer to the following table. If you need to pay attention to the need during installation, due to the limited space, the relevant SQL of DSS insert table can be found in the one click bucket under the DSS appconn lib package SQL. The SQL script has some variables that need to be inserted after replacement.
 
 |Table name|effect|remarks|

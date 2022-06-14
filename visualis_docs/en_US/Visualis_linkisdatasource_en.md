@@ -1,10 +1,10 @@
 > Visualis Access Linkis Datasource Design Manual
 
 ## 1. Original intention
-&nbsp;&nbsp;&nbsp;&nbsp;The original Visualis must rely on a data source to develop View and Wideget. The data source needs to be configured with relevant link information, and Visualis can query the corresponding information and provide View development through the configured link information, but traditional Visualis does not. Supports big data scenarios, or the supported big data scenarios are relatively simple (you can link Hive ThriftServer through JDBC), within WeBank enterprises, provide computing middleware Linkis links to support a variety of big data data sources, and at the same time it provides a variety of enterprise-level Features, in order to better support big data scenarios, Visualis is compatible with the original JDBC Source and provides Linkis Datasource to link related data sources. Currently, Hive Datasource is more commonly used, and its name is HiveDatasource. When creating a new View, the default value is HiveDatasource. It is directly bound to the data source. In use, the sidebar will display the information of the library table that it has permission to, just like the file tree, the library table can be double-clicked to expand. Not limited to Hive Datasource, Visualis supports data source extension at the code level. Among them, the new Presto data source, more access and extension usage methods, need users to discover and explore by themselves.
+&nbsp;&nbsp;&nbsp;&nbsp;The original Visualis must rely on a data source to develop View and Wideget. The data source needs to configure the relevant link information, and Visualis can query the corresponding information through the configured link information, provide View development, but the traditional Visualis does not support big data scenarios, or the supported big data scenarios are relatively simple (you can link Hive ThriftServer through JDBC), and within the WeBank enterprise, it provides computing middleware Linkis links to support a variety of big data data sources , and it provides a variety of enterprise-level features. In order to better support big data scenarios, Visualis is compatible with the original JDBC Source and provides Linkis Datasource to link related data sources. Currently, the most commonly used support is Hive Datasource, whose name is HiveDatasource, When creating a new View, it is directly bound to the data source by default. In use, the sidebar will display the library table information that it has permission to, just like a file tree, its library table can be double-clicked to expand. Not limited to Hive Datasource, Visualis supports data source extension at the code level. Among them, the new Presto data source, more access and extension usage methods, need users to discover and explore by themselves.
 
-## 2. Design ideas
-&nbsp;&nbsp;&nbsp;&nbsp;HiveDatasource has certain specifications in Visualis. In order to enable each user to log in and use, a standard Hive datasource with default configuration can be provided. When creating a database, a template needs to be inserted into Source in advance. In the Davinci.sql file, the following SQL exists:
+## 2. Design Ideas
+&nbsp;&nbsp;&nbsp;&nbsp;HiveDatasource has certain specifications in Visualis. In order to enable each user to log in and use, it can provide a standard Hive data source with a default configuration. When creating a database, it needs to be in the Source in advance Insert a template. In the Davinci.sql file, the following SQL exists:
 ```sql
 DELETE FROM source;
 INSERT INTO `source` (
@@ -31,20 +31,20 @@ VALUES (
     -1,
     null,null,null,null,null,null,null,null);
 ```
-&nbsp;&nbsp;&nbsp;&nbsp;The default insertion primary key is id 1, in order to specify the index of the template in the database, so that the template position can be found when using it next. If there are other situations, the index of the template data source in the database changes, you need to modify the relevant configuration and restart the service. For the relevant configuration of the data source, you can refer to the configuration in the com.webank.wedatasphere.dss.visualis.utils.VisualisUtils class. When using it, you only need to configure the corresponding key-value pair in the linkis.properties file. The configuration related to the data source can be referred to as follows:
+&nbsp;&nbsp;&nbsp;&nbsp;The default insertion primary key is id 1, in order to specify the index of the template in the database, so that the template location can be found when using it next. If there are other situations, the index of the template data source in the database changes, you need to modify the relevant configuration and restart the service. For the relevant configuration of the data source, you can refer to the configuration in the com.webank.wedatasphere.dss.visualis.utils.VisualisUtils class. When using it, you only need to configure the corresponding key-value pair in the linkis.properties file. The configuration related to the data source can be referred to as follows:
 ```scala
-  // hive datasource token
+  // hive datasource token value
   val HIVE_DATA_SOURCE_TOKEN = CommonVars("wds.dss.visualis.hive.datasource.token","hiveDataSource-token")
-  // hive datasource
-  val HIVE_DATA_SOURCE_ID =  CommonVars("wds.dss.visualis.hive.datasource.id",1)
-  // presto token
+  // hive datasource primary key id
+  val HIVE_DATA_SOURCE_ID = CommonVars("wds.dss.visualis.hive.datasource.id",1)
+  // presto data source token
   val PRESTO_DATA_SOURCE_TOKEN = CommonVars("wds.dss.visualis.presto.datasource.token","prestoDataSource-token")
-  // presto token
-  val PRESTO_DATA_SOURCE_ID =  CommonVars("wds.dss.visualis.presto.datasource.id",210)
+  // presto data source token
+  val PRESTO_DATA_SOURCE_ID = CommonVars("wds.dss.visualis.presto.datasource.id",210)
 ```
 &nbsp;&nbsp;&nbsp;&nbsp;When the data source is created, it occurs when the data source information is obtained. When logging in to Visualis and switching to the Source's Tab, the front-end interface will trigger the acquisition of the Source's list interface. Its Restful interface is in the SourceController class, and the code is as follows.
 ```java
-    // Original Davinci interface
+    // original Davinci interface
     @MethodLog
     @GetMapping
     public ResponseEntity getSources(@RequestParam Long projectId,
@@ -58,7 +58,7 @@ VALUES (
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(sources));
     }
 ```
-&nbsp;&nbsp;&nbsp;&nbsp;In the SourceController class, we have not modified other Davinci related implementations. In order to be compatible with the data source reuse logic, the interfaces in SourceServive have been modified. In the Service, there are three steps of logic, which are to obtain the project through the project id. Go to the corresponding Source list. The Source list is traversed to determine whether there is a Hive data source or a Presto data source. In the last step, if there is no relevant Hive Datasource or Presto data source, it will be inserted and added to the final list that needs to be returned. TotalSource , the code is as follows:
+&nbsp;&nbsp;&nbsp;&nbsp;In the SourceController class, we have not modified other Davinci related implementations. In order to be compatible with the data source reuse logic, the interfaces in SourceServive have been modified. In the Service, there are three-step logic, Respectively, the corresponding Source list under the project is obtained through the project id, and the Source list is traversed to determine whether there is a Hive data source or a Presto data source. To the totalSource in the final list that needs to be returned, the code is as follows:
 ```java
     @Override
     public List<Source> getSources(Long projectId, User user, String ticketId) throws NotFoundException, UnAuthorizedExecption, ServerException {
@@ -71,7 +71,7 @@ VALUES (
             return null;
         }
 
-        // 1. Obtain the relevant data source through the project id
+        // 1. Get the relevant data source through the project id
         List<Source> sources = sourceMapper.getByProject(projectId);
         List<Source> totalSources = Lists.newArrayList();
         totalSources.addAll(hiveDBHelper.sourcesToHiveSources(sources));
@@ -82,7 +82,7 @@ VALUES (
             }
         }
 
-        // 2. Identify the type and existence of data sources
+        // 2. Identify the type and existence of the data source
         if(sources.stream().noneMatch(s -> VisualisUtils.isLinkisDataSource(s))){
             
             // 3. Insert the data source
@@ -101,11 +101,21 @@ VALUES (
             prestoSource.setProjectId(projectId);
             sourceMapper.insert(prestoSource);
             totalSources.add(hiveDBHelper.sourceToHiveSource(prestoSource));
+            }
+        if(getAvailableEngineTypes(user.username).contains(VisualisUtils.PRESTO().getValue()) && sources.stream().noneMatch(
+                s -> VisualisUtils.isPrestoDataSource(s))){
+            
+            // 3. Insert the data source
+            Source prestoSource = sourceMapper.getById(VisualisUtils.getPrestoDataSourceId());
+            prestoSource.setId(null);
+            prestoSource.setProjectId(projectId);
+            sourceMapper.insert(prestoSource);
+            totalSources.add(hiveDBHelper.sourceToHiveSource(prestoSource));
         }
         return totalSources;
     }
 ```
-&nbsp;&nbsp;&nbsp;&nbsp;When the data source is used, it relies on the Linkis service. Linkis provides a data source acquisition interface, which shields the difficulty of obtaining Hive Metasource-related information for third-party components. Linkis provides a data source interface and returns its standard library table information format. Here, Visualis only needs to define the interface request and parsing format, and can quickly integrate the usage scenarios of big data. When requesting Linkis data source, GateWay needs to forward it and set the corresponding cookie value, namely linkis ticket id. The interface returned by the request is in JSON format. When using it, the JSON string needs to be parsed. The core of the relevant code is as follows:
+&nbsp;&nbsp;&nbsp;&nbsp;When the data source is used, it relies on the Linkis service. Linkis provides a data source acquisition interface, which shields the difficulty of third-party components from obtaining Hive Metasource-related information. Linkis provides a data source interface and returns its Standardized library table information format. Here, Visualis only needs to define the interface request and parsing format, and can quickly integrate the usage scenarios of big data. When requesting Linkis data source, GateWay needs to forward it and set the corresponding cookie value, namely linkis ticket id. The interface returned by the request is in JSON format. When using it, the JSON string needs to be parsed. The core of the relevant code is as follows:
 ```java
 public class HttpUtils {
 
@@ -119,7 +129,7 @@ public class HttpUtils {
     // Request table information interface
     private static final String TABLE_URL = GATEWAY_URL + CommonConfig.TABLE_URL_SUFFIX().getValue();
     
-    // Request column information interface
+    // request column information interface
     private static final String COLUMN_URL = GATEWAY_URL + CommonConfig.COLUMN_URL_SUFFIX().getValue();
 
     public static String getDbs(String ticketId) {
@@ -136,7 +146,7 @@ public class HttpUtils {
             CloseableHttpResponse response = httpClient.execute(httpGet);
             hiveDBJson = EntityUtils.toString(response.getEntity(), "UTF-8");
         } catch (IOException e) {
-            logger.error("通过HTTP方式获取Hive数据库信息失败, reason:", e);
+            logger.error("Failed to obtain Hive database information through HTTP, reason:", e);
         }
         return hiveDBJson;
     }
@@ -158,9 +168,9 @@ public class HttpUtils {
             CloseableHttpResponse response = httpClient.execute(httpGet);
             tableJson = EntityUtils.toString(response.getEntity(), "UTF-8");
         } catch (URISyntaxException e) {
-            logger.error("{} url 有问题", TABLE_URL, e);
+            logger.error("{} url is wrong", TABLE_URL, e);
         } catch (IOException e) {
-            logger.error("获取hive数据库 {} 下面的表失败了", hiveDBName, e);
+            logger.error("Failed to get the table below hive database {}", hiveDBName, e);
         }
         return tableJson;
     }
@@ -183,18 +193,18 @@ public class HttpUtils {
             CloseableHttpResponse response = httpClient.execute(httpGet);
             columnJson = EntityUtils.toString(response.getEntity(), "UTF-8");
         } catch (final URISyntaxException e) {
-            logger.error("{} url 有问题", COLUMN_URL, e);
+            logger.error("{} url is wrong", COLUMN_URL, e);
         } catch (final IOException e) {
-            logger.error("获取hive数据库 {}.{} 字段信息失败 ", dbName, tableName, e);
+            logger.error("Failed to get hive database {}.{} field information", dbName, tableName, e);
         }
         return columnJson;
     }
 ```
-&nbsp;&nbsp;&nbsp;&nbsp;Regarding the configured Hive Datasource usage scenario, the data source does not provide real execution logic. The binding logic of Visualis is that the Widget needs to be bound to a View, and the View will be bound to a Source. Get the executed library table information in . In the non-traditional Davinci logic, there will be a View query record SQL. During actual execution, the logic of Widget rendering is submitted by submitting the SQL code. Therefore, the Linkis data source only provides a tool component for visual editing, not will affect the actual execution.
-&nbsp;&nbsp;&nbsp;&nbsp;The core fields in View are as follows:
+&nbsp;&nbsp;&nbsp;&nbsp;The Hive Datasorce usage scenario for configuration, the data source does not provide real execution logic, the binding logic of Visualis is, Widget needs to bind a View, View will bind a Source, Widget During execution, the executed library table information will not be obtained from Souce. In the non-traditional Davinci logic, there will be a View query record SQL. During actual execution, the logic of Widget rendering is submitted by submitting the SQL code. Therefore, the Linkis data source only provides a visual editing time.
+&nbsp;&nbsp;&nbsp;&nbsp;The core fields in the View are as follows:
 ```json
-// view-bound sql
-select * from default.dwc_vsbi_students_demo 
+// view bound sql
+select * from default.dwc_vsbi_students_demo
 
 // Its indicator dimension information
 {
@@ -212,5 +222,5 @@ select * from default.dwc_vsbi_students_demo
     "exam_date":{"sqlType":"STRING","visualType":"string","modelType":"category"}
 }
 ```
-## 3. Other
-&nbsp;&nbsp;&nbsp;&nbsp;At present, if Visualis is used by itself, Visualis supports Hive Datasource to provide tool components for View query. If it is developed through the DSS workflow, when the Widget is bound to the upstream table, the data of the Widget is obtained from the CS service. It does not involve specific data sources. Currently, the Visualis code level also integrates Presto data sources to support faster query analysis. If you need to provide support for more data sources, you can refer to the implementation of Presto and Hive data sources.
+## 3. Others
+&nbsp;&nbsp;&nbsp;&nbsp;At present, if Visualis is used by itself, Visualis supports Hive Datasource to provide tool components for View query. If it is developed through DSS workflow, when the Widget is bound to the upstream table, the data of its Widget It is obtained from the CS service and does not involve specific data sources. Currently, the Visualis code level also integrates the Presto data source to support faster query analysis. If you need to provide support for more data sources, you can refer to Presto and Hive The relevant implementation of the data source.
