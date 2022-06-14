@@ -19,7 +19,7 @@ df = spark.sql("select * from default.demo")
 show(df)
 ```
 &nbsp;&nbsp;&nbsp;&nbsp;如下图为在DSS中使用绑定上游使用Visualis节点的方式。
-![Widget绑定上游表]()
+![Widget绑定上游表](./../images/widget_databind_sql.gif)
 
 ## 3. 实现原理
 &nbsp;&nbsp;&nbsp;&nbsp;在DSS工作流中，拖拽数据开发节点后，其执行后会产生一个类似于cs_tmp_sql_5643_rc1的临时表，当拖拽Widget节点绑定数据开发节点时，在DSS工作流Json中，会设置Widegt节点的Json配置bindViewKey为上游绑定数据开发节点NodeId，DSS后端，会通过该绑定的NodeId找到其CS缓存表，并在请求同步创建Visualis的Widget节点时，传递其CS表对于的CS ID，作为Widget节点所使用的数据源。
