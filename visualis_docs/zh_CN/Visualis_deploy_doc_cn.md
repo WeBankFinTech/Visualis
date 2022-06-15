@@ -207,24 +207,8 @@ spring:
 # ##################################
 wds.linkis.gateway.url=http://127.0.0.1:9001/
 
-# ##################################
-# 2. can keep the default configuration
-#    可以保持默认配置
-# ##################################
-
-wds.dss.visualis.query.timeout=1200000
-
-wds.linkis.test.mode=false
-wds.linkis.test.user=test
-
-wds.linkis.server.restful.scan.packages=com.webank.wedatasphere.dss.visualis.restful
-
-wds.dss.visualis.project.name=default
-
-wds.dss.engine.allowed.creators=Visualis,nodeexecution,IDE
-wds.linkis.max.ask.executor.time=45m
-wds.linkis.server.component.exclude.classes=com.webank.wedatasphere.linkis.entrance.parser.SparkJobParser
-wds.dss.visualis.creator=Visualis
+# 其它参数使用配置文件中的默认配置即可
+# 配置省略
 ```
 
 ## 3. 启动应用
