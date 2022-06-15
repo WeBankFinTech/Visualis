@@ -14,7 +14,7 @@ Visualis compile deployment document
 | Hadoop(2.7.2，Other versions of Hadoop need to compile Linkis themselves) | required | [how to install  Hadoop](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) [Hadoop cluster](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
 | Spark(2.4.3，Other Spark versions need to compile Linkis themselves) | required | [how to install Spark](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
 | DSS1.0.1 | required | [how to install DSS](https://github.com/WeBankFinTech/DataSphereStudio-Doc/blob/main/zh_CN/%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/DSS%E5%8D%95%E6%9C%BA%E9%83%A8%E7%BD%B2%E6%96%87%E6%A1%A3.md) |
-| Linkis1.1.1 | required | [how to install Linkis](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
+| Linkis1.1.1 (greater than or equal to this version) | required | [how to install Linkis](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
 | Nginx | required | [how to install Nginx](http://nginx.org/en/linux_packages.html) |
 
 
