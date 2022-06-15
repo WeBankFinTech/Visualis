@@ -1,6 +1,7 @@
 > Visualis AppConn安装
 
 ## 1. AppConn安装
+&nbsp;&nbsp;&nbsp;&nbsp;DSS在编译打包时，会自动编译打包好Visualis AppConn物料包，Visualis AppConn的安装，只涉及到AppConn相关库表的配置。
 &nbsp;&nbsp;&nbsp;&nbsp;如果是使用[DSS一键安装全家桶](https://osp-1257653870.cos.ap-guangzhou.myqcloud.com/WeDatasphere/DataSphereStudio/1.0.1/DSS-Linkis%E5%85%A8%E5%AE%B6%E6%A1%B620220223.zip)来部署的服务，可以直接使用其软件包中提供的脚本工具。在一键全家桶部署完成后，可以在dss的安装目录下找到脚本工具，其目录结构和使用说明如下。
 ```shell
 # 进入到dss安装的bin目录下
