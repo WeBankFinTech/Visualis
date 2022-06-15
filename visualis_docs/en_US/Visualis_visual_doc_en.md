@@ -14,7 +14,7 @@ c) Parameter source: as a field of the parameter view, it is also a JSON structu
 d) In the above concept, the widget needs to be able to be bound to a virtual view to receive the parameters of the patched view.
 2.	The virtual view is a row inserted in the database, and its project_ ID and source_ ID is -1; The SQL, model, variable, and config fields are all null.
 3.	 It only supports the creation of a widget bound to a virtual view when it is called by other systems and parameters are passed. You cannot manually select to bind a virtual view when creating a widget.
-4.	参The parameter view needs to conform to the following JSON format.  
+4.	The parameter view needs to conform to the following JSON format.  
 a) Correspondence between data source type and specific data content:
 
 |dataSourceType |dataSourceContent |   
