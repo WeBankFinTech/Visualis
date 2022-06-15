@@ -30,7 +30,7 @@ select * from students where class = ${className}
 ## 4. 如何使用邮件发送图表功能
 
 &nbsp;&nbsp;&nbsp;&nbsp;DSS中的Display/Dashboard节点，在作为邮件发送内容时，会从Visualis系统获取图表对应的截图，为了确保截图功能正常，需检查以下几点：
-1. 确认linkis-appjoint-entrance中已经添加sendmail与visualis的appjoint。
+1. 确保DSS安装目录有dss-appconn Sendemail AppConn目录。
 1. 根据在application.yml中的配置的default_browser，确认已经将对应的selenium driver放在部署的服务器的目录下
 1. 确认selenium driver已配置在application.yml的phantomjs_path或chromedriver_path中(默认为安装路径的bin目录下)
 1. 确认启动Visualis的用户对selenium driver文件具有执行权限
