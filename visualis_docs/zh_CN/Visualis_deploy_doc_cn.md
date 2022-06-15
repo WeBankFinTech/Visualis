@@ -204,7 +204,7 @@ spring:
 # 其它参数保持默认，如果不需要定制化修改，采用默认参数即可
 ```
 
-### 2.2.2 修改linkis.properties
+### 2.5.2. 修改linkis.properties
 ```properties
 # ##################################
 # 1. need configuration
@@ -220,7 +220,7 @@ wds.linkis.gateway.url=http://127.0.0.1:9001/
 
 &nbsp;&nbsp;&nbsp;&nbsp;在配置和前端包编译完成后，可以尝试启动服务。Visualis目前和DSS集成，使用了DSS的登录及权限体系，使用前需部署完成DSS1.0.1版本，可以参考DSS1.0.1一键安装部署。（**由于此次visualis-1.0.0-rc1版本属于内测版，如需正常使用，请编译最新的DSS master分支代码**）
 
-### 3.1 执行启动脚本
+### 3.1. 执行启动脚本
 
 &nbsp;&nbsp;&nbsp;&nbsp;进入Visualis的安装目录，找到bin文件夹，在此文件夹下执行一下命令。
 ```
@@ -228,7 +228,7 @@ sh ./start-server.sh
 ```
 备注：**如果启动服务时，报启动脚本的换行符无法识别，需要在服务器上对脚本进行编码转换使用：dos2unix xxx.sh 命令进行转换**
 
-### 3.2 确认应用启动成功
+### 3.2. 确认应用启动成功
 
 &nbsp;&nbsp;&nbsp;&nbsp;打开Eureka页面，在注册的服务列表中，找到visualis服务的实例，即可认为服务启动成功。同时也可以查看visualis的服务启动日志，如果没有报错，即服务顺利启动。
 ```
