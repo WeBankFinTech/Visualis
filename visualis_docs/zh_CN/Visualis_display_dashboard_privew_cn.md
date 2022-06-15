@@ -41,7 +41,7 @@
         }
     }
 ```
-&nbsp;&nbsp;&nbsp;&nbsp;预览的核心是把Display的页面和Dashboard的页面截图，其主要功能依托于PhantomJS的实现，Visualis使用Java的Selenium库调用PhantomJS进行截图，其核心逻辑在ScreenshotUtil类中实现。截图需要依赖bin目录下的名称为phantomjs的二进制文件，这个是Selenium针对PhantomJS提供的Driver驱动，其相关包可以在Selenium官网上下载。
+&nbsp;&nbsp;&nbsp;&nbsp;预览的核心是把Display的页面和Dashboard的页面截图，其主要功能依托于PhantomJS的实现，Visualis使用Java的Selenium库调用PhantomJS进行截图，其核心逻辑在ScreenshotUtil类中实现。截图需要依赖bin目录下的名称为phantomjs的二进制文件，这个是Selenium针对PhantomJS提供的Driver驱动，其相关包可以在Selenium官网上下载（**在打包的bin目录下，已经提供一个默认的PhantomJS驱动**）。
 &nbsp;&nbsp;&nbsp;&nbsp;由于PhantomJS属于不维护状态，未来存在迁移到Chrome的可能性，同样可以在Selenium官网上下载到对应的driver，但使用Chrome需要在Linux机器上安装真正的Chrome浏览器，如需切换为Chromer需要进行适配测试和兼容性测试。
 
 ## 3. 预览优化

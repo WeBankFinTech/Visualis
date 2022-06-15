@@ -38,7 +38,7 @@
 
 
 ## 2.1. 应用商店集成
-&nbsp;&nbsp;&nbsp;&nbsp;Visualis可以内嵌如DSS前端页面，接入到DSS的应用商店，可以免密互通。
+&nbsp;&nbsp;&nbsp;&nbsp;Visualis可以内嵌入DSS前端页面，接入到DSS的应用商店，可以免密互通。
 ![](../images/visualis_dss_1.png)
 
 
