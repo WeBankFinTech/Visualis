@@ -1,364 +1,301 @@
-Visualis compile and deploy documentation
+Visualis compile deployment document
+
 ------
 
-## 1. Download the source package and compile and package
-&nbsp;&nbsp;&nbsp;&nbsp;When installing the Visualis source code, you need to download the corresponding source code package for compilation. At present, the DSS 1.0.1 version and Linkis 1.0.3 version that Visualis depends on have been uploaded to the Maven central warehouse, as long as the Maven configuration is normal Relevant dependencies can be pulled.
+
+
+# 1. Environment preparation and compilation
+## 1.1. Dependent environment preparation
+
+| Dependent components | Is it required | Install a through train |
+| -------------- | ------ | --------------- |
+| MySQL (5.5+) | required  | [how to install mysql](https://www.runoob.com/mysql/mysql-install.html) |
+| JDK (1.8.0_141) | required | [how to install JDK](https://www.runoob.com/java/java-environment-setup.html) |
+| Hadoop(2.7.2，Other versions of Hadoop need to compile Linkis themselves) | required | [how to install  Hadoop](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) [Hadoop cluster](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
+| Spark(2.4.3，Other Spark versions need to compile Linkis themselves) | required | [how to install Spark](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
+| DSS1.0.1 | required | [how to install DSS](https://github.com/WeBankFinTech/DataSphereStudio-Doc/blob/main/zh_CN/%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/DSS%E5%8D%95%E6%9C%BA%E9%83%A8%E7%BD%B2%E6%96%87%E6%A1%A3.md) |
+| Linkis1.1.1 | required | [how to install Linkis](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
+| Nginx | required | [how to install Nginx](http://nginx.org/en/linux_packages.html) |
+
+
+
+
+## 1.2. Creating Linux users
+
+&nbsp;&nbsp;&nbsp;&nbsp;Please keep the deployment users of visualis consistent with those of linkis and deploy with Hadoop users.
+
+
+
+## 1.3. Underlying dependent component check
+
+&nbsp;&nbsp;&nbsp;&nbsp;**Please ensure that dss1.0.1 and linkis1.1.1 are basically available. You can execute sparkql scripts in the DSS front-end interface, and create and execute DSS workflows normally**
+
+
+
+## 1.4. Download the source package and compile the backend
+
+&nbsp;&nbsp;&nbsp;&nbsp;When installing the visualis source code, you need to download the corresponding source code package for compilation. Currently, the DSS version 1.0.1 and linkis1.1.1 that visualis relies on have been uploaded to the Maven central warehouse. As long as the Maven configuration is normal, you can pull the relevant dependencies.
 ```shell
-# 1. Download the source code
+# 1. Download source code
 git clone https://github.com/WeDataSphere/Visualis.git
 
-# 2. Switch to the 1.0.0-rc1 branch
+# 2. Switch to 1.0.0-rc1 branch
 git checkout 1.0.0-rc1
 
-# 3. Execute compilation and packaging
+# 3.Perform compilation and packaging
 cd Visualis
+
 mvn -N install
+
 mvn clean package -DskipTests=true
-```
-
-## 2. Install the Visualis package
-&nbsp;&nbsp;&nbsp;&nbsp;Visualis uses assembly as a packaging plug-in. After compiling, go to the Visualis/assembly/target directory to find the compiled Visualis-server.zip package.
-````bash
- # 1. Unzip the installation package
-unzip visualis-server.zip
-cd visualis-server
-````  
-
-&nbsp;&nbsp;&nbsp;&nbsp;After decompressing the visualis compilation package, enter the directory and you can see the following file directory.
-````
-visualis-server
-    --- bin # Service start and stop script
-    --- conf # Service configuration directory
-    --- davinvi-ui # Front-end template, presence or absence does not affect use
-    --- lib # Service jar package storage location
-    --- logs # log directory
-````
-## 3. Modify the configuration
-
-&nbsp;&nbsp;&nbsp;&nbsp;After the decompression package is installed, the configuration needs to be modified before use. The configuration mainly modifies the two files, application.yml and linkis.properties in the conf directory. The application.yml file needs to conform to the configuration specification of yaml (Key-value pairs need to be separated by a space after the colon).
-
-### 3.1 Modify application.yml
-&nbsp;&nbsp;&nbsp;&nbsp;In the configuration application.yml file, configuration items 1, 2, and 3 must be configured. In the first item, you need to configure some deployment IP and port information, and the second item needs to configure eureka information, only the link information of the configuration database is required in item 3 (other parameters can be kept at their default values). **It should be noted that due to historical reasons, Visualis reuses the user authority system of DSS and uses the linkis_user table of DSS. Therefore, when deploying, Visualis needs to configure the same database as DSS. If it is implemented in separate databases, it needs to be used regularly. Synchronize DSS users to the linkis_user table in the Visualis library.**
-```yaml
-# ####################################
-# 1. Visualis Service configuration
-# ####################################
-server:
-  protocol: http
-  address: 127.0.0.1 # server ip address
-  port: 9008 # server port
-  url: http://127.0.0.1:8088/dss/visualis # frontend index page full path
-  access:
-    address: 127.0.0.1 # frontend address
-    port: 8088 # frontend port
-
-
-# ####################################
-# 2. eureka configuration
-# ####################################
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: http://127.0.0.1:20303/eureka/ # Configuration required
-  instance:
-    metadata-map:
-      test: wedatasphere
-management:
-  endpoints:
-    web:
-      exposure:
-        include: refresh,info
-
-
-# ####################################
-# 3. Spring configuration
-# ####################################
-spring:
-  main:
-    allow-bean-definition-overriding: true
-  application:
-    name: visualis-dev
-  datasource:
-    url: jdbc:mysql://127.0.0.1:3306/dss?characterEncoding=UTF-8&allowMultiQueries=true # Configuration required
-    username: hadoop
-    password: hadoop
-    driver-class-name: com.mysql.jdbc.Driver
-    initial-size: 2
-    min-idle: 1
-    max-wait: 60000
-    max-active: 10
-    type: com.alibaba.druid.pool.DruidDataSource
-    time-between-eviction-runs-millis: 30000
-    min-evictable-idle-time-millis: 300000
-    test-while-idle: true
-    test-on-borrow: false
-    test-on-return: false
-    filters: stat
-    break-after-acquire-failure: true
-    connection-error-retry-attempts: 3
-    validation-query: SELECT 1
-  servlet:
-    multipart:
-      max-request-size: 1024MB
-      max-file-size: 1024MB
-      enabled: true
-      location: /
-
-  config:
-    location: classpath:/
-    additional-location: file:${DAVINCI3_HOME}/conf/
-    name: application
-
-  resources:
-    static-locations: classpath:/META-INF/resources/, classpath:/resources/, classpath:/static/, file:${file.userfiles-path}, file:${file.web_resources}
-
-  mvc:
-    static-path-pattern: /**
-
-  thymeleaf:
-    mode: HTML5
-    cache: true
-    prefix: classpath:/templates/
-    encoding: UTF-8
-    suffix: .html
-    check-template-location: true
-    template-resolver-order: 1
-
-  jackson:
-    date-format: yyyy-MM-dd HH:mm:ss
-    time-zone: GMT+8
-
-  cache:
-    caffeine:
-      type: caffeine
-  mail:
-    host: 127.0.0.1
-    port: 8000
-    username: wedatasphere
-    password: wedatasphere
-    nickname: wedatasphere
-
-    properties:
-      smtp:
-        starttls:
-          enable: true
-          required: true
-        auth: true
-      mail:
-        smtp:
-          ssl:
-            enable: false
-logging:
-  config: classpath:log4j2.xml
-
-
-# ####################################
-# 4. static resource configuration
-# ####################################
-file:
-  userfiles-path: ${DAVINCI3_HOME}/userfiles
-  web_resources: ${DAVINCI3_HOME}/davinci-ui/
-  base-path: ${DAVINCI3_HOME}
-
-sql_template_delimiter: $
-custom-datasource-driver-path: ${DAVINCI3_HOME}/conf/datasource_driver.yml
-
-
-# ####################################
-# 5. SQL configuration
-# ####################################
-pagehelper:
-  supportMethodsArguments: true
-  reasonable: true
-  returnPageInfo: check
-  helperDialect: mysql
-  params: count=countSql
-
-mybatis:
-  mapper-locations: classpath:mybatis/mapper/*Mapper.xml
-  config-locations: classpath:mybatis/mybatis-config.xml
-  type-aliases-package: edp.davinci.model
-  configuration:
-    map-underscore-to-camel-case: true
-    use-generated-keys: true
-
-mapper:
-  identity: MYSQL
-  not-empty: false
-  mappers: edp.davinci.dao
-
-# ####################################
-# 6. Screenshot drive
-# ####################################
-email:
-  suffix: ""
-screenshot:
-  default_browser: PHANTOMJS
-  timeout_second: 1800
-  phantomjs_path: ${DAVINCI3_HOME}/bin/phantomjs
 
 ```
 
-### 3.2 Modify linkis.properties
-```properties
-# ####################################
-# 1. need configuration
-# need to configure
-# ####################################
-wds.dss.visualis.gateway.ip=127.0.0.1
-wds.dss.visualis.gateway.port=9001
-wds.dss.visualis.query.timeout=1200000
-
-wds.linkis.gateway.url=http://127.0.0.1:9001/
-wds.linkis.gateway.ip=127.0.0.1
-wds.linkis.gateway.port=9001
 
 
-# ####################################
-# 2. can keep the default configuration
-# can keep the default configuration
-# ####################################
-# Whether to start the test default
-wds.linkis.rpc.eureka.client.refresh.wait.time.max=60s
-wds.linkis.test.mode=false
-wds.linkis.test.user=test
+## 1.5. Compile front end
 
-wds.linkis.server.restful.scan.packages=com.webank.wedatasphere.linkis.entrance.restful,com.webank.wedatasphere.dss.visualis.restful
-wds.linkis.query.application.name=linkis-ps-jobhistory
-wds.linkis.console.config.application.name=linkis-ps-publicservice
-wds.linkis.engine.creation.wait.time.max=20m
-wds.linkis.server.socket.mode=false
+ & nbsp;& nbsp;& nbsp; Visualis is a front-end and back-end separated project. The front-end files can be compiled and packaged separately. NPM tools need to be installed on the computer.
 
-wds.linkis.server.distinct.mode=true
-wds.linkis.filesystem.root.path=file:///mnt/bdap/
-wds.linkis.filesystem.hdfs.root.path=hdfs:///tmp/linkis
-
-wds.dss.visualis.project.name=default
-wds.linkis.server.version=v1
-
-wds.dss.engine.allowed.creators=Visualis,nodeexecution,IDE
-wds.linkis.max.ask.executor.time=45m
-wds.linkis.server.component.exclude.classes=com.webank.wedatasphere.linkis.entrance.parser.SparkJobParser
-wds.dss.visualis.creator=Visualis
-
-```
-### 3.3 Other configuration file modifications
-&nbsp;&nbsp;&nbsp;&nbsp;In the actual usage scenario, depending on the linkis.out log output scenario is not in compliance with the specification, the log file is not rolled back, and long-term operation is likely to cause the production server disk capacity alarm, which will bring production problems , at present, we can optimize the log printing by modifying the log configuration. The log configuration can be modified as follows:
-```properties
-<?xml version="1.0" encoding="UTF-8"?>
-<configuration status="error" monitorInterval="30">
-    <appenders>
-        <Console name="Console" target="SYSTEM_OUT">
-            <ThresholdFilter level="trace" onMatch="ACCEPT" onMismatch="DENY"/>
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{36} %L %M - %msg%xEx%n"/>
-        </Console>
-        <RollingFile name="RollingFile" fileName="/data/logs/visualis/visualis.log"
-                     filePattern="/data/logs/visualis/$${date:yyyy-MM}/visualis-log-%d{yyyy-MM-dd}-%i.log.gz">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{36} %L %M - %msg%xEx%n"/>
-            <SizeBasedTriggeringPolicy size="100MB"/>
-            <DefaultRolloverStrategy max="20"/>
-        </RollingFile>
-    </appenders>
-    <loggers>
-        <root level="INFO">
-            <appender-ref ref="RollingFile"/>
-            <appender-ref ref="Console"/> # Removing this configuration will cancel the linkis.out log output.
-        </root>
-    </loggers>
-</configuration>
-```
-
-## 4. Initialize the database
-&nbsp;&nbsp;&nbsp;&nbsp;Before use, you need to create a Visualis database (currently recommended, it should be noted that due to historical reasons Visualis reuses the DSS user authority system and uses the DSS linkis_user table, so when deploying, Visualis needs to configure the same database as DSS. If the sub-database is implemented, it needs to synchronize the DSS user to the linkis_user table of the Visualis library.), build the table that Visualis depends on, go to the source code directory, and find the db file Folder, after linking to the corresponding database, you need to execute the following SQL file to create the table() that Visualis needs to use.
 ```shell
-# link visualis database
-mysql -h 127.0.0.1 -u hadoop -d visualis -P3306 -p
 
-source ${visualis_home}/davinci.sql
-source ${visualis_home}/ddl.sql
+#Check whether NPM installation is completed
 
-# Where davinci.sql is the davinci table that visualis needs to use
-# ddl.sql is a table that visualis additionally depends on
-````
-
-## 5. Compile frontend files
-&nbsp;&nbsp;&nbsp;&nbsp;Visualis is a front-end and back-end separation project, the front-end files can be compiled and packaged separately, and the npm tool needs to be installed on the computer.
-```shell
-# Check if npm is installed
 npm -v
+
 >> 8.1.0
 
-cd webapp # Enter the front-end file path
-npm i # download front-end dependencies
-npm run build # Compile front-end packages
 
-# A build file directory will be generated in the webapp directory, which is the compiled front-end package file
+cd webapp #enter the front-end file path
+
+npm i #download front end dependency
+
+npm run build
+
+#A build file directory will be generated under the webapp directory, which is the compiled front-end package file
+```
+
+
+
+## 2. Install deployment
+
+## 2.1. Installing the rear end
+
+&nbsp;&nbsp;&nbsp;&nbsp;Visualis uses assembly as a package plug-in. After compilation, go to the visualis/assembly/target directory to find the compiled visualis server Zip package.
+
+````bash
+# 1. Unzip the installation package
+unzip visualis-server. zip
+
+cd visualis-server
 ````
 
-## 6. Start the application
+ & nbsp;& nbsp;& nbsp; After decompressing the visualis compilation package, you can enter the directory to see the following file directories.
 
-&nbsp;&nbsp;&nbsp;&nbsp;After configuring and compiling the frontend package, you can try to start the service. Visualis is currently integrated with DSS and uses the DSS login and permission system. Before use, the DSS1.0.1 version needs to be deployed. You can refer to DSS1.0.1 one-click installation and deployment. (Because this visualis-1.0.0-rc1 version is an internal beta version, if you want to use it normally, please compile the latest DSS master branch code)
-
-### 6.1 Execute the startup script
-
-&nbsp;&nbsp;&nbsp;&nbsp;Enter the Visualis installation directory, find the bin folder, and execute the following command in this folder.
-````
-sh ./start-server.sh
-````
-Note: **If the newline character of the startup script cannot be recognized when the service is started, you need to convert the script on the server and use: dos2unix xxx.sh command to convert**
-
-### 6.2 Confirm that the application starts successfully
-
-&nbsp;&nbsp;&nbsp;&nbsp;Open the Eureka page, find the instance of the visualis service in the list of registered services, and then consider the service to start successfully. At the same time, you can also view the service startup log of visualis. If no error is reported, the service starts successfully.
-````
-# View service startup log
-less logs/linkis.out
-````
-
-## 7. Deploy the front-end page
-&nbsp;&nbsp;&nbsp;&nbsp;Visualis currently uses the front-end and back-end separation deployment scheme. After completing the compilation in step 4, place the front-end package in the server directory corresponding to the dss/visualis path of the nginx front-end package installation path, and start nginx. Can.
-&nbsp;&nbsp;&nbsp;&nbsp;Visualis' nginx front-end configuration can refer to the following:
 ```shell
-# Configuration reference in nginx
+
+visualis-server
+
+---bin 
+
+---conf # service configuration directory
+
+---davinvi-ui
+
+---lib # service jar package storage location
+
+---logs # log directory
+
+```
+
+
+
+## 2.2. Initialize database
+
+&nbsp;&nbsp;&nbsp;Before initializing the database, it should be noted that due to historical reasons, visualis reuses the user permission system of DSS and uses the links of DSS_ User table. Therefore, during deployment, visualis needs to configure the same database as DSS. If the sub database is implemented, it needs to regularly synchronize the links of DSS users to visualis library during use_ In the user table), create the tables that visualis depends on, enter the source directory, and find the DB folder. After linking to the corresponding database, you need to execute the following SQL files to create the tables that visualis needs to use.
+
+```shell
+
+#Find the corresponding SQL file in the source package
+
+
+
+#Link visualis database (same library as DSS)
+
+mysql -h 127.0.0.1 -u hadoop -d visualis -P3306 -p
+
+
+
+source ${visualis_home}/davinci. sql
+
+source ${visualis_home}/ddl. sql
+
+
+
+#Davinci SQL is the DaVinci table that visualis needs to use
+
+# ddl. SQL is an additional dependent table of visualis
+
+```
+
+
+
+
+## 2.3. Font library installation
+
+ & nbsp;& nbsp;& nbsp; For Mail reports, you need to render Chinese fonts. The visualis screenshot function depends on Chinese fonts and is located in the /usr/share/fonts directory on the deployed machine. Create a visualis folder and upload pf Ttf file to visualis folder, execute FC cache – FV command to refresh font cache.
+
+```shell
+#Need to switch to root
+
+sudo su
+
+cd /usr/share/fonts
+
+mkdir visualis
+
+#Upload pf Ttf Chinese font library
+
+rz -ybe
+
+#Refresh font library cache
+
+fc-cache –fv
+
+```
+
+
+
+##2.4 installing the front end
+
+ & nbsp;& nbsp;& nbsp; Visualis currently uses the front-end and back-end deployment scheme. After the front-end compilation is completed, place the front-end package in the server directory corresponding to the dss/visualis path of the nginx front-end package installation path.
+
+
+
+```shell
+#Configure the static resource root path (if not, create it)
+cd /data/dss/web
+
+
+#In the previous step, under /data/dss/web directory, configure the front-end access URL path address (if not, you need to create it)
+
+cd dss/visualis
+
+
+unzip build. Zip #unzip the front-end package
+
+cd build 
+
+mv * ./../ # Move the static resource file to the visualisation path
+```
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp; According to the front-end deployment in the previous step, the front-end configuration of nginx of visualis can be referred to as follows:
+
+```shell
+
+#Configure reference in nginx
+
+#Supplement the linkis gateway
+
+
+
+#Change the port
+
 server {
-    listen 8088; # access port
-    server_name localhost;
-    client_max_body_size 100M;
 
-    # ...
+listen 8989; # Access port
 
-    location /dss/visualis { # url path
-    root /data/dss/web; # Visualis front-end static resource file directory, which can be freely specified
-    autoindex off;
-  }
-  
-  # ...
+server_ name localhost;
+
+client_ max_ body_ size 100M;
+
+
+
+#
+
+Location /dss/visualis {\\
+
+root /data/dss/web; # Visualis front-end static resource file directory, freely specified
+
+autoindex off;
 
 }
 
-````
 
-&nbsp;&nbsp;&nbsp;&nbsp;After configuring the corresponding ngixn configuration, you can install the corresponding front-end files.
-```shell
-cd /data/dss/web # Enter the static resource installation path
-mkdir -p dss/visualis # After the file directory is established, upload the build.zip package to the folder
-unzip build.zip # Unzip the front-end package
-cd build
-mv * ./../ # move frontend files to the previous directory
-sudo nginx # start nginx
-````
 
-## 8. Font library
-&nbsp;&nbsp;&nbsp;&nbsp;For mail reports, Chinese fonts need to be rendered, and the Visualis screenshot function depends on Chinese fonts, which are located in the /usr/share/fonts directory on the deployed machine. Create a new visualis folder, upload the pf.ttf file in the ext directory of the Visualis source package to the visualis folder, and execute the fc-cache –fv command to refresh the font cache.
-```shell
-# Need to switch to root user
-sudo su
-cd /usr/share/fonts
-mkdir visualis
+location /ws {
 
-# Upload pf.ttf Chinese font library
-rz -ybe
+proxy_ pass http://10.107.118.104:9001 # Link gateway address
 
-# Refresh font library cache
-fc-cache –fv
-````
+#
+
+}
+
+
+
+location /api {
+
+proxy_ pass http://10.107.118.104:9001 # Link gateway address
+
+#
+
+}
+
+}
+
+```
+
+
+
+## 2.5. Modify configuration
+
+
+
+### 2.5.1. Modify application yml
+
+ & nbsp;& nbsp;& nbsp; Configure application In the YML file, there are 1, 2 and 3 configuration items that must be configured. Other configurations can adopt default values. In the first item, some deployment IP and port information needs to be configured, in the second item, Eureka information needs to be configured, and in the third item, only the link information of the configuration database is required (other parameters can remain the default values).
+
+ & nbsp;& nbsp;& nbsp;** It should be noted that due to historical reasons, visualis reuses the user permission system of DSS and uses the linkis of DSS_ User table. Therefore, during deployment, visualis needs to configure the same database as DSS. If the sub database is implemented, it needs to regularly synchronize the links of DSS users to visualis library during use_ User table**
+
+```yaml
+
+# ##################################
+
+# 1. Visualis Service configuration
+
+# ##################################
+
+server:
+
+protocol: http
+
+Address: 127.0.0.1 \server IP address (machine IP of service deployment)
+
+Port: 9008 \server port (service deployment port)
+
+url: http://127.0.0.1:8989/dss/visualis #Frontend index page full path
+
+access:
+
+Address: 127.0.0.1 \frontend address (front-end deployment IP)
+
+Port: 8989 \frontend port
+
+
+
+
+# ##################################
+
+# 2. eureka configuration
+
+# ##################################
+
+eureka:
+
+client:
+
+serviceUrl:
+
+defaultZone: http://127.0.0.1:20303/eureka/ # Configuration required
