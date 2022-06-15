@@ -31,8 +31,8 @@ cd {DSS_INSTALL_HOME}/dss/bin
 
 &nbsp;&nbsp;&nbsp;&nbsp;**需要额外注意，DSS1.0.1中Visualis AppConn请求需要走服务端请求路径，来支持DSS工作流和Visualis服务的交互（下个版本我们会修复这个问题）。相关表修改记录参考如下：**
 ```sql
--- ${ip}: 服务端IP
--- ${port}: 服务端端口
+-- ${ip}: 服务端IP 127.0.0.1
+-- ${port}: 服务端端口 9888
 update dss_appconn_instance set url='http://${ip}:${port}/' where appconn_id = (select id from dss_appconn where appconn_name = 'visualis');
 
 -- 也可以通过比对dss_appconn和dss_appconn_instance两个表修改配置
