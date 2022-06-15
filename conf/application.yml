@@ -36,7 +36,7 @@ spring:
     allow-bean-definition-overriding: true
   application:
     name: visualis-dev
-  datasource:
+  datasource: # visualis需要和dss部署在同一个数据库
     url: jdbc:mysql://127.0.0.1:3306/dss?characterEncoding=UTF-8&allowMultiQueries=true # Configuration required
     username: hadoop
     password: hadoop
