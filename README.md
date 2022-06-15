@@ -24,7 +24,7 @@ Based on Davinci project, Visualis achieves below features with DataSphere Studi
 * External application parameters support.
 * Dashboard/Display as an appjoint of DataSphere Studio workflow
 
-Visualis also supports most of the original features of Davinci.
+Visualis also supports most of the original features of Davinci v0.3.
 * Data Source Support
   * Files in CSV format
   * JDBC data source
