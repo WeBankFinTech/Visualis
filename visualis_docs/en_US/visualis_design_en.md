@@ -53,7 +53,8 @@
 ## 3. architecture design
 
 &nbsp;&nbsp;&nbsp;&nbsp;It is designed around the two core concepts of view (data view) and widget (visual component). View is a structured form of data, and all logic / permissions / services are expanded from view (as a virtual view in the spark SQL node of DSS workflow). A widget is a visual form of data. All display / interaction / guidance, etc. are carried out from the widget. The following figure shows the functional component modules of visualis.
-![](../images/4.png)
+![](./../../images/architecture.png)
+
 
 
 
