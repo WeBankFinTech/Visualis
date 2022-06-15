@@ -1,6 +1,6 @@
 > Visualis与Davinci的功能区别
 
-## 1. 自定义变量格式（这个写一下davinci的参数使用方式）
+## 1. 自定义变量格式
 
 &nbsp;&nbsp;&nbsp;&nbsp;Davinci的自定义变量格式默认为双美元符号的方式，并支持在配置中对默认格式进行修改，而Visualis中，变量一律为${variableName}格式，且无法修改，此格式与Linkis的自定义变量一致。如：
 
@@ -22,7 +22,6 @@ http://ip:port/dws/visualis/#/projects?withHeader=true
 ## 3. 邮件定时发送功能
 
 &nbsp;&nbsp;&nbsp;&nbsp;DataSphere Studio的工作流中，提供了SendMail节点，支持将Visualis中的Dashboard和Display作为邮件发送内容。
-&nbsp;&nbsp;&nbsp;&nbsp;Davinci的原有的邮件定时任务功能，在Visualis中保持不变。
 
 
 ## 4. Dashboard与Display的预览功能
@@ -47,4 +46,4 @@ http://ip:port/dws/visualis/#/projects?withHeader=true
 
 ## 8. 与DSS工作流打通
 &nbsp;&nbsp;&nbsp;&nbsp;Davinci不支持工作流调度。
-&nbsp;&nbsp;&nbsp;&nbsp;DSS支持拖拽式开发visualis可视化报表，支持与DSS数据开发节点协调widget, display, dashboard节点开发。并且可以一键发布执行调度，并发送邮件。
+&nbsp;&nbsp;&nbsp;&nbsp;DSS支持拖拽式开发Visualis可视化报表，支持与DSS数据开发节点协调widget, display, dashboard节点开发。并且可以一键发布执行调度，并发送邮件。
