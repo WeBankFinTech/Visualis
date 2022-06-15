@@ -1,10 +1,14 @@
 > Visualis与Davinci的功能区别
 
-## 1. 自定义变量格式
+## 1. 自定义变量格式（这个写一下davinci的参数使用方式）
 
-&nbsp;&nbsp;&nbsp;&nbsp;Davinci的自定义变量格式默认为$variableName$的方式，并支持在配置中对默认格式进行修改，而Visualis中，变量一律为${variableName}格式，且无法修改，此格式与Linkis的自定义变量一致。如：
+&nbsp;&nbsp;&nbsp;&nbsp;Davinci的自定义变量格式默认为双美元符号的方式，并支持在配置中对默认格式进行修改，而Visualis中，变量一律为${variableName}格式，且无法修改，此格式与Linkis的自定义变量一致。如：
 
 ````sql
+# davinci引入变量
+select * from students where class = $variableName$
+
+# 对接linkis后引入变量的方式
 select * from students where class = ${className}
 ````
 
