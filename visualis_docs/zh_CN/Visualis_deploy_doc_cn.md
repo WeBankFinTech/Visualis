@@ -11,7 +11,7 @@ Visualis编译部署文档
 | Hadoop(2.7.2，Hadoop 其他版本需自行编译 Linkis) | 必装 | [Hadoop单机部署](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) ；[Hadoop分布式部署](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
 | Spark(2.4.3，Spark 其他版本需自行编译 Linkis) | 必装 | [Spark快速安装](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
 | DSS1.0.1 | 必装 | [如何安装DSS](https://github.com/WeBankFinTech/DataSphereStudio-Doc/blob/main/zh_CN/%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/DSS%E5%8D%95%E6%9C%BA%E9%83%A8%E7%BD%B2%E6%96%87%E6%A1%A3.md) |
-| Linkis1.1.1 | 必装 | [如何安装Linkis](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
+| Linkis1.1.1（大于等于该版本） | 必装 | [如何安装Linkis](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
 | Nginx | 必装 | [如何安装 Nginx](http://nginx.org/en/linux_packages.html) |
 
 ## 1.2. 创建 Linux 用户
@@ -19,8 +19,8 @@ Visualis编译部署文档
 &nbsp;&nbsp;&nbsp;&nbsp;请保持Visualis的部署用户与Linkis的部署用户一致，采用hadoop用户部署。
 
 ## 1.3. 底层依赖组件检查
-
-&nbsp;&nbsp;&nbsp;&nbsp;**请确保 DSS1.0.1 与 Linkis1.1.1 基本可用，可在 DSS 前端界面执行 SparkQL 脚本，可正常创建并执行 DSS 工作流。**
+&nbsp;&nbsp;&nbsp;&nbsp;<font color="red">如果想使用Visualis1.0.0-rc1版本，需要拉取最新的[DSS源码](https://github.com/WeBankFinTech/DataSphereStudio)编译打包，或者下载6月15号后最新的DSS一键全家桶包。</font>
+&nbsp;&nbsp;&nbsp;&nbsp;**请确保DSS1.0.1与Linkis1.1.1 基本可用，可在 DSS 前端界面执行 SparkQL 脚本，可正常创建并执行 DSS 工作流。**
 
 ## 1.4. 下载源码包及编译后端
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis源码安装时，需要下载对应的源码包进行编译，目前Visualis在依赖的DSS 1.0.1版本和Linkis1.1.1版本已经上传到Maven中央仓库，只需Maven配置正常即可拉取相关依赖。
@@ -70,11 +70,11 @@ visualis-server
 ```
 
 ## 2.2. 初始化数据库
-&nbsp;&nbsp;&nbsp;&nbsp;在初始化数据库前，需要注意，由于历史原因Visualis复用了DSS的用户权限体系，及使用了DSS的linkis_user表，所以在部署时，Visualis需要配置和DSS一样的数据库，如果分库实现，在使用时需要定时同步DSS用户到Visualis库的linkis_user表中），建好Visualis所依赖的表，进入到源码的跟目录，找到db文件夹，在链接到对应的数据库后，需要执行以下SQL文件，建立Visualis使用时需用到的表。
+&nbsp;&nbsp;&nbsp;&nbsp;在初始化数据库前，需要注意，由于历史原因Visualis复用了DSS的用户权限体系，即使用了DSS的linkis_user表，所以在部署时，**Visualis需要配置和DSS同一个数据库**，进入到源码的跟目录，找到db文件夹，在链接到对应的数据库后，需要执行以下SQL文件，建立Visualis使用时需用到的表。
 ```shell
-# 在源码包中找到对应的sql文件
+# 在源码包db目录中找到对应的sql文件
 
-# 链接visualis数据库（和DSS使用同一个库）
+# 连接visualis数据库（和DSS使用同一个库）
 mysql -h 127.0.0.1 -u hadoop -d visualis -P3306 -p
 
 source ${visualis_home}/davinci.sql
@@ -86,7 +86,7 @@ source ${visualis_home}/ddl.sql
 
 
 ## 2.3. 字体库安装
-&nbsp;&nbsp;&nbsp;&nbsp;对于邮件报表而言，需要渲染中文字体，其中Visualis截图功能依赖中文字体，在部署的机器上/usr/share/fonts目录下。新建一个visualis文件夹，上传Visualis源码包中ext目录下的pf.ttf文件到visualis文件夹下，执行fc-cache –fv命令刷新字体缓存即可。
+&nbsp;&nbsp;&nbsp;&nbsp;对于邮件报表而言，需要渲染中文字体，其中Visualis截图功能依赖中文字体，在部署的机器上/usr/share/fonts目录下。新建一个visualis文件夹，上传**Visualis源码包中ext目录下的pf.ttf文件夹下**，执行fc-cache –fv命令刷新字体缓存即可。
 ```shell
 # 需要切换到root用户
 sudo su
@@ -105,17 +105,20 @@ fc-cache –fv
 
 ```shell
 
-# 配置静态资源根路径（没有则需要创建）
+# 配置静态资源根路径（用于配置nginx的root参数）
 cd /data/dss/web
 
 # 在上一步/data/dss/web目录下，配置前端访问url路径地址（没有则需要创建）
 cd dss/visualis
 
+# 上传Visualis前端包
+rz -ybe build.zip
+
 unzip build.zip # 解压前端包
 
 cd build # 进入到解压路径
 
-mv * ./../ # 把静态资源文件移动visualis路径下
+mv * ./../ # 把静态资源文件移动dss/visualis路径下
 ```
 
 &nbsp;&nbsp;&nbsp;&nbsp;根据上一步前端部署的内容，Visualis的nginx的前端配置可以参考如下：
@@ -146,12 +149,12 @@ server {
   }
 }
 ```
+&nbsp;&nbsp;&nbsp;&nbsp;前端部署配置后，可以重启nginx或者刷新nginx配置，
 
 ## 2.5. 修改配置
 
 ### 2.5.1. 修改application.yml
 &nbsp;&nbsp;&nbsp;&nbsp;在配置application.yml文件中，必须要配置的有1、2、3配置项，其它配置可采用默认值，其中第1项中，需要配置一些部署IP和端口信息，第2项需要配置eureka的信息，第3项中只需要配置数据库的链接信息即可（其它参数可以保持默认值）。
-&nbsp;&nbsp;&nbsp;&nbsp;**需要注意，由于历史原因Visualis复用了DSS的用户权限体系，及使用了DSS的linkis_user表，所以在部署时，Visualis需要配置和DSS一样的数据库，如果分库实现，在使用时需要定时同步DSS用户到Visualis库的linkis_user表中。**
 ```yaml
 # ##################################
 # 1. Visualis Service configuration
@@ -191,7 +194,7 @@ spring:
     allow-bean-definition-overriding: true
   application:
     name: visualis-dev
-  datasource: # 需要配置和DSS一个数据库
+  datasource: # 需要配置和DSS同一个数据库
     url: jdbc:mysql://127.0.0.1:3306/dss?characterEncoding=UTF-8&allowMultiQueries=true # Configuration required
     username: hadoop
     password: hadoop
@@ -207,8 +210,8 @@ spring:
 # ##################################
 wds.linkis.gateway.url=http://127.0.0.1:9001/
 
-# 其它参数使用配置文件中的默认配置即可
-# 配置省略
+# 其它可以使用默认参数
+# 省略配置
 ```
 
 ## 3. 启动应用
