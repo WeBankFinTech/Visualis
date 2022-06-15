@@ -19,7 +19,7 @@ Visualis编译部署文档
 &nbsp;&nbsp;&nbsp;&nbsp;请保持Visualis的部署用户与Linkis的部署用户一致，采用hadoop用户部署。
 
 ## 1.3. 底层依赖组件检查
-&nbsp;&nbsp;&nbsp;&nbsp;<font color="red">如果想使用Visualis1.0.0-rc1版本，需要拉取最新的[DSS源码](https://github.com/WeBankFinTech/DataSphereStudio)编译打包，或者下载6月15号后最新的DSS一键全家桶包。</font>  
+&nbsp;&nbsp;&nbsp;&nbsp;<font color="red">如果想使用Visualis1.0.0-rc1版本，需要拉取最新的[DSS源码](https://github.com/WeBankFinTech/DataSphereStudio)master分支编译打包，或者下载6月15号后最新的DSS一键全家桶包。</font>  
 &nbsp;&nbsp;&nbsp;&nbsp;**请确保DSS1.0.1与Linkis1.1.1 基本可用，可在 DSS 前端界面执行 SparkQL 脚本，可正常创建并执行 DSS 工作流。**
 
 ## 1.4. 下载源码包及编译后端
@@ -70,6 +70,7 @@ visualis-server
     --- lib   # 服务jar包存放位置
     --- logs  # 日志目录
 ```
+&nbsp;&nbsp;&nbsp;&nbsp;在需要部署的服务器上（也可以是DSS部署的服务器），上传该visualis-server.zip包，解压即完成Visualis安装。
 
 ## 2.2. 初始化数据库
 &nbsp;&nbsp;&nbsp;&nbsp;在初始化数据库前，需要注意，由于历史原因Visualis复用了DSS的用户权限体系，即使用了DSS的linkis_user表，所以在部署时，**Visualis需要配置和DSS同一个数据库**，进入到源码的跟目录，找到db文件夹，在链接到对应的数据库后，需要执行以下SQL文件，建立Visualis使用时需用到的表。
@@ -88,7 +89,7 @@ source ${visualis_home}/ddl.sql
 
 
 ## 2.3. 字体库安装
-&nbsp;&nbsp;&nbsp;&nbsp;对于邮件报表而言，需要渲染中文字体，其中Visualis截图功能依赖中文字体，在部署的机器上/usr/share/fonts目录下。新建一个visualis文件夹，上传**Visualis源码包中ext目录下的pf.ttf文件夹下**，执行fc-cache –fv命令刷新字体缓存即可。
+&nbsp;&nbsp;&nbsp;&nbsp;对于邮件报表而言，需要渲染中文字体，其中Visualis截图功能依赖中文字体，在部署的机器上/usr/share/fonts目录下。新建一个visualis文件夹，上传**Visualis源码包中ext目录下的pf.ttf到该visualis文件夹下**，执行fc-cache –fv命令刷新字体缓存即可。
 ```shell
 # 需要切换到root用户
 sudo su
