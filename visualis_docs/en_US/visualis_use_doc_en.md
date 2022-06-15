@@ -1,63 +1,17 @@
-# 1. Access
-&nbsp;&nbsp;&nbsp;&nbsp;Visualis service is currently provided as a module of dataspherestudio. It can enter the DSS home page and support two usage modes.
-![](../images/use/2.png)
+> Working with documentation
+## 1. Basic usage documentation
+&nbsp;&nbsp;&nbsp;&nbsp;Visualis is a data-based BI product developed based on Davinci, which supports the original [Davinci user usage](https://edp963.github.io/davinci/), on this basis, Visualis provides more additional functionality points. Mainly, result set visualization, workflow usage, email usage.
 
-## 1.1. Workflow usage
+## 2. Result set visualization
+&nbsp;&nbsp;&nbsp;&nbsp;Visualis supports interactive script analysis for docking with DSS. After the script runs, the result set of the script can be visually analyzed, and the result set will be automatically bound to a default Widget, which supports simple drag-and-drop Drag and drop can realize the development of Widget.
+![](./../images/visualis_scriptis_visualis.gif)
 
-&nbsp;&nbsp;&nbsp;&nbsp;Drag and drop the data visualization node to use visualis.
-![](../images/use/1.png)
+## 3. Workflow usage
+&nbsp;&nbsp;&nbsp;&nbsp;Visualis is connected to the DSS workflow. When creating a project on the DSS side, the Visualis project will be created synchronously. In the workflow, drag and drop the Visualis node, and the corresponding components will also be created in the project. When using a Widget in a workflow, the Widget needs to bind an upstream table as a data source to develop visual graphics. For the related implementation principle, please refer to [Widget Node Binding DSS Result Set Node](./Visualis_sql_databind_cn.md), by dragging and dropping Widget, Display, and Dashboard three components, connected into a line, can realize a visual report.
+![](./../images/visualis_workflow.gif)
 
-## 1.2. Enter the workspace and use the DSS application component - data analysis - enter visualis
+## 4. Mail usage
+&nbsp;&nbsp;&nbsp;&nbsp;DSS provides data output nodes. When deploying and installing DSS, you need to configure the relevant mail server configuration. Before using mail, you need to ensure the availability of the mail server. Line and rely on the visualization node, configure the relevant mail options, you can send mail, the final effect of mail sending can be viewed through the preview interface of Display and Dashboard.
+![](./../images/dss_sendemail.gif)
 
-&nbsp;&nbsp;&nbsp;&nbsp;Note: the project, display and dashboard created from this portal cannot be referenced by the workflow, so only view and widget editing are supported. If you need to edit the display and dashboard for the purpose of sending mail, or there is a need for project collaboration, please use the first access method.
-![](../images/use/2.png)
-
-
-
-
-# 2. Introduction to components
-## 2.1. Data source -source
-
-&nbsp;&nbsp;&nbsp;&nbsp;Source refers to the connected data source. Usually, visualis has a hive data source by default to obtain the library table information of users in the big data cluster. At the same time, users can also add JDBC data sources and CSV files as data sources.
-![](../images/use/3.jpg)
-
-
-
-
-## 2.2. Data model view
-
-&nbsp;&nbsp;&nbsp;&nbsp;View can be understood as a data model, which is similar to the view in SQL. Through processing the data source, a data model conforming to the business report is generated.
-![](../images/use/4.jpg)
-
-
-
-
-## 2.3. Visual component widget
-
-&nbsp;&nbsp;&nbsp;&nbsp;View can be understood as a data model, which is similar to the view in SQL. Through processing the data source, a data model conforming to the business report is generated.
-![](../images/use/5.jpg)
-![](../images/use/6.jpg)
-![](../images/use/7.jpg)
-![](../images/use/8.jpg)
-
-
-## 2.4. Data dashboard dashboard
-
-&nbsp;&nbsp;&nbsp;&nbsp;Dashboard charts are organized on the screen in a more orderly and unified form, and provide advanced functions such as chart linkage and global filtering.
-![](../images/use/9.jpg)
-![](../images/use/10.png)
-
-
-
-## 2.5. Data large screen display
-&nbsp;&nbsp;&nbsp;&nbsp;The editor of display has a higher degree of freedom. It supports common typesetting options such as background color, layer order, custom labels, etc., making it easy to customize a large visual screen with more artistic personality.
-![](../images/use/11.png)
-
-
-
-
-# 3. Mail Report
-&nbsp;&nbsp;&nbsp;&nbsp;By configuring the DSS workflow e-mail node and selecting the relevant configuration, you can send the e-mail and publish the e-mail report to the wtss scheduled scheduling system to realize the scheduled report sending function.
-![](../images/use/2.png)
-
-
+For some usage precautions, please refer to [Visualis access to DSS/Linkis precautions](./Visualis_dss_integration_cn.md).
