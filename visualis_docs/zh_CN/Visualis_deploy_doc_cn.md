@@ -207,11 +207,6 @@ spring:
 # ##################################
 wds.linkis.gateway.url=http://127.0.0.1:9001/
 
-
-# 需配置和Linkis结果集路径保持一致
-wds.linkis.filesystem.root.path=file:///mnt/bdap/
-wds.linkis.filesystem.hdfs.root.path=hdfs:///tmp/linkis
-
 # ##################################
 # 2. can keep the default configuration
 #    可以保持默认配置
