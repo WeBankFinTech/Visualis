@@ -191,18 +191,12 @@ mv * ./../ # Move the static resource file to the visualisation path
 
 
 
-&nbsp;&nbsp;&nbsp;&nbsp; According to the front-end deployment in the previous step, the front-end configuration of nginx of visualis can be referred to as follows:
+&nbsp;&nbsp;&nbsp;&nbsp;According to the front-end deployment in the previous step, the front-end configuration of nginx of visualis can be referred to as follows:
 
 ```shell
-
 #Configure reference in nginx
-
 #Supplement the linkis gateway
-
-
-
 #Change the port
-
 server {
 
 listen 8989; # Access port
@@ -211,38 +205,17 @@ server_ name localhost;
 
 client_ max_ body_ size 100M;
 
-
-
-#
-
-Location /dss/visualis {\\
-
-root /data/dss/web; # Visualis front-end static resource file directory, freely specified
-
-autoindex off;
-
+Location /dss/visualis {
+  root /data/dss/web; # Visualis front-end static resource file directory, freely specified
+  autoindex off;
 }
 
-
-
-location /ws {
-
-proxy_ pass http://127.0.0.1:9001 # Link gateway address
-
-#
-
-}
-
-
-
-location /api {
-
-proxy_ pass http://127.0.0.1:9001 # Link gateway address
-
-#
-
-}
-
+  location /ws {
+    proxy_ pass http://127.0.0.1:9001 # Link gateway address
+  } 
+  location /api {
+    proxy_ pass http://127.0.0.1:9001 # Link gateway address
+  }
 }
 
 ```
@@ -259,43 +232,131 @@ proxy_ pass http://127.0.0.1:9001 # Link gateway address
 
  & nbsp;& nbsp;& nbsp;** It should be noted that due to historical reasons, visualis reuses the user permission system of DSS and uses the linkis of DSS_ User table. Therefore, during deployment, visualis needs to configure the same database as DSS. If the sub database is implemented, it needs to regularly synchronize the links of DSS users to visualis library during use_ User table**
 
-```yaml
-
-# ##################################
-
+````yaml
+# ####################################
 # 1. Visualis Service configuration
-
-# ##################################
-
+# ####################################
 server:
-
-protocol: http
-
-Address: 127.0.0.1 \server IP address (machine IP of service deployment)
-
-Port: 9008 \server port (service deployment port)
-
-url: http://127.0.0.1:8989/dss/visualis #Frontend index page full path
-
-access:
-
-Address: 127.0.0.1 \frontend address (front-end deployment IP)
-
-Port: 8989 \frontend port
+  protocol: http
+  address: 127.0.0.1 # server ip address (the IP of the machine where the service is deployed)
+  port: 9008 # server port (the port where the service is deployed)
+  url: http://127.0.0.1:8989/dss/visualis # frontend index page full path (front-end access path)
+  access:
+    address: 127.0.0.1 # frontend address (front-end deployment IP)
+    port: 8989 # frontend port (front-end deployment port)
 
 
-
-
-# ##################################
-
+# ####################################
 # 2. eureka configuration
-
-# ##################################
-
+# ####################################
 eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://127.0.0.1:20303/eureka/ # Configuration required
+  instance:
+    metadata-map:
+      test: wedatasphere
+management:
+  endpoints:
+    web:
+      exposure:
+        include: refresh,info
 
-client:
 
-serviceUrl:
+# ####################################
+# 3. Spring configuration
+# ####################################
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  application:
+    name: visualis-dev
+  datasource: # Need to configure and DSS a database
+    url: jdbc:mysql://127.0.0.1:3306/dss?characterEncoding=UTF-8&allowMultiQueries=true # Configuration required
+    username: hadoop
+    password: hadoop
 
-defaultZone: http://127.0.0.1:20303/eureka/ # Configuration required
+# Keep other parameters as default, if you don't need customized modification, just use the default parameters
+````
+
+### 2.2.2 Modify linkis.properties
+````properties
+# ####################################
+# 1. need configuration
+# need to configure
+# ####################################
+wds.linkis.gateway.url=http://127.0.0.1:9001/
+
+
+# The configuration needs to be consistent with the Linkis result set path
+wds.linkis.filesystem.root.path=file:///mnt/bdap/
+wds.linkis.filesystem.hdfs.root.path=hdfs:///tmp/linkis
+
+# ####################################
+# 2. can keep the default configuration
+# can keep the default configuration
+# ####################################
+
+wds.dss.visualis.query.timeout=1200000
+
+wds.linkis.test.mode=false
+wds.linkis.test.user=test
+
+wds.linkis.server.restful.scan.packages=com.webank.wedatasphere.dss.visualis.restful
+
+wds.dss.visualis.project.name=default
+
+wds.dss.engine.allowed.creators=Visualis,nodeexecution,IDE
+wds.linkis.max.ask.executor.time=45m
+wds.linkis.server.component.exclude.classes=com.webank.wedatasphere.linkis.entrance.parser.SparkJobParser
+wds.dss.visualis.creator=Visualis
+````
+
+## 3. Start the application
+
+&nbsp;&nbsp;&nbsp;&nbsp;After configuring and compiling the frontend package, you can try to start the service. Visualis is currently integrated with DSS and uses the DSS login and permission system. Before use, the DSS1.0.1 version needs to be deployed. You can refer to DSS1.0.1 one-click installation and deployment. (**Because this visualis-1.0.0-rc1 version is an internal beta version, if you want to use it normally, please compile the latest DSS master branch code**)
+
+### 3.1 Execute the startup script
+
+&nbsp;&nbsp;&nbsp;&nbsp;Enter the Visualis installation directory, find the bin folder, and execute the following command in this folder.
+````
+sh ./start-server.sh
+````
+Note: **If the newline character of the startup script cannot be recognized when the service is started, you need to convert the script on the server and use: dos2unix xxx.sh command to convert**
+
+### 3.2 Confirm that the application starts successfully
+
+&nbsp;&nbsp;&nbsp;&nbsp;Open the Eureka page, find the instance of the visualis service in the list of registered services, and then consider the service to start successfully. At the same time, you can also view the service startup log of visualis. If no error is reported, the service starts successfully.
+````
+# View service startup log
+less logs/linkis.out
+````
+
+## 4. AppConn installation
+&nbsp;&nbsp;&nbsp;&nbsp;After the Visualis service is deployed, it needs to be connected with the DSS application store and workflow, and the corresponding AppConn needs to be installed on the DSS side. Please refer to [VisualisAppConn Installation](./Visualis_appconn_install_cn.md).
+
+## 5. Log configuration (optional)
+&nbsp;&nbsp;&nbsp;&nbsp;In the actual usage scenario, depending on the linkis.out log output scenario is not in compliance with the specification, the log file is not rolled back, and long-term operation is likely to cause the production server disk capacity alarm, which will bring production problems , at present, we can optimize the log printing by modifying the log configuration. The log configuration can be modified as follows:
+````properties
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration status="error" monitorInterval="30">
+    <appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <ThresholdFilter level="trace" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{36} %L %M - %msg%xEx%n"/>
+        </Console>
+        <RollingFile name="RollingFile" fileName="/data/logs/visualis/visualis.log"
+                     filePattern="/data/logs/visualis/$${date:yyyy-MM}/visualis-log-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{36} %L %M - %msg%xEx%n"/>
+            <SizeBasedTriggeringPolicy size="100MB"/>
+            <DefaultRolloverStrategy max="20"/>
+        </RollingFile>
+    </appenders>
+    <loggers>
+        <root level="INFO">
+            <appender-ref ref="RollingFile"/>
+            <appender-ref ref="Console"/> # Removing this configuration will cancel the linkis.out log output.
+        </root>
+    </loggers>
+</configuration>
+````

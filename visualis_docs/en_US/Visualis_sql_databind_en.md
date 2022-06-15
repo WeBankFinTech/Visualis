@@ -1,6 +1,6 @@
 > Workflow widget node binding DSS result set node
 
-## 1. brief introduction
+## 1. Brief introduction
 
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis, as a visual report system, has been connected with DSS workflow at present. You can create a visualis node by dragging it for visual development. For the traditional use of visualisation, the visualization component widget needs to create a view like component view to provide the data source of graphic rendering. For widgets, as long as the result set is a structured data set, it can be used as the data source of widgets for visual graphics development.
 
