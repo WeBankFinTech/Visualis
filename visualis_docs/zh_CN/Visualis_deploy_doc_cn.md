@@ -19,7 +19,7 @@ Visualis编译部署文档
 &nbsp;&nbsp;&nbsp;&nbsp;请保持Visualis的部署用户与Linkis的部署用户一致，采用hadoop用户部署。
 
 ## 1.3. 底层依赖组件检查
-&nbsp;&nbsp;&nbsp;&nbsp;<font color="red">如果想使用Visualis1.0.0-rc1版本，需要拉取最新的[DSS源码](https://github.com/WeBankFinTech/DataSphereStudio)编译打包，或者下载6月15号后最新的DSS一键全家桶包。</font>
+&nbsp;&nbsp;&nbsp;&nbsp;<font color="red">如果想使用Visualis1.0.0-rc1版本，需要拉取最新的[DSS源码](https://github.com/WeBankFinTech/DataSphereStudio)编译打包，或者下载6月15号后最新的DSS一键全家桶包。</font>  
 &nbsp;&nbsp;&nbsp;&nbsp;**请确保DSS1.0.1与Linkis1.1.1 基本可用，可在 DSS 前端界面执行 SparkQL 脚本，可正常创建并执行 DSS 工作流。**
 
 ## 1.4. 下载源码包及编译后端
@@ -38,7 +38,7 @@ mvn clean package -DskipTests=true
 ```
 
 ## 1.5. 编译前端
-&nbsp;&nbsp;&nbsp;&nbsp;Visualis是一个前后端分离项目，前端文件可以单独编译打包，在电脑上需要安装npm工具。
+&nbsp;&nbsp;&nbsp;&nbsp;Visualis是一个前后端分离项目，前端文件可以单独编译打包，在电脑上需要安装npm工具，可以查看[npm安装](https://nodejs.org/en/download/)，在windowns机器上，可以打开Idea工具的Terminal界面，或者使用Git bash完成前端编译。
 ```shell
 # 查看npm是否安装完成
 npm -v
@@ -49,6 +49,8 @@ npm i # 下载前端依赖
 npm run build # 编译前端包
 
 # 在webapp目录下会生成一个build文件目录，该目录即编译完成的前端包文件
+
+# 在windows环境，压缩build目录为一个zip文件即可
 ```
 
 ## 2. 安装部署
@@ -149,12 +151,12 @@ server {
   }
 }
 ```
-&nbsp;&nbsp;&nbsp;&nbsp;前端部署配置后，可以重启nginx或者刷新nginx配置，
+&nbsp;&nbsp;&nbsp;&nbsp;前端部署配置后，可以重启nginx或者刷新nginx配置sudo nginx -s reload。
 
 ## 2.5. 修改配置
 
 ### 2.5.1. 修改application.yml
-&nbsp;&nbsp;&nbsp;&nbsp;在配置application.yml文件中，必须要配置的有1、2、3配置项，其它配置可采用默认值，其中第1项中，需要配置一些部署IP和端口信息，第2项需要配置eureka的信息，第3项中只需要配置数据库的链接信息即可（其它参数可以保持默认值）。
+&nbsp;&nbsp;&nbsp;&nbsp;在配置application.yml文件中，必须要配置的有1、2、3配置项，其它配置可采用默认值，其中第1项中，需要配置一些部署IP和端口信息，第2项需要配置eureka的信息，第3项中只需要配置数据库的链接信息，**需要配置为DSS同一个数据库**（其它参数可以保持默认值）。
 ```yaml
 # ##################################
 # 1. Visualis Service configuration
@@ -162,7 +164,7 @@ server {
 server:
   protocol: http
   address: 127.0.0.1 # server ip address（服务部署的机器IP）
-  port:  9008 # server port（服务部署的端口）
+  port:  9888 # server port（服务部署的端口）
   url: http://127.0.0.1:8989/dss/visualis # frontend index page full path（前端访问路径）
   access:
     address: 127.0.0.1 # frontend address（前端部署IP）
@@ -233,6 +235,8 @@ sh ./start-server.sh
 # 查看服务启动日志
 less logs/linkis.out
 ```
+&nbsp;&nbsp;&nbsp;&nbsp;查看Eureka页面，查看服务是否注册成功。
+![](./../images/visualis_eureka.png)
 
 ## 4. AppConn安装
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis服务部署后，需要和DSS应用商店和工作流打通，需要在DSS侧安装对应的AppConn，可参考[VisualisAppConn安装](./Visualis_appconn_install_cn.md)。
