@@ -8,27 +8,6 @@ CREATE TABLE `visualis_config` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
--- visualis使用这个表
-DROP TABLE IF EXISTS `linkis_user`;
-CREATE TABLE `linkis_user` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `email` varchar(255) DEFAULT NULL,
-  `username` varchar(255) NOT NULL,
-  `password` varchar(255) DEFAULT NULL,
-  `admin` tinyint(1) DEFAULT NULL COMMENT 'If it is an administrator',
-  `active` tinyint(1) DEFAULT NULL COMMENT 'If it is active',
-  `name` varchar(255) DEFAULT NULL COMMENT 'User name',
-  `description` varchar(255) DEFAULT NULL,
-  `department` varchar(255) DEFAULT NULL,
-  `avatar` varchar(255) DEFAULT NULL COMMENT 'Path of the avator',
-  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `create_by` bigint(20) DEFAULT '0',
-  `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `update_by` bigint(20) DEFAULT '0',
-  `is_first_login` bit(1) DEFAULT NULL COMMENT 'If it is the first time to log in',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
 DROP TABLE IF EXISTS `visualis_project`;
 CREATE TABLE `visualis_project` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
@@ -49,3 +28,24 @@ CREATE TABLE `visualis_project` (
   `isArchive` bit(1) DEFAULT b'0' COMMENT 'If it is archived',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=313 DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPACT;
+
+---- visualis使用这个表做权限管理
+--DROP TABLE IF EXISTS `linkis_user`;
+--CREATE TABLE `linkis_user` (
+--  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+--  `email` varchar(255) DEFAULT NULL,
+--  `username` varchar(255) NOT NULL,
+--  `password` varchar(255) DEFAULT NULL,
+--  `admin` tinyint(1) DEFAULT NULL COMMENT 'If it is an administrator',
+--  `active` tinyint(1) DEFAULT NULL COMMENT 'If it is active',
+--  `name` varchar(255) DEFAULT NULL COMMENT 'User name',
+--  `description` varchar(255) DEFAULT NULL,
+--  `department` varchar(255) DEFAULT NULL,
+--  `avatar` varchar(255) DEFAULT NULL COMMENT 'Path of the avator',
+--  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--  `create_by` bigint(20) DEFAULT '0',
+--  `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--  `update_by` bigint(20) DEFAULT '0',
+--  `is_first_login` bit(1) DEFAULT NULL COMMENT 'If it is the first time to log in',
+--  PRIMARY KEY (`id`)
+--) ENGINE=InnoDB DEFAULT CHARSET=utf8;
