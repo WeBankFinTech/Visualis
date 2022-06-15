@@ -31,6 +31,6 @@ select * from students where class = ${className}
 
 &nbsp;&nbsp;&nbsp;&nbsp;The Display/Dashboard node in DSS will obtain the screenshot corresponding to the chart from the Visualis system when sending the content as an email. To ensure that the screenshot function is normal, you need to check the following points:
 1. Make sure the DSS installation directory has the dss-appconn Sendemail AppConn directory.
-1. According to the default_browser configured in application.yml, confirm that the corresponding selenium driver has been placed in the directory of the deployed server
-1. Confirm that the selenium driver has been configured in the phantomjs_path or chromedriver_path of application.yml (the default is the bin directory of the installation path)
+1. According to the default_browser configured in application.yml, confirm that the corresponding selenium driver has been placed in the directory of the deployed server.
+1. Confirm that the selenium driver has been configured in the phantomjs_path or chromedriver_path of application.yml (the default is the bin directory of the installation path).
 1. Confirm that the user who started Visualis has execute permission on the selenium driver file.
