@@ -41,6 +41,7 @@ public class ExecutorUtil {
             new ThreadFactoryBuilder().setNameFormat("sheet-worker-%d").setDaemon(true).build());
 
 
+    @SuppressWarnings("unchecked")
     public static <T> Future<T> submitWorkbookTask(WorkbookWorker worker) {
         printThreadPoolStatusLog(WORKBOOK_WORKERS, "WORKBOOK_WORKERS");
         return ExecutorUtil.WORKBOOK_WORKERS.submit(worker);
@@ -50,6 +51,7 @@ public class ExecutorUtil {
         return ExecutorUtil.submitWorkbookTask(new WorkbookWorker(context));
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> Future<T> submitSheetTask(SheetWorker worker) {
         printThreadPoolStatusLog(SHEET_WORKERS, "SHEET_WORKERS");
         return ExecutorUtil.SHEET_WORKERS.submit(worker);

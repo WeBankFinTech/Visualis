@@ -1,39 +1,23 @@
-/*
- * Copyright 2019 WeBank
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
 package com.webank.wedatasphere.dss.visualis.res
 
 import java.util
-
-import com.webank.wedatasphere.linkis.storage.domain._
-import com.webank.wedatasphere.linkis.storage.resultset.table.TableMetaData
-import com.webank.wedatasphere.linkis.storage.resultset.{ResultSetFactory, ResultSetReader}
+import com.webank.wedatasphere.dss.visualis.configuration.CommonConfig
+import org.apache.linkis.storage.domain._
+import org.apache.linkis.storage.resultset.table.TableMetaData
+import org.apache.linkis.storage.resultset.{ResultSetFactory, ResultSetReader}
 import com.webank.wedatasphere.dss.visualis.exception.VGErrorException
-import com.webank.wedatasphere.linkis.adapt.LinkisUtils
-import com.webank.wedatasphere.linkis.common.io.FsPath
-import com.webank.wedatasphere.linkis.server.BDPJettyServerHelper
+import org.apache.linkis.adapt.LinkisUtils
+import org.apache.linkis.common.io.FsPath
+import org.apache.linkis.common.utils.Utils
+import org.apache.linkis.server.BDPJettyServerHelper
+import org.apache.linkis.storage.FSFactory
 import org.json4s.DefaultFormats
 
-/**
-  * Created by johnnwang on 2019/1/22.
-  */
+
 object ResultHelper {
   implicit val formats = DefaultFormats
   def getResultByPath(path:String,limit:Long)={
-    val resPath = new FsPath(path)
+    val resPath = new FsPath(getSchemaPath(path))
     val rsFactory = ResultSetFactory.getInstance
     val resultSet = rsFactory.getResultSetByPath(resPath)
     if(ResultSetFactory.TABLE_TYPE != resultSet.resultSetType()){
@@ -41,20 +25,29 @@ object ResultHelper {
     }
   }
 
+  def getSchemaPath(path: String): String = {
+    if(path.startsWith(CommonConfig.RESULT_SET_SCHEMA.getValue)){
+      path
+    } else {
+      CommonConfig.RESULT_SET_SCHEMA.getValue + path
+    }
+  }
+
 
   @scala.throws[VGErrorException]
   def getResultType(path:String):Array[Column]={
-    /*val resPath = new FsPath(path)
+    val resPath = new FsPath(path)
     val rsFactory = ResultSetFactory.getInstance
     val resultSet = rsFactory.getResultSetByPath(resPath)
     if(ResultSetFactory.TABLE_TYPE != resultSet.resultSetType()){
-        throw new VGErrorException(70001,"不支持不是表格的结果集")
+      throw new VGErrorException(70001,"不支持不是表格的结果集")
     }
     val fs = FSFactory.getFs(resPath)
     fs.init(null)
-    val reader = ResultSetReader.getResultSetReader(resultSet,fs.read(resPath))*/
-    val reader = ResultSetReader.getTableResultReader(path)
+    val reader = ResultSetReader.getResultSetReader(resultSet,fs.read(resPath))
     val metaData = reader.getMetaData.asInstanceOf[TableMetaData]
+    Utils.tryQuietly(reader.close())
+    Utils.tryQuietly(fs.close())
     metaData.columns
   }
 
@@ -77,5 +70,13 @@ object ResultHelper {
     case DateType | TimestampType => "date"
     case _ => "string"
   }
+
+  def toVisualType(sqlType: String): String = sqlType match {
+    case "TINYINT" | "SMALLINT" | "MEDIUMINT" | "INT" | "INTEGER" | "BIGINT" | "FLOAT" | "DOUBLE" | "DOUBLE PRECISION" | "REAL" | "DECIMAL" | "BIT" | "SERIAL" | "BOOL" | "BOOLEAN" | "DEC" | "FIXED" | "NUMERIC" => NUMBER_TYPE
+    case "DATE" | "DATETIME" | "TIMESTAMP" | "TIME" | "YEAR"  => "date"
+    case _ => "string"
+  }
+
+
 
 }

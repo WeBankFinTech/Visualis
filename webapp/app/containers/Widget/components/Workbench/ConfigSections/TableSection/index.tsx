@@ -5,7 +5,6 @@ import { IDataParams } from '../../OperatingPanel'
 import { IDataParamSource } from '../../Dropbox'
 import { getFieldAlias } from 'containers/Widget/components/Config/Field'
 import { decodeMetricName, getAggregatorLocale } from 'containers/Widget/components/util'
-
 import {
   ITableConfig, ITableHeaderConfig, ITableColumnConfig,
   TableCellStyleTypes, DefaultTableCellStyle } from 'containers/Widget/components/Config/Table'
@@ -62,6 +61,7 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
     })
   }
 
+  // 从props中的dataParams提取出需要展示的列
   private getCurrentTableColumns (props: ITableSectionProps) {
     const { dataParams } = props
     const keyNames = ['cols', 'metrics', 'rows']
@@ -112,18 +112,24 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
   }
 
   private getValidColumnConfig = (props: ITableSectionProps, validColumns: IDataParamSource[]) => {
+    // 这个config是从styleParams中的基础配置
     const { config } = props
 
     const validColumnConfig = produce(config.columnsConfig, (draft) => {
       const config: ITableColumnConfig[] = []
-
+      // 这个validColumns里的数据就是显示在表格数据设置弹框里的各列的数据
       validColumns.forEach((column) => {
         const existedConfig = draft.find((item) => item.columnName === column.name)
+        // column里的width这些才是最新的，因为validColumns是根据最新的dataParams拿到的数据，而最新的cols和metrics数据在最新的dataParams里
         if (existedConfig) {
           config.push({
             ...existedConfig,
             alias: this.getColumnDisplayName(column),
-            visualType: column.visualType
+            visualType: column.visualType,
+            width: column.width,
+            alreadySetWidth: column.alreadySetWidth,
+            oldColumnCounts: column.oldColumnCounts,
+            widthChanged: column.widthChanged
           })
         } else {
           config.push({
@@ -132,7 +138,11 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
             visualType: column.visualType,
             styleType: TableCellStyleTypes.Column,
             style: { ...DefaultTableCellStyle },
-            conditionStyles: []
+            conditionStyles: [],
+            width: column.width,
+            alreadySetWidth: column.alreadySetWidth,
+            oldColumnCounts: column.oldColumnCounts,
+            widthChanged: column.widthChanged
           })
         }
       })
@@ -299,8 +309,6 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
       validColumns, validHeaderConfig, validColumnConfig,
       headerConfigModalVisible, columnConfigModalVisible } = this.state
     const fixedColumnOptions = this.getValidFixedColumns(validHeaderConfig, validColumns)
-
-
     return (
       <div>
         <div className={styles.paneBlock}>
@@ -431,6 +439,7 @@ export class TableSection extends React.PureComponent<ITableSectionProps, ITable
           <HeaderConfigModal
             visible={headerConfigModalVisible}
             config={validHeaderConfig}
+            validColumns={validColumns}
             onCancel={this.closeHeaderConfig}
             onSave={this.saveHeaderConfig}
           />

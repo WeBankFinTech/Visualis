@@ -64,8 +64,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static edp.core.consts.Consts.EMPTY;
 import static edp.core.consts.Consts.SEMICOLON;
-import static edp.davinci.common.utils.ScriptUtiils.getExecuptParamScriptEngine;
-import static edp.davinci.common.utils.ScriptUtiils.getViewExecuteParam;
+import static edp.davinci.common.utils.ScriptUtils.getExecuptParamScriptEngine;
+import static edp.davinci.common.utils.ScriptUtils.getViewExecuteParam;
 
 @Slf4j
 @Service("emailScheduleService")
@@ -211,6 +211,7 @@ public class EmailScheduleServiceImpl implements ScheduleService {
     @Override
     public List<ImageContent> getPreviewImage(Long userId, String contentType, Long contentId) throws Exception{
         List<ImageContent> imageContents = new ArrayList<>();
+        // 只截一张图片
         int order = 0;
         String url = getContentUrl(userId, contentType, contentId);
         imageContents.add(new ImageContent(order, contentId, contentType, url));
@@ -254,6 +255,7 @@ public class EmailScheduleServiceImpl implements ScheduleService {
      * @return
      * @throws Exception
      */
+    @SuppressWarnings("unchecked")
     private List<ExcelContent> generateExcels(CronJobConfig cronJobConfig, User user) throws Exception {
         ScriptEngine engine = getExecuptParamScriptEngine();
 
@@ -323,7 +325,7 @@ public class EmailScheduleServiceImpl implements ScheduleService {
                 excelContents.add(new ExcelContent(name, msgMailExcel.getFilePath()));
                 countDownLatch.countDown();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                log.error(e.getMessage());
             } finally {
                 lock.unlock();
             }

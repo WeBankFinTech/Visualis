@@ -19,24 +19,26 @@
 
 package edp.davinci.controller;
 
+import edp.core.annotation.MethodLog;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
-import springfox.documentation.annotations.ApiIgnore;
 
-@ApiIgnore
 @Controller
 public class HomeController {
 
+    @MethodLog
     @RequestMapping("swagger")
     public String swagger() {
         return "redirect:swagger-ui.html";
     }
 
+    @MethodLog
     @RequestMapping(value = {"", "/"})
     public String index() {
         return "index";
     }
 
+    @MethodLog
     @RequestMapping("share/")
     public String shareIndex() {
         return "share";

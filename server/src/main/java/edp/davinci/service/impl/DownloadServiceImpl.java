@@ -92,6 +92,7 @@ public class DownloadServiceImpl extends DownloadCommonService implements Downlo
         return record;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public Boolean submit(DownloadType type, Long id, User user, List<DownloadViewExecuteParam> params) {
         try {

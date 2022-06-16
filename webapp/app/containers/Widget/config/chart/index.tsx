@@ -34,9 +34,11 @@ import wordCloud from './wordCloud'
 import waterfall from './waterfall'
 import scorecard from './scorecard'
 import gauge from './gauge'
+import relationGraph from './relationGraph'
 import iframe from './iframe'
 import richText from './richText'
 import doubleYAxis from './doubleYAxis'
+import excel from './excel'
 
 const widgetlibs: IChartInfo[] = [
   table,
@@ -55,7 +57,9 @@ const widgetlibs: IChartInfo[] = [
   iframe,
   richText,
   doubleYAxis,
-  gauge
+  gauge,
+  relationGraph,
+  // excel
 ]
 
 export default widgetlibs

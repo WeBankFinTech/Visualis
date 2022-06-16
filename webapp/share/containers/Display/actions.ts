@@ -80,6 +80,117 @@ export const ShareDisplayActions = {
         error
       }
     }
+  },
+  executeQuery (renderType, layerId, dataToken, requestParams, resolve, reject, parameters) {
+    return {
+      type: ActionTypes.EXECUTE_QUERY,
+      payload: {
+        renderType,
+        layerId,
+        dataToken,
+        requestParams,
+        resolve,
+        reject,
+        parameters
+      }
+    }
+  },
+  executeQueryLoaded (renderType, layerId, data, requestParams) {
+    return {
+      type: ActionTypes.EXECUTE_QUERY_SUCCESS,
+      payload: {
+        renderType,
+        layerId,
+        data,
+        requestParams
+      }
+    }
+  },
+  loadExecuteQueryFail (error) {
+    return {
+      type: ActionTypes.EXECUTE_QUERY_FAILURE,
+      payload: {
+        error
+      }
+    }
+  },
+
+  getProgress (execId, resolve, reject) {
+    return {
+      type: ActionTypes.GET_PROGRESS,
+      payload: {
+        execId,
+        resolve,
+        reject
+      }
+    }
+  },
+  getProgressLoaded () {
+    return {
+      type: ActionTypes.GET_PROGRESS_SUCCESS,
+    }
+  },
+  loadGetProgressFail (error) {
+    return {
+      type: ActionTypes.GET_PROGRESS_FAILURE,
+      payload: {
+        error
+      }
+    }
+  },
+
+  getResult (execId, renderType, layerId, dataToken, requestParams, resolve, reject) {
+    return {
+      type: ActionTypes.GET_RESULT,
+      payload: {
+        execId,
+        renderType,
+        layerId,
+        dataToken,
+        requestParams,
+        resolve,
+        reject
+      }
+    }
+  },
+  getResultLoaded (renderType, layerId, data, requestParams) {
+    return {
+      type: ActionTypes.GET_RESULT_SUCCESS,
+      payload: {
+        renderType,
+        layerId,
+        data,
+        requestParams
+      }
+    }
+  },
+  loadGetResultFail (error) {
+    return {
+      type: ActionTypes.GET_RESULT_FAILURE,
+      payload: {
+        error
+      }
+    }
+  },
+  getBaseInfo (resolve) {
+    return {
+      type: ActionTypes.GET_BASE_INFO,
+      payload: {
+        resolve
+      }
+    }
+  },
+  
+  getBaseInfoLoaded () {
+    return {
+      type: ActionTypes.GET_BASE_INFO_SUCCESS
+    }
+  },
+  
+  loadGetBaseInfoFail () {
+    return {
+      type: ActionTypes.GET_BASE_INFO_FAILURE
+    }
   }
 }
 

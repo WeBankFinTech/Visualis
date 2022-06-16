@@ -131,6 +131,7 @@ public class DacChannelUtil {
     }
 
 
+    @SuppressWarnings("unchecked")
     public List<Object> getData(String dacName, String bizId, String email) {
         if (dacMap.containsKey(dacName) && !StringUtils.isEmpty(email)) {
             DacChannel channel = dacMap.get(dacName);

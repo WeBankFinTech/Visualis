@@ -282,7 +282,6 @@ export class ViewList extends React.PureComponent<IViewListProps, IViewListState
     const filterViews = this.getFilterViews(filterViewName, views)
 
     const { copyModalVisible, copyFromView } = this.state
-
     return (
       <>
         <Container>

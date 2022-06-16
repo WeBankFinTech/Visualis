@@ -200,7 +200,7 @@ export function mapDispatchToProps (dispatch) {
         { icon: (<i className="iconfont icon-widget-gallery" />), route: ['widgets'], permission: 'widget' },
         { icon: (<i className="iconfont icon-custom-business" />), route: ['views', 'view'], permission: 'view' },
         { icon: (<i className="iconfont icon-datasource24" />), route: ['sources'], permission: 'source' },
-        { icon: (<Icon type="clock-circle" />), route: ['schedules', 'schedule'], permission: 'schedule' }
+        // { icon: (<Icon type="clock-circle" />), route: ['schedules', 'schedule'], permission: 'schedule' }
       ]
       dispatch(loadSidebar(sidebarSource))
     },

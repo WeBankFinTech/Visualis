@@ -124,6 +124,8 @@ export default function (chartProps: IChartProps) {
     const value = record[`${agg}(${metricName})`]
     min = Math.min(min, value)
     max = Math.max(max, value)
+    if (typeof min === 'number' && isNaN(min)) min = 0
+    if (typeof max === 'number' && isNaN(max)) max = 0
 
     cols.forEach((col) => {
       const { visualType } = model[col.name]
@@ -262,7 +264,6 @@ export default function (chartProps: IChartProps) {
       startColor,
       endColor
     } = chartStyles.visualMap
-
     visualMapOptions = {
       visualMap: {
         show: layerType === 'lines' ? false : showVisualMap,
@@ -478,6 +479,7 @@ export default function (chartProps: IChartProps) {
       }
       break
   }
+
 
   return mapOptions
 }

@@ -39,6 +39,7 @@ public class RecordInfo<T> {
     @JSONField(serialize = false)
     Date updateTime;
 
+    @SuppressWarnings("unchecked")
     public T createdBy(Long userId) {
         this.createBy = userId;
         this.createTime = new Date();
@@ -48,5 +49,16 @@ public class RecordInfo<T> {
     public void updatedBy(Long userId) {
         this.updateBy = userId;
         this.updateTime = new Date();
+    }
+
+    public void updateByWithoutUpdateTime(Long userId) {
+        this.updateBy = userId;
+    }
+
+    public Date getUpdateTime() {
+        if(updateTime == null){
+            return createTime;
+        }
+        return updateTime;
     }
 }

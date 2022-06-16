@@ -71,11 +71,9 @@ export class PaginationWithoutTotal extends PureComponent<IPaginationWithoutTota
   }
 
   public componentWillReceiveProps (nextProps) {
-    if (nextProps.defaultPageSize !== this.props.defaultPageSize) {
-      this.setState({
-        pageSize: nextProps.defaultPageSize
-      })
-    }
+    this.setState({
+      pageSize: nextProps.pageSize
+    })
   }
 
   private changeJumpToValue = (e) => {
