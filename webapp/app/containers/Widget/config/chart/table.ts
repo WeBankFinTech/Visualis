@@ -50,9 +50,9 @@ const table: IChartInfo = {
       // 图表驱动-表格 自动合并相同内容 默认为关闭
       autoMergeCell: false,
       bordered: true,
-      size: 'default',
+      size: 'small',
       withPaging: true,
-      pageSize: '20',
+      pageSize: '5000',
       withNoAggregators: false
     },
     spec: {

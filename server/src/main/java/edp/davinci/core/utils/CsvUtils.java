@@ -31,6 +31,8 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
@@ -40,6 +42,8 @@ import static edp.core.consts.Consts.EMPTY;
 
 
 public class CsvUtils {
+
+    final static Logger log = LoggerFactory.getLogger(CsvUtils.class);
 
 
     /**
@@ -102,7 +106,7 @@ public class CsvUtils {
             reader.close();
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("CSV file parsing failed: ", e);
             throw new ServerException(e.getMessage());
         } finally {
             try {
@@ -114,7 +118,7 @@ public class CsvUtils {
                     reader.close();
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("CSV file stream close failed: ", e);
                 throw new ServerException(e.getMessage());
             }
         }
@@ -191,7 +195,7 @@ public class CsvUtils {
                 }
 
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("CSV file writing failed: ", e);
                 throw new ServerException(e.getMessage());
             } finally {
                 try {
@@ -200,7 +204,6 @@ public class CsvUtils {
                     fileWriter.close();
                     csvPrinter.close();
                 } catch (Exception e) {
-                    e.printStackTrace();
                     throw new ServerException(e.getMessage());
                 }
             }

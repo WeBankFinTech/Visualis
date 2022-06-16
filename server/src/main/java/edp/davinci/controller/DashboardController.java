@@ -20,7 +20,9 @@
 package edp.davinci.controller;
 
 
+import com.webank.wedatasphere.dss.visualis.auth.ProjectAuth;
 import edp.core.annotation.CurrentUser;
+import edp.core.annotation.MethodLog;
 import edp.davinci.common.controller.BaseController;
 import edp.davinci.core.common.Constants;
 import edp.davinci.core.common.ResultMap;
@@ -31,27 +33,21 @@ import edp.davinci.model.MemDashboardWidget;
 import edp.davinci.model.User;
 import edp.davinci.service.DashboardPortalService;
 import edp.davinci.service.DashboardService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.List;
 
-@Api(value = "/dashboardPortals", tags = "dashboardPortals", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-@ApiResponses(@ApiResponse(code = 404, message = "dashboardPortal not found"))
 @Slf4j
 @RestController
-@RequestMapping(value = Constants.BASE_API_PATH + "/dashboardPortals", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+@RequestMapping(value = Constants.BASE_API_PATH + "/dashboardPortals", produces = MediaType.APPLICATION_JSON_VALUE)
 public class DashboardController extends BaseController {
 
     @Autowired
@@ -59,6 +55,9 @@ public class DashboardController extends BaseController {
 
     @Autowired
     private DashboardService dashboardService;
+
+    @Autowired
+    private ProjectAuth projectAuth;
 
     /**
      * 获取dashboardPortal列表
@@ -68,10 +67,10 @@ public class DashboardController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get dashboardPortals")
+    @MethodLog
     @GetMapping
     public ResponseEntity getDashboardPortals(@RequestParam Long projectId,
-                                              @ApiIgnore @CurrentUser User user,
+                                              @CurrentUser User user,
                                               HttpServletRequest request) {
         if (invalidId(projectId)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid project id");
@@ -90,10 +89,10 @@ public class DashboardController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get dashboards")
+    @MethodLog
     @GetMapping("/{id}/dashboards")
     public ResponseEntity getDashboards(@PathVariable Long id,
-                                        @ApiIgnore @CurrentUser User user,
+                                        @CurrentUser User user,
                                         HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid id");
@@ -112,7 +111,7 @@ public class DashboardController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get dashboard exclude roles")
+    @MethodLog
     @GetMapping("/dashboard/{id}/exclude/roles")
     public ResponseEntity getDashboardExcludeRoles(@PathVariable Long id,
                                                    HttpServletRequest request) {
@@ -133,10 +132,10 @@ public class DashboardController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get dashboard portal exclude roles")
+    @MethodLog
     @GetMapping("/{id}/exclude/roles")
     public ResponseEntity getPortalExcludeRoles(@PathVariable Long id,
-                                                @ApiIgnore @CurrentUser User user,
+                                                @CurrentUser User user,
                                                 HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid id");
@@ -156,11 +155,11 @@ public class DashboardController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get dashboard widgets")
+    @MethodLog
     @GetMapping("/{portalId}/dashboards/{dashboardId}")
     public ResponseEntity getDashboardMemWidgets(@PathVariable("portalId") Long portalId,
                                                  @PathVariable("dashboardId") Long dashboardId,
-                                                 @ApiIgnore @CurrentUser User user,
+                                                 @CurrentUser User user,
                                                  HttpServletRequest request) {
         if (invalidId(portalId)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid dashboard portal id");
@@ -186,16 +185,20 @@ public class DashboardController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "create dashboard portal")
+    @MethodLog
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity createDashboardPortal(@Valid @RequestBody DashboardPortalCreate dashboardPortal,
-                                                @ApiIgnore BindingResult bindingResult,
-                                                @ApiIgnore @CurrentUser User user,
+                                                BindingResult bindingResult,
+                                                @CurrentUser User user,
                                                 HttpServletRequest request) {
 
         if (bindingResult.hasErrors()) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message(bindingResult.getFieldErrors().get(0).getDefaultMessage());
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
+        }
+
+        if(!projectAuth.isPorjectOwner(dashboardPortal.getProjectId(), user.getId())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         DashboardPortal portal = dashboardPortalService.createDashboardPortal(dashboardPortal, user);
@@ -213,12 +216,12 @@ public class DashboardController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "update dashboard portal")
+    @MethodLog
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateDashboardPortal(@PathVariable Long id,
                                                 @Valid @RequestBody DashboardPortalUpdate dashboardPortalUpdate,
-                                                @ApiIgnore BindingResult bindingResult,
-                                                @ApiIgnore @CurrentUser User user,
+                                                BindingResult bindingResult,
+                                                @CurrentUser User user,
                                                 HttpServletRequest request) {
 
         if (bindingResult.hasErrors()) {
@@ -244,10 +247,10 @@ public class DashboardController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "delete dashboard portal")
+    @MethodLog
     @DeleteMapping("/{id}")
     public ResponseEntity deleteDashboardPortal(@PathVariable Long id,
-                                                @ApiIgnore @CurrentUser User user,
+                                                @CurrentUser User user,
                                                 HttpServletRequest request) {
 
         if (invalidId(id)) {
@@ -270,12 +273,12 @@ public class DashboardController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "create dashboard")
+    @MethodLog
     @PostMapping(value = "/{id}/dashboards", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity createDashboard(@PathVariable("id") Long portalId,
                                           @Valid @RequestBody DashboardCreate dashboardCreate,
-                                          @ApiIgnore BindingResult bindingResult,
-                                          @ApiIgnore @CurrentUser User user,
+                                          BindingResult bindingResult,
+                                          @CurrentUser User user,
                                           HttpServletRequest request) {
 
         if (bindingResult.hasErrors()) {
@@ -302,12 +305,12 @@ public class DashboardController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "update dashboards")
+    @MethodLog
     @PutMapping(value = "{id}/dashboards", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateDashboards(@PathVariable("id") Long portalId,
                                            @Valid @RequestBody DashboardDto[] dashboards,
-                                           @ApiIgnore BindingResult bindingResult,
-                                           @ApiIgnore @CurrentUser User user,
+                                           BindingResult bindingResult,
+                                           @CurrentUser User user,
                                            HttpServletRequest request) {
 
         if (bindingResult.hasErrors()) {
@@ -335,10 +338,10 @@ public class DashboardController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "delete dashboard")
+    @MethodLog
     @DeleteMapping("/dashboards/{dashboardId}")
     public ResponseEntity deleteDashboard(@PathVariable Long dashboardId,
-                                          @ApiIgnore @CurrentUser User user,
+                                          @CurrentUser User user,
                                           HttpServletRequest request) {
 
         if (invalidId(dashboardId)) {
@@ -362,13 +365,13 @@ public class DashboardController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "create dashboard widget relation")
+    @MethodLog
     @PostMapping(value = "/{portalId}/dashboards/{dashboardId}/widgets", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity createMemDashboardWidget(@PathVariable("portalId") Long portalId,
                                                    @PathVariable("dashboardId") Long dashboardId,
                                                    @Valid @RequestBody MemDashboardWidgetCreate[] memDashboardWidgetCreates,
-                                                   @ApiIgnore BindingResult bindingResult,
-                                                   @ApiIgnore @CurrentUser User user,
+                                                   BindingResult bindingResult,
+                                                   @CurrentUser User user,
                                                    HttpServletRequest request) {
         if (invalidId(portalId)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid dashboard portal id");
@@ -405,12 +408,12 @@ public class DashboardController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "update dashboard widget relation")
+    @MethodLog
     @PutMapping(value = "/{portalId}/dashboards/widgets", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateMemDashboardWidget(@PathVariable("portalId") Long portalId,
                                                    @Valid @RequestBody MemDashboardWidgetDto[] memDashboardWidgets,
-                                                   @ApiIgnore BindingResult bindingResult,
-                                                   @ApiIgnore @CurrentUser User user,
+                                                   BindingResult bindingResult,
+                                                   @CurrentUser User user,
                                                    HttpServletRequest request) {
         if (bindingResult.hasErrors()) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message(bindingResult.getFieldErrors().get(0).getDefaultMessage());
@@ -452,10 +455,10 @@ public class DashboardController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "delete dashboard widget relation")
+    @MethodLog
     @DeleteMapping(value = "/dashboards/widgets/{relationId}")
     public ResponseEntity deleteMemDashboardWidget(@PathVariable Long relationId,
-                                                   @ApiIgnore @CurrentUser User user,
+                                                   @CurrentUser User user,
                                                    HttpServletRequest request) {
         dashboardService.deleteMemDashboardWidget(relationId, user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
@@ -471,11 +474,11 @@ public class DashboardController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "share dashboard")
+    @MethodLog
     @GetMapping("/dashboards/{dashboardId}/share")
     public ResponseEntity shareDashboard(@PathVariable Long dashboardId,
                                          @RequestParam(required = false) String username,
-                                         @ApiIgnore @CurrentUser User user,
+                                         @CurrentUser User user,
                                          HttpServletRequest request) {
 
         if (invalidId(dashboardId)) {

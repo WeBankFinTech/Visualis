@@ -298,6 +298,7 @@ export function metricAxisLabelFormatter (value) {
   } else if (value >= Math.pow(10, 3) && value < Math.pow(10, 6)) {
     return `${precision(value / Math.pow(10, 3))}K`
   } else {
+    if (value < 1 && value > 0 || value > -1 && value < 0) return value.toFixed(2)
     return value
   }
 
@@ -321,7 +322,8 @@ export function getPivotModeSelectedCharts (items: IDataParamSource[]): IChartIn
 export function getStyleConfig (chartStyles: IChartStyles): IChartStyles {
   return {
     ...chartStyles,
-    pivot: chartStyles.pivot || {...getPivot().style['pivot']}  // FIXME 兼容0.3.0-beta 数据库
+    pivot: chartStyles.pivot || {...getPivot().style['pivot']},  // FIXME 兼容0.3.0-beta 数据库
+    table: chartStyles.table || {...getTable().style['table']}
   }
 }
 
@@ -700,6 +702,8 @@ export const iconMapping = {
   graph: 'icon-510tongji_guanxitu',
   waterfall: 'icon-waterfall',
   gauge: 'icon-gauge',
+  relationGraph: 'icon-relation-graph',
+  excel: 'icon-relation-excel',
   radar: 'icon-radarchart',
   parallel: 'icon-parallel',
   confidenceBand: 'icon-confidence-band'

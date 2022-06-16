@@ -116,7 +116,6 @@ export default function (chartProps: IChartProps, drillOptions) {
       metrics,
       xAxisData
     )
-
     const configValue = color.items[0].config.values
     const configKeys = []
     Object.entries(configValue).forEach(([k, v]: [string, string]) => {
@@ -144,7 +143,7 @@ export default function (chartProps: IChartProps, drillOptions) {
     if (color.items.length) {
       const sumArr = []
       Object.entries(percentGrouped).forEach(([k, v]: [string, any[]]) => {
-        sumArr.push(getColorDataSum(v, metrics))
+        if (v) sumArr.push(getColorDataSum(v, metrics))
       })
 
       Object.entries(grouped).forEach(([k, v]: [string, any[]]) => {

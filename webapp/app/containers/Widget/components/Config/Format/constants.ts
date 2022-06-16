@@ -36,7 +36,7 @@ export enum NumericUnit {
   None = '无',
   TenThousand = '万',
   OneHundredMillion = '亿',
-  Thousand = 'k',
+  Thousand = 'K',
   Million = 'M',
   Giga = 'G'
 }

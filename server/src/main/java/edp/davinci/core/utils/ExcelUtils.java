@@ -38,6 +38,8 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.script.Invocable;
@@ -50,10 +52,12 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static edp.core.consts.Consts.*;
-import static edp.davinci.common.utils.ScriptUtiils.formatHeader;
-import static edp.davinci.common.utils.ScriptUtiils.getCellValueScriptEngine;
+import static edp.davinci.common.utils.ScriptUtils.formatHeader;
+import static edp.davinci.common.utils.ScriptUtils.getCellValueScriptEngine;
 
 public class ExcelUtils {
+
+    final static Logger log = LoggerFactory.getLogger(ExcelUtils.class);
 
 
     /**
@@ -97,7 +101,6 @@ public class ExcelUtils {
                     headers.add(new QueryColumn(headerRow.getCell(i).getStringCellValue(),
                             SqlUtils.formatSqlType(typeRow.getCell(i).getStringCellValue())));
                 } catch (Exception e) {
-                    e.printStackTrace();
                     if (e instanceof NullPointerException) {
                         throw new ServerException("Unknown Type");
                     }
@@ -121,7 +124,6 @@ public class ExcelUtils {
             dataUploadEntity.setValues(values);
 
         } catch (ServerException e) {
-            e.printStackTrace();
             throw new ServerException(e.getMessage());
         }
 
@@ -142,7 +144,6 @@ public class ExcelUtils {
                 throw new ServerException("Invalid excel file");
             }
         } catch (IOException e) {
-            e.printStackTrace();
             throw new ServerException(e.getMessage());
         } finally {
             try {
@@ -150,7 +151,6 @@ public class ExcelUtils {
                     inputStream.close();
                 }
             } catch (IOException e) {
-                e.printStackTrace();
                 throw new ServerException(e.getMessage());
             }
         }
@@ -206,7 +206,7 @@ public class ExcelUtils {
                 engine = getCellValueScriptEngine();
                 excelHeaders = formatHeader(engine, json, params);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("Failed to write excel sheet: ", e);
             }
         }
 
@@ -547,9 +547,9 @@ public class ExcelUtils {
             }
 
         } catch (ScriptException e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
         } catch (NoSuchMethodException e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
         }
 
         return list;

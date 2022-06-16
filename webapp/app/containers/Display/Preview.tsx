@@ -231,6 +231,9 @@ export class Preview extends React.Component<IPreviewProps, IPreviewStates> {
     statistic.resetClock()
   }
 
+// 备注：preview接口由前端发起的说明是开发中心所以加入labelsRoute=dev
+// 如果是Display或者DashBoard在工作流执行时，发起的执行，是访问后台服务接口，
+// 在请求时，由相关接口可以就可以带上环境标签。所以前端侧固定为Dev环境。
   public render () {
     const {spinning} = this.state;
     const {
@@ -239,9 +242,9 @@ export class Preview extends React.Component<IPreviewProps, IPreviewStates> {
     const dashboardId = +params.dashboardId
     let host = `${config[env].host}`
     if (displayId) {
-      host += `/displays/${displayId}/preview`
+      host += `/displays/${displayId}/preview?labelsRoute=dev`
     } else {
-      host += `/dashboard/${dashboardId}/preview`
+      host += `/dashboard/${dashboardId}/preview?labelsRoute=dev`
     }
     return (
       <div className={styles.preview}>

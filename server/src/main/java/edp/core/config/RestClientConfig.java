@@ -112,8 +112,7 @@ public class RestClientConfig {
             clientHttpRequestFactory.setConnectionRequestTimeout(connectionRequestTimout);
             return clientHttpRequestFactory;
         } catch (NoSuchAlgorithmException | KeyManagementException | KeyStoreException e) {
-            e.printStackTrace();
-            log.error("Initializing HTTP connection pool ERROR, {}", e);
+            log.error("Initializing HTTP connection pool ERROR: ", e);
         }
         return null;
     }

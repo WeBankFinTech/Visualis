@@ -20,9 +20,11 @@
 package edp.davinci.controller;
 
 import com.alibaba.druid.util.StringUtils;
+import com.webank.wedatasphere.dss.visualis.query.service.VirtualViewQueryService;
 import edp.core.annotation.AuthIgnore;
 import edp.core.annotation.AuthShare;
 import edp.core.annotation.CurrentUser;
+import edp.core.annotation.MethodLog;
 import edp.core.enums.HttpCodeEnum;
 import edp.core.model.Paginate;
 import edp.davinci.common.controller.BaseController;
@@ -37,34 +39,29 @@ import edp.davinci.dto.viewDto.DistinctParam;
 import edp.davinci.dto.viewDto.ViewExecuteParam;
 import edp.davinci.model.User;
 import edp.davinci.service.ShareService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
-import java.sql.SQLException;
 import java.util.Map;
 
 
-@Api(value = "/share", tags = "share", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-@ApiResponses(@ApiResponse(code = 404, message = "resource not found"))
 @Slf4j
 @RestController
-@RequestMapping(value = Constants.BASE_API_PATH + "/share", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+@RequestMapping(value = Constants.BASE_API_PATH + "/share", produces = MediaType.APPLICATION_JSON_VALUE)
 public class ShareController extends BaseController {
 
 
     @Autowired
     private ShareService shareService;
+
+    @Autowired
+    private VirtualViewQueryService virtualViewQueryService;
 
 
     /**
@@ -75,12 +72,12 @@ public class ShareController extends BaseController {
      * @param bindingResult
      * @return
      */
-    @ApiOperation(value = "share login")
+    @MethodLog
     @AuthIgnore
     @PostMapping("/login/{token}")
     public ResponseEntity shareLogin(@PathVariable String token,
                                      @Valid @RequestBody UserLogin userLogin,
-                                     @ApiIgnore BindingResult bindingResult) {
+                                     BindingResult bindingResult) {
 
         if (StringUtils.isEmpty(token)) {
             ResultMap resultMap = new ResultMap().fail().message("Invalid token");
@@ -104,11 +101,11 @@ public class ShareController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get share dashboard")
+    @MethodLog
     @AuthShare
     @GetMapping("/dashboard/{token}")
     public ResponseEntity getShareDashboard(@PathVariable String token,
-                                            @ApiIgnore @CurrentUser User user,
+                                            @CurrentUser User user,
                                             HttpServletRequest request) {
         if (StringUtils.isEmpty(token)) {
             ResultMap resultMap = new ResultMap().fail().message("Invalid share token");
@@ -132,11 +129,11 @@ public class ShareController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get share display")
+    @MethodLog
     @AuthShare
     @GetMapping("/display/{token}")
     public ResponseEntity getShareDisplay(@PathVariable String token,
-                                          @ApiIgnore @CurrentUser User user,
+                                          @CurrentUser User user,
                                           HttpServletRequest request) {
         if (StringUtils.isEmpty(token)) {
             ResultMap resultMap = new ResultMap().fail().message("Invalid share token");
@@ -160,11 +157,11 @@ public class ShareController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get share widget")
+    @MethodLog
     @AuthShare
     @GetMapping("/widget/{token}")
     public ResponseEntity getShareWidget(@PathVariable String token,
-                                         @ApiIgnore @CurrentUser User user,
+                                         @CurrentUser User user,
                                          HttpServletRequest request) {
         if (StringUtils.isEmpty(token)) {
             ResultMap resultMap = new ResultMap().fail().message("Invalid share token");
@@ -189,20 +186,26 @@ public class ShareController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get share data")
+    @MethodLog
     @AuthShare
     @PostMapping(value = "/data/{token}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getShareData(@PathVariable String token,
                                        @RequestBody(required = false) ViewExecuteParam executeParam,
-                                       @ApiIgnore @CurrentUser User user,
-                                       HttpServletRequest request) throws SQLException {
+                                       @CurrentUser User user,
+                                       HttpServletRequest request) throws Exception {
 
         if (StringUtils.isEmpty(token)) {
             ResultMap resultMap = new ResultMap().fail().message("Invalid share token");
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        Paginate<Map<String, Object>> shareData = shareService.getShareData(token, executeParam, user);
+        Paginate<Map<String, Object>> shareData;
+        if(executeParam.getView() == null){
+            shareData = shareService.getShareData(token, executeParam, user, request);
+        } else {
+            shareData = virtualViewQueryService.getData(executeParam, user, true);
+        }
+
         if (null == user) {
             return ResponseEntity.ok(new ResultMap().success().payload(shareData));
         } else {
@@ -222,14 +225,14 @@ public class ShareController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get share data")
+    @MethodLog
     @AuthShare
     @PostMapping(value = "/data/{token}/distinctvalue/{viewId}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getDistinctValue(@PathVariable("token") String token,
                                            @PathVariable("viewId") Long viewId,
                                            @Valid @RequestBody DistinctParam param,
-                                           @ApiIgnore BindingResult bindingResult,
-                                           @ApiIgnore @CurrentUser User user,
+                                           BindingResult bindingResult,
+                                           @CurrentUser User user,
                                            HttpServletRequest request) {
 
         if (StringUtils.isEmpty(token)) {
@@ -251,8 +254,7 @@ public class ShareController extends BaseController {
             ResultMap resultMap = shareService.getDistinctValue(token, viewId, param, user, request);
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
+            log.error("share token error: " + e);
             return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
         }
     }
@@ -267,12 +269,12 @@ public class ShareController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get share data csv")
+    @MethodLog
     @AuthShare
     @PostMapping(value = "/csv/{token}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity generationShareDataCsv(@PathVariable String token,
                                                  @RequestBody(required = false) ViewExecuteParam executeParam,
-                                                 @ApiIgnore @CurrentUser User user,
+                                                 @CurrentUser User user,
                                                  HttpServletRequest request) {
 
         if (StringUtils.isEmpty(token)) {

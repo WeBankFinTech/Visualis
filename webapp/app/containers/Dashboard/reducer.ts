@@ -297,8 +297,40 @@ function dashboardReducer (state = initialState, action: ViewActionType | any) {
             errorMessage: ''
           }
         })
-
+    case ViewActionTypes.VIEW_EXECUTE_QUERY:
+      return payload.vizType !== 'dashboard' ? state : state
+        .set('currentItemsInfo', {
+          ...itemsInfo,
+          [payload.itemId]: {
+            ...itemsInfo[payload.itemId],
+            loading: true,
+            errorMessage: ''
+          }
+        })
     case ViewActionTypes.LOAD_VIEW_DATA_FROM_VIZ_ITEM_SUCCESS:
+      fieldGroupedSort(payload.result.resultList, payload.requestParams.customOrders)
+      return payload.vizType !== 'dashboard' ? state : state.set('currentItemsInfo', {
+        ...itemsInfo,
+        [payload.itemId]: {
+          ...itemsInfo[payload.itemId],
+          loading: false,
+          datasource: payload.result,
+          selectedItems: [],
+          renderType: payload.renderType,
+          queryConditions: {
+            ...itemsInfo[payload.itemId].queryConditions,
+            tempFilters: payload.requestParams.tempFilters,
+            linkageFilters: payload.requestParams.linkageFilters,
+            globalFilters: payload.requestParams.globalFilters,
+            variables: payload.requestParams.variables,
+            linkageVariables: payload.requestParams.linkageVariables,
+            globalVariables: payload.requestParams.globalVariables,
+            pagination: payload.requestParams.pagination,
+            nativeQuery: payload.requestParams.nativeQuery
+          }
+        }
+      })
+    case ViewActionTypes.VIEW_GET_RESULT_SUCCESS:
       fieldGroupedSort(payload.result.resultList, payload.requestParams.customOrders)
       return payload.vizType !== 'dashboard' ? state : state.set('currentItemsInfo', {
         ...itemsInfo,
@@ -383,6 +415,19 @@ function dashboardReducer (state = initialState, action: ViewActionType | any) {
         }
       })
     case ViewActionTypes.LOAD_VIEW_DATA_FROM_VIZ_ITEM_FAILURE:
+      return payload.vizType === 'dashboard'
+        ? !!itemsInfo
+          ? state.set('currentItemsInfo', {
+            ...itemsInfo,
+            [payload.itemId]: {
+              ...itemsInfo[payload.itemId],
+              loading: false,
+              errorMessage: payload.errorMessage
+            }
+          })
+          : state
+        : state
+    case ViewActionTypes.VIEW_GET_RESULT_FAILURE:
       return payload.vizType === 'dashboard'
         ? !!itemsInfo
           ? state.set('currentItemsInfo', {

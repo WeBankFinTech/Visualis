@@ -1,82 +1,55 @@
-/*
- * Copyright 2019 WeBank
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
 package com.webank.wedatasphere.dss.visualis.entrance.spark
 
 import java.util
-import java.util.concurrent.ConcurrentHashMap
-
 import com.google.gson.reflect.TypeToken
-import com.webank.wedatasphere.linkis.common.io.FsPath
-import com.webank.wedatasphere.linkis.common.utils.{Logging, Utils}
-import com.webank.wedatasphere.linkis.entrance.EntranceServer
-import com.webank.wedatasphere.linkis.entrance.exception.{EntranceRPCException, QueryFailedException}
-import com.webank.wedatasphere.linkis.protocol.constants.TaskConstant
-import com.webank.wedatasphere.linkis.protocol.query.{RequestPersistTask, RequestQueryTask, ResponsePersist}
-import com.webank.wedatasphere.linkis.rpc.Sender
-import com.webank.wedatasphere.linkis.scheduler.queue.SchedulerEventState
-import com.webank.wedatasphere.linkis.server.{BDPJettyServerHelper, JMap}
-import com.webank.wedatasphere.linkis.server.security.SecurityFilter
-import com.webank.wedatasphere.linkis.storage.FSFactory
-import com.webank.wedatasphere.linkis.storage.resultset.table.{TableMetaData, TableRecord}
-import com.webank.wedatasphere.linkis.storage.resultset.{ResultSetFactory, ResultSetReader}
 import com.webank.wedatasphere.dss.visualis.configuration.CommonConfig
 import com.webank.wedatasphere.dss.visualis.exception.{ResultTypeException, SparkEngineExecuteException, VGErrorException}
+import com.webank.wedatasphere.dss.visualis.model.PaginateWithExecStatus
 import com.webank.wedatasphere.dss.visualis.res.ResultHelper
 import com.webank.wedatasphere.dss.visualis.ujes.UJESJob
 import com.webank.wedatasphere.dss.visualis.utils.VisualisUtils
-import com.webank.wedatasphere.linkis.adapt.LinkisUtils
+import org.apache.linkis.common.io.FsPath
+import org.apache.linkis.common.utils.{Logging, Utils}
+import org.apache.linkis.cs.common.utils.CSCommonUtils
+import org.apache.linkis.entrance.EntranceServer
+import org.apache.linkis.entrance.exception.{EntranceRPCException, QueryFailedException}
+import org.apache.linkis.governance.common.entity.task.{RequestPersistTask, RequestQueryTask}
+import org.apache.linkis.protocol.constants.TaskConstant
+import org.apache.linkis.rpc.Sender
+import org.apache.linkis.scheduler.queue.SchedulerEventState
+import org.apache.linkis.server.JMap
+import org.apache.linkis.server.security.SecurityFilter
+import org.apache.linkis.storage.FSFactory
+import org.apache.linkis.storage.resultset.table.{TableMetaData, TableRecord}
+import org.apache.linkis.storage.resultset.{ResultSetFactory, ResultSetReader}
 import edp.core.exception.{ServerException, SourceException}
 import edp.core.model._
 import edp.core.utils.SqlUtils
 import edp.davinci.model.Source
+import org.apache.commons.lang.StringUtils
+import org.apache.linkis.adapt.LinkisUtils
 import org.json4s._
 import org.json4s.jackson.Serialization.read
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.annotation.{Scope, ScopedProxyMode}
+import org.springframework.context.annotation.Scope
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Component
 import org.springframework.web.context.request.{RequestContextHolder, ServletRequestAttributes}
 
-import scala.collection.JavaConversions._
-import org.json4s.JsonDSL._
-import org.json4s.jackson.JsonMethods._
-import org.json4s.jackson.Serialization._
-import org.json4s._
-import org.json4s.jackson._
-import org.json4s.jackson.Serialization.{read, write}
-import org.springframework.context.annotation.Scope
-import org.springframework.jdbc.core.JdbcTemplate
-import org.springframework.web.context.WebApplicationContext
-
 import scala.collection.JavaConversions
+import scala.collection.JavaConversions._
+import scala.math.BigDecimal.RoundingMode
 
 
-/**
-  * Created by shanhuang on 2019/1/23.
-  */
-@Component
-@Scope("prototype")
+
 class SparkEntranceExecutor extends SqlUtils with Logging{
   private var umUser:String=""
   implicit val formats = DefaultFormats
   @Autowired
-  private var entranceServer: EntranceServer = _
+  var entranceServer: EntranceServer = _
 
   override def init(source: BaseSource): SqlUtils = {
-    if(VisualisUtils.isHiveDataSource(source)){
+    if(source == null || VisualisUtils.isLinkisDataSource(source)){
       //info(s"SparkEntranceExecutor is initing, config is: ${source.asInstanceOf[Source].getConfig}")
       val executor = new SparkEntranceExecutor
       executor.jdbcDataSource = this.jdbcDataSource
@@ -106,30 +79,13 @@ class SparkEntranceExecutor extends SqlUtils with Logging{
 
   private def executeUntil[T](sql: String, op: VisualisJob => T): T = {
     info(s"$umUser began to executeRealJob script:$sql")
-    val input = read[UJESJob](sql)
-    var code =input.code
-    val jobType = input.jobType
-    val source = JavaConversions.mapAsJavaMap(input.source.asInstanceOf[Map[String, String]])
-    umUser = input.user
-    if(jobType.equals(UJESJob.SQL_TYPE)) {
-      code = SqlUtils.filterAnnotate(code)
-      SqlUtils.checkSensitiveSql(code)
-    }
-    val requestMap = new JMap[String, Any]
-    requestMap.put(TaskConstant.UMUSER, umUser)
-    requestMap.put(TaskConstant.REQUESTAPPLICATIONNAME, VisualisUtils.VG_CREATOR.getValue)
-    requestMap.put(TaskConstant.EXECUTEAPPLICATIONNAME, VisualisUtils.VG_APP_NAME.getValue)
-    requestMap.put(TaskConstant.EXECUTIONCODE, code)
-    requestMap.put(TaskConstant.RUNTYPE,jobType)
-    requestMap.put(TaskConstant.SOURCE,source)
-    requestMap.put(TaskConstant.PARAMS,new util.HashMap())
-    val execId = entranceServer.execute(requestMap)
-    SparkEntranceExecutor.putJobCache(umUser,execId)//缓存相应的执行ID
+    val execId: String = submitQuery(sql)
+    //SparkEntranceExecutor.putJobCache(umUser,execId)//缓存相应的执行ID
     entranceServer.getJob(execId) foreach {
       case job: VisualisJob =>
         job.waitForCompleted()
         if (!SchedulerEventState.isSucceed(job.getState)){
-          job.getTask match {
+          job.getJobRequest match {
             case t: RequestPersistTask =>
               if(t.getErrCode != null && t.getErrDesc != null){
                 throw SparkEngineExecuteException(t.getErrCode, "spark engine run sql failed:" + t.getErrDesc)
@@ -142,59 +98,48 @@ class SparkEntranceExecutor extends SqlUtils with Logging{
           throw SparkEngineExecuteException(60001, "spark engine run sql failed")
         }
         info(s"$umUser finish to executeRealJob script:$sql")
-        SparkEntranceExecutor.removeJobCache(umUser,execId)
+        //SparkEntranceExecutor.removeJobCache(umUser,execId)
         return op(job)
       case _ =>
-        SparkEntranceExecutor.removeJobCache(umUser,execId)
+        //SparkEntranceExecutor.removeJobCache(umUser,execId)
         throw new VGErrorException(70001, "executeRealJob failed, not supported job type.")
     }
     throw new VGErrorException(70001, s"executeRealJob failed, cannot find the job $execId.")
   }
 
-  private def getHistoryQuery(sql: String): Option[RequestPersistTask] = {
-    val ujesJob = read[UJESJob](sql)
-    val code = ujesJob.code
-    val sender = Sender.getSender(CommonConfig.QUERY_PERSISTENCE_SPRING_APPLICATION_NAME.getValue)
-    val task = new RequestQueryTask
-    //    task.setUmUser(getCurrentUser)
-    task.setUmUser(ujesJob.user)
-    task.setExecutionCode(code)
-    var responsePersist:ResponsePersist = null
-    Utils.tryThrow(
-      responsePersist = sender.ask(task).asInstanceOf[ResponsePersist]
-    )(e => {
-      val errorException =  new EntranceRPCException(60010, "sender rpc failed")
-      errorException.initCause(e)
-      throw errorException
-    })
-    if (responsePersist != null){
-      val  status = responsePersist.getStatus()
-      val  message = responsePersist.getMsg()
-      if (status != 0 ){
-        throw new QueryFailedException(60011, "insert task failed, reason: " + message)
-      }
-      val data = responsePersist.getData()
-      val inputJson=LinkisUtils.gson.toJson(data.get(TaskConstant.TASK))
-      //      val extractJson = parse(inputJson)
-      val typeToken = new TypeToken[java.util.List[RequestPersistTask]](){}.getType
-      val ResponseRequestPersistTasks = LinkisUtils.gson.fromJson(inputJson,typeToken).asInstanceOf[java.util.List[RequestPersistTask]]
-      //      val ResponseRequestPersistTasks = extractJson.extract[List[RequestPersistTask]]
-      if (ResponseRequestPersistTasks == null){
-        throw new QueryFailedException(60012, "query task failed, reason: " + message)
-      }
-      val now =System.currentTimeMillis()
-      val sortedTasks = ResponseRequestPersistTasks.filter( x=>{
-        now - x.getCreatedTime.getTime    < CommonConfig.QUERY_PERSISTENCE_SPRING_TIME.getValue
-      }).sortWith((x,y)=>x.getCreatedTime.getTime > y.getCreatedTime.getTime)
-      if(sortedTasks.size >0){
-        Some(sortedTasks(0))
-      }else{
-        None
-      }
-    }else{
-      None
+  def submitQuery(sql: String) = {
+    val input = read[UJESJob](sql)
+    var code = input.code
+    val jobType = input.jobType
+    val source = JavaConversions.mapAsJavaMap(input.source.asInstanceOf[Map[String, String]])
+    umUser = input.user
+//    if (jobType.equals(UJESJob.SQL_TYPE)) {
+//      code = SqlUtils.filterAnnotate(code)
+//      SqlUtils.checkSensitiveSql(code)
+//    }
+    val requestMap = new JMap[String, Any]
+    requestMap.put(TaskConstant.UMUSER, umUser)
+    requestMap.put(TaskConstant.REQUESTAPPLICATIONNAME, VisualisUtils.VG_CREATOR.getValue)// input.creator)
+    requestMap.put(TaskConstant.EXECUTEAPPLICATIONNAME, input.engine)
+    requestMap.put(TaskConstant.EXECUTIONCODE, code)
+    requestMap.put(TaskConstant.RUNTYPE, jobType)
+    requestMap.put(TaskConstant.SOURCE, source)
+    val params = new util.HashMap[String, Object]()
+    val configuration = new util.HashMap[String, Object]()
+    val runtime = new util.HashMap[String, Object]()
+    // updated cache related params
+    runtime.put(TaskConstant.CACHE, input.cache.asInstanceOf[java.lang.Boolean])
+    runtime.put(TaskConstant.CACHE_EXPIRE_AFTER, input.cacheExpireAfter.asInstanceOf[java.lang.Long])
+    runtime.put(TaskConstant.READ_FROM_CACHE, input.readFromCache.asInstanceOf[java.lang.Boolean])
+    runtime.put(TaskConstant.READ_CACHE_BEFORE, input.readCacheBefore.asInstanceOf[java.lang.Long])
+    if(StringUtils.isNotBlank(input.contextId)){
+      runtime.put(CSCommonUtils.CONTEXT_ID_STR, input.contextId)
     }
-
+    configuration.put(TaskConstant.PARAMS_CONFIGURATION_RUNTIME, runtime)
+    params.put(TaskConstant.PARAMS_CONFIGURATION, configuration)
+    requestMap.put(TaskConstant.PARAMS, params)
+    val execId = entranceServer.execute(requestMap)
+    execId
   }
 
   /**
@@ -225,10 +170,11 @@ class SparkEntranceExecutor extends SqlUtils with Logging{
         }
         res.add(lineMap)
       }
-      info(s"$umUser finish to get the result of execution :$resultSet")
+      Utils.tryQuietly(reader.close())
+      //info(s"$umUser finish to get the result of execution :$resultSet")
       res
     }else if(rsFactory.isResultSetPath(resultSet)){
-      val resPath = new FsPath(resultSet)
+      val resPath = new FsPath(ResultHelper.getSchemaPath(resultSet))
       val resultSetContent =  rsFactory.getResultSetByPath(resPath)
       if(ResultSetFactory.TABLE_TYPE != resultSetContent.resultSetType()){
         throw new VGErrorException(60014,"不支持不是表格的结果集")
@@ -249,7 +195,9 @@ class SparkEntranceExecutor extends SqlUtils with Logging{
         }
         res.add(lineMap)
       }
-      info(s"$umUser finish to get the result of execution :$resultSet")
+      Utils.tryQuietly(reader.close())
+      Utils.tryQuietly(fs.close())
+      //info(s"$umUser finish to get the result of execution :$resultSet")
       res
     }else{
       throw new ResultTypeException(60015,"结果集类型异常:"+resultSet)
@@ -276,7 +224,7 @@ class SparkEntranceExecutor extends SqlUtils with Logging{
 //      }
 //    }.filter(_.isEmpty).getOrElse(
       executeUntil(sql, { job =>
-      job.getTask match {
+      job.getJobRequest match {
         case t: RequestPersistTask => Array(t.getResultLocation + VisualisUtils.RESULT_FILE_NAME.getValue)
         case _ => Array()
       }
@@ -305,14 +253,131 @@ class SparkEntranceExecutor extends SqlUtils with Logging{
     if(resultSets.isEmpty) new util.ArrayList[util.Map[String, AnyRef]] else getResultSet(resultSets(resultSets.length - 1))
   }
 
+  override def submit4Exec(sql: String, pageNo: Int, pageSize: Int, totalCount: Int, limit: Int, excludeColumns: util.Set[String]): PaginateWithExecStatus = {
+    val paginateWithQueryColumns = new PaginateWithExecStatus
+    val execId = submitQuery(sql)
+    paginateWithQueryColumns.setExecId(VisualisUtils.getHAExecId(execId))
+    paginateWithQueryColumns.setProgress(0.0f)
+    return  paginateWithQueryColumns;
+  }
+
+  override def getProgress4Exec(execId: String, user: String): PaginateWithExecStatus = {
+    val instance = VisualisUtils.getInstanceByHAExecId(execId)
+    val realExecId = VisualisUtils.getExecIdByHAExecId(execId)
+    if(instance.equals(Sender.getThisInstance)){
+      entranceServer.getJob(realExecId) foreach {
+        case job: VisualisJob =>
+          val paginateWithQueryColumns = new PaginateWithExecStatus
+          paginateWithQueryColumns.setExecId(execId)
+          paginateWithQueryColumns.setProgress(BigDecimal(job.getProgress).setScale(2, RoundingMode.HALF_UP).floatValue())
+          paginateWithQueryColumns.setStatus(job.getState.toString)
+          return paginateWithQueryColumns
+        case _ =>
+          throw new VGErrorException(70001, "executeRealJob failed, not supported job type.")
+      }
+      throw new VGErrorException(70001, s"executeRealJob failed, cannot find the job $execId.")
+    } else {
+      val task = VisualisUtils.getQueryTask(instance, realExecId)
+      val paginateWithQueryColumns = new PaginateWithExecStatus
+      paginateWithQueryColumns.setExecId(execId)
+      paginateWithQueryColumns.setProgress(BigDecimal(task.getProgress).setScale(2, RoundingMode.HALF_UP).floatValue())
+      paginateWithQueryColumns.setStatus(task.getStatus)
+      return paginateWithQueryColumns
+    }
+  }
+
+  override def kill4Exec(execId: String, user: String): PaginateWithExecStatus = {
+    val instance = VisualisUtils.getInstanceByHAExecId(execId)
+    val realExecId = VisualisUtils.getExecIdByHAExecId(execId)
+    if(instance.equals(Sender.getThisInstance)){
+      entranceServer.getJob(realExecId) foreach {
+        case job: VisualisJob =>
+          if(!SchedulerEventState.isCompleted(job.getState)){
+            job.kill();
+          }
+          val paginateWithQueryColumns = new PaginateWithExecStatus
+          paginateWithQueryColumns.setExecId(execId)
+          paginateWithQueryColumns.setProgress(job.getProgress)
+          paginateWithQueryColumns.setStatus(job.getState.toString)
+          return paginateWithQueryColumns
+        case _ =>
+          throw new VGErrorException(70001, "kill job failed, not supported job type.")
+      }
+      throw new VGErrorException(70001, s"kill job failed, cannot find the job $execId.")
+    } else {
+      VisualisUtils.killHA(instance, execId)
+    }
+  }
+
+  override def getResultSet4Exec(execId: String, user: String): PaginateWithExecStatus = {
+    val instance = VisualisUtils.getInstanceByHAExecId(execId)
+    val realExecId = VisualisUtils.getExecIdByHAExecId(execId)
+    val paginateWithQueryColumns = new PaginateWithExecStatus
+    if(instance.equals(Sender.getThisInstance)){
+      entranceServer.getJob(realExecId) foreach {
+        case job: VisualisJob =>
+          job.waitForCompleted()
+
+          //TODO consider if necessary here
+          if (!SchedulerEventState.isSucceed(job.getState)){
+            job.getJobRequest match {
+              case t: RequestPersistTask =>
+                if(t.getErrCode != null && t.getErrDesc != null){
+                  throw SparkEngineExecuteException(t.getErrCode, "spark engine run sql failed:" + t.getErrDesc)
+                }
+              case _ =>
+            }
+            if(job.getErrorResponse != null){
+              throw SparkEngineExecuteException(60001, job.getErrorResponse.message)
+            }
+            throw SparkEngineExecuteException(60001, "spark engine run sql failed")
+          }
+
+          paginateWithQueryColumns.setExecId(execId)
+          paginateWithQueryColumns.setProgress(job.getProgress)
+          paginateWithQueryColumns.setStatus(job.getState.toString)
+          val resultSets = job.getResultSets
+          if(resultSets.isEmpty){
+            paginateWithQueryColumns.setResultList(new util.ArrayList[util.Map[String, AnyRef]])
+            paginateWithQueryColumns.setTotalCount(0)
+          } else {
+            val resultList = getResultSet(resultSets(resultSets.length - 1))
+            paginateWithQueryColumns.setResultList(resultList)
+            paginateWithQueryColumns.setTotalCount(resultList.size())
+            val columns = ResultHelper.getResultType(resultSets(resultSets.length - 1))
+            paginateWithQueryColumns.setColumns(columns.map(col => new QueryColumn(col.columnName,col.dataType.typeName)).toList)
+          }
+          return paginateWithQueryColumns;
+        case _ =>
+          //SparkEntranceExecutor.removeJobCache(umUser,execId)
+          throw new VGErrorException(70001, "executeRealJob failed, not supported job type.")
+      }
+      throw new VGErrorException(70001, s"executeRealJob failed, cannot find the job $execId.")
+    } else {
+      val task = VisualisUtils.getQueryTask(instance, realExecId)
+      paginateWithQueryColumns.setExecId(execId)
+      paginateWithQueryColumns.setProgress(task.getProgress)
+      paginateWithQueryColumns.setStatus(task.getStatus)
+      val resultList = getResultSet(task.getResultLocation + VisualisUtils.RESULT_FILE_NAME.getValue)
+      paginateWithQueryColumns.setResultList(resultList)
+      paginateWithQueryColumns.setTotalCount(resultList.size())
+      val columns = ResultHelper.getResultType(task.getResultLocation + VisualisUtils.RESULT_FILE_NAME.getValue)
+      paginateWithQueryColumns.setColumns(columns.map(col => new QueryColumn(col.columnName,col.dataType.typeName)).toList)
+      return paginateWithQueryColumns
+    }
+  }
+
   override def query4Paginate(sql: String, pageNo: Int, pageSize: Int, totalCount: Int, limit: Int, excludeColumns: util.Set[String]): PaginateWithQueryColumns = {
     val paginateWithQueryColumns = new PaginateWithQueryColumns
     val resultSets = querySQLWithResultSetPaths(sql, limit)
 
     if(resultSets.isEmpty){
       paginateWithQueryColumns.setResultList(new util.ArrayList[util.Map[String, AnyRef]])
+      paginateWithQueryColumns.setTotalCount(0)
     } else {
-      paginateWithQueryColumns.setResultList(getResultSet(resultSets(resultSets.length - 1)))
+      val resultList = getResultSet(resultSets(resultSets.length - 1))
+      paginateWithQueryColumns.setResultList(resultList)
+      paginateWithQueryColumns.setTotalCount(resultList.size())
       val columns = ResultHelper.getResultType(resultSets(resultSets.length - 1))
       paginateWithQueryColumns.setColumns(columns.map(col => new QueryColumn(col.columnName,col.dataType.typeName)).toList)
     }
@@ -358,17 +423,17 @@ class SparkEntranceExecutor extends SqlUtils with Logging{
 }
 
 object SparkEntranceExecutor{
-  val QUERY_JOB_CACHE = new ConcurrentHashMap[String, String]()
-
-  def putJobCache(user:String,execId:String): Unit ={
-    QUERY_JOB_CACHE.put(user,execId)
-  }
-
-  def removeJobCache(user:String,execId:String):Unit = {
-    QUERY_JOB_CACHE.remove(user, execId)
-  }
-
-  def getJobCache(user:String):String = {
-    QUERY_JOB_CACHE.get(user)
-  }
+//  val QUERY_JOB_CACHE = new ConcurrentHashMap[String, String]()
+//
+//  def putJobCache(user:String,execId:String): Unit ={
+//    QUERY_JOB_CACHE.put(user,execId)
+//  }
+//
+//  def removeJobCache(user:String,execId:String):Unit = {
+//    QUERY_JOB_CACHE.remove(user, execId)
+//  }
+//
+//  def getJobCache(user:String):String = {
+//    QUERY_JOB_CACHE.get(user)
+//  }
 }
