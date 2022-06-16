@@ -4,7 +4,7 @@ import { uuid } from 'utils/util'
 import { fontWeightOptions, fontStyleOptions, fontFamilyOptions, fontSizeOptions, DefaultTableCellStyle } from '../constants'
 import { ITableHeaderConfig } from './types'
 
-import { Icon, Row, Col, Modal, Input, Button, Radio, Select, Table, message, Tooltip } from 'antd'
+import { Icon, Row, Col, Modal, Input, Button, Radio, Select, Table, message, Tooltip, Checkbox } from 'antd'
 const ButtonGroup = Button.Group
 const RadioGroup = Radio.Group
 const RadioButton = Radio.Button
@@ -19,6 +19,7 @@ import stylesConfig from '../styles.less'
 interface IHeaderConfigModalProps {
   visible: boolean
   config: ITableHeaderConfig[]
+  validColumns: IDataParamSource[]
   onCancel: () => void
   onSave: (config: ITableHeaderConfig[]) => void
 }
@@ -29,6 +30,8 @@ interface IHeaderConfigModalStates {
   currentSelectedKeys: string[]
   mapHeader: { [key: string]: ITableHeaderConfig }
   mapHeaderParent: { [key: string]: ITableHeaderConfig }
+  styleChangeModalVisible: boolean
+  styleChangeDefaultConfig: Object
 }
 
 class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHeaderConfigModalStates> {
@@ -37,26 +40,129 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
 
   public constructor (props: IHeaderConfigModalProps) {
     super(props)
-    const localConfig = fromJS(props.config).toJS()
+    let localConfig = fromJS(props.config).toJS()
+    const { validColumns } = props
+    // 如果是第一次进来的时候，localConfig里的每一个元素的seq属性都是undefined，这时候采用默认的排序
+    // 如果是新增了维度或指标，说明loaclConfig里至少有一项是undefined，这时候采用默认的排序
+    // 如果是删除了维度或指标，说明有seq属性的字段数量和seq的最大值很可能不同（除非删除最后一项，删除最后一项时保持seq的顺序也没uanxu）
+    // 所以，只有当localConfig里的所有项都有seq属性，并且有seq属性的字段数量和seq最大值相等，才采用seq的这个排序
+    let seqCount = 0
+    let maxSeq = 0
+    localConfig.forEach((item) => {
+      if (item.seq) seqCount++
+      if (item.seq > maxSeq) maxSeq = item.seq
+    })
+    if (seqCount === localConfig.length && seqCount === maxSeq) {
+      // localConfig里的各项按照seq的值来排序
+      localConfig.sort(function (x, y) {return x.seq - y.seq})
+    } else {
+      // 否则清空所有seq值
+      localConfig.forEach((item, index) => {
+        delete localConfig[index].seq
+      })
+      // 并且按照validColumns里的顺序进行排序(即原始的按照指标维度拖拽框里的顺序排序)
+      const tempArr = []
+      validColumns.forEach((item) => {
+        for (let i = 0; i < localConfig.length; i++) {
+          if (item.name === localConfig[i].headerName) {
+            tempArr.push(localConfig[i])
+            break
+          }
+        }
+      })
+      for (let i = 0; i < localConfig.length; i++) {
+        if (localConfig[i].isGroup) {
+          tempArr.push(localConfig[i])
+        }
+      }
+      localConfig = tempArr
+    }
+    // 保存一个初始的localConfig，如果后面改变了顺序但是点击取消按钮，应该还原localConfig的顺序
+    if (localConfig && localConfig.length) this.initLocalConfig = JSON.parse(JSON.stringify(localConfig))
     const [mapHeader, mapHeaderParent] = this.getMapHeaderKeyAndConfig(localConfig)
     this.state = {
       localConfig,
       currentEditingConfig: null,
       mapHeader,
       mapHeaderParent,
-      currentSelectedKeys: []
+      currentSelectedKeys: [],
+      styleChangeModalVisible: false,
+      // 批量修改样式 弹框里的初始数据
+      styleChangeDefaultConfig: [{
+        style: {
+          backgroundColor: "transparent",
+          fontColor: "#666",
+          fontFamily: "PingFang SC",
+          fontSize: "12",
+          fontStyle: "normal",
+          fontWeight: "normal",
+          justifyContent: "flex-start"
+        }
+      }]
     }
   }
 
+  private initLocalConfig = []
+
   public componentWillReceiveProps (nextProps: IHeaderConfigModalProps) {
     if (nextProps.config === this.props.config) { return }
-    const localConfig = fromJS(nextProps.config).toJS()
+    let localConfig = fromJS(nextProps.config).toJS()
+    const { validColumns } = nextProps
+    // 如果是第一次进来的时候，localConfig里的每一个元素的seq属性都是undefined，这时候采用默认的排序
+    // 如果是新增了维度或指标，说明loaclConfig里至少有一项是undefined，这时候采用默认的排序
+    // 如果是删除了维度或指标，说明有seq属性的字段数量和seq的最大值很可能不同（除非删除最后一项，删除最后一项时保持seq的顺序也没uanxu）
+    // 所以，只有当localConfig里的所有项都有seq属性，并且有seq属性的字段数量和seq最大值相等，才采用seq的这个排序
+    let seqCount = 0
+    let maxSeq = 0
+    localConfig.forEach((item) => {
+      if (item.seq) seqCount++
+      if (item.seq > maxSeq) maxSeq = item.seq
+    })
+    if (seqCount === localConfig.length && seqCount === maxSeq) {
+      // localConfig里的各项按照seq的值来排序
+      localConfig.sort(function (x, y) {return x.seq - y.seq})
+    } else {
+      // 否则清空所有seq值
+      localConfig.forEach((item, index) => {
+        delete localConfig[index].seq
+      })
+      // 并且按照validColumns里的顺序进行排序(即原始的按照指标维度拖拽框里的顺序排序)
+      const tempArr = []
+      validColumns.forEach((item) => {
+        for (let i = 0; i < localConfig.length; i++) {
+          if (item.name === localConfig[i].headerName) {
+            tempArr.push(localConfig[i])
+            break
+          }
+        }
+      })
+      for (let i = 0; i < localConfig.length; i++) {
+        if (localConfig[i].isGroup) {
+          tempArr.push(localConfig[i])
+        }
+      }
+      localConfig = tempArr
+    }
+    // 点击弹框的保存后，会触发一次compontWillReceiveProps，可能是更新了顺序了，所以这里也要更新initLocalConfig
+    if (localConfig && localConfig.length) this.initLocalConfig = JSON.parse(JSON.stringify(localConfig))
     const [mapHeader, mapHeaderParent] = this.getMapHeaderKeyAndConfig(localConfig)
     this.setState({
       localConfig,
       mapHeader,
       mapHeaderParent,
-      currentSelectedKeys: []
+      currentSelectedKeys: [],
+      styleChangeModalVisible: false,
+      styleChangeDefaultConfig: [{
+        style: {
+          backgroundColor: "transparent",
+          fontColor: "#666",
+          fontFamily: "PingFang SC",
+          fontSize: "12",
+          fontStyle: "normal",
+          fontWeight: "normal",
+          justifyContent: "flex-start"
+        }
+      }]
     })
   }
 
@@ -174,7 +280,20 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
   }
 
   private cancel = () => {
-    this.props.onCancel()
+    const { localConfig } = this.state
+    // 因为可能改变了顺序，所以取消时要还原顺序(在表头设置中，localConfig的长度应该不会变)
+    const temp = []
+    this.initLocalConfig.forEach((item) => {
+      for (let i = 0; i < localConfig.length; i++) {
+        if (item.key === localConfig[i].key) {
+          temp.push(localConfig[i])
+          break
+        }
+      }
+    })
+    this.setState({
+      localConfig: temp
+    }, () => this.props.onCancel())
   }
 
   private save = () => {
@@ -200,7 +319,102 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
     const cb = (cursorConfig: ITableHeaderConfig) => {
       const isTarget = key === cursorConfig.key
       if (isTarget) {
+        // isTarget是用来判断现在是点的表格的哪一列
         cursorConfig.style[propName] = value
+        if (propName === 'hide') {
+          // 先要进行判断，除了该列，其他所有列至少有一列没有被隐藏，否则给与用户提示：“至少要显示一列数据”
+          let atLeastDisplayOneColumn = false
+          for(let i = 0; i < localConfig.length; i++) {
+            if (key !== localConfig[i].key) {
+              if (!localConfig[i].hide) {
+                atLeastDisplayOneColumn = true
+                break
+              }
+            }
+          }
+          if (atLeastDisplayOneColumn) {
+            cursorConfig['hide'] = cursorConfig['hide'] ? false : true
+          } else {
+            message.warning('至少要显示一列数据！')
+          }
+        }
+      }
+      return isTarget
+    }
+    localConfig.some((config) => this.traverseHeaderConfig(config, null, cb))
+    this.setState({
+      localConfig: [...localConfig]
+    })
+  }
+
+  // 批量修改样式 弹框里的样式修改
+  private styleChangeModalChange = (record: ITableHeaderConfig, propName) => (e) => {
+    const value = e.target ? e.target.value : e
+    const tmpObj = this.state.styleChangeDefaultConfig[0].style
+    tmpObj[propName] = value
+    this.setState({
+      styleChangeDefaultConfig: [{
+        style: tmpObj
+      }],
+    })
+  }
+
+  private openStyleChangeModal = () => {
+    // 初始化 + 打开弹框
+    this.setState({
+      styleChangeDefaultConfig: [{
+        style: {
+          backgroundColor: "transparent",
+          fontColor: "#666",
+          fontFamily: "PingFang SC",
+          fontSize: "12",
+          fontStyle: "normal",
+          fontWeight: "normal",
+          justifyContent: "flex-start"
+        }
+      }],
+      styleChangeModalVisible: true
+    })
+  }
+
+  // 交换数组两个元素的位置
+  private swapArray = (arr, index1, index2) => {
+    // arr[index1] = arr.splice(index2, 1, arr[index1])[0];
+
+    // 更换两项元素的seq值
+    const tempSeq = arr[index1].seq
+    arr[index1].seq = arr[index2].seq
+    arr[index2].seq = tempSeq
+
+    // 更换两项元素，这个切换本身是不会保存在数据中的，只是用于立即在页面上显示效果，真正的持久化的数据是各列的seq值，打开表头设置弹框时，根据seq值排序各列
+    // 但因为这个操作直接改变了localConfig里的数据（可以在子组件中直接改变父组件中的对象中的属性），所以这个改变即时不保存，在关闭弹框后也还是会保留，而上面的seq属性就不会
+    const tempItem = arr[index1]
+    arr[index1] = arr[index2]
+    arr[index2] = tempItem
+
+    return arr;
+ }
+
+  private goUpOrDown = (key, direction) => (e) => {
+    const { localConfig } = this.state
+    if (localConfig.length && !localConfig[0].seq) {
+      // 如果localConfig里面的seq是undefined的话，则给一个初始的顺序
+      localConfig.forEach((item, index) => {
+        localConfig[index].seq = index + 1
+      })
+    }
+    const cb = (cursorConfig: ITableHeaderConfig) => {
+      const isTarget = key === cursorConfig.key
+      if (isTarget) {
+        // 记录当前是哪一行要往上移一行
+        let index = 0
+        for (let i = 0; i < localConfig.length; i++) {
+          if (key === localConfig[i].key) {
+            index = i
+            break
+          }
+        }
+        this.swapArray(localConfig, direction === 'up' ? index - 1 : index + 1, index)
       }
       return isTarget
     }
@@ -299,8 +513,64 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
           ref={this.headerNameInput}
           className={styles.tableInput}
           defaultValue={currentEditingHeaderName}
+          onBlur={this.saveEditingHeaderName}
           onPressEnter={this.saveEditingHeaderName}
         />
+      )
+    }
+  }, {
+    title: '上移',
+    dataIndex: 'up',
+    key: 'up',
+    width: 60,
+    render: (_, record: ITableHeaderConfig) => {
+      const { localConfig } = this.state
+      const { key } = record
+      if (localConfig && localConfig.length && key !== localConfig[0].key) {
+        // 说明此时不是首行
+        return (
+          <Row type="flex" justify="center">
+            <Col>
+              <Icon type="arrow-up" style={{fontSize: '18px', cursor: 'pointer'}} onClick={this.goUpOrDown(key, 'up')} />
+            </Col>
+          </Row>
+        )
+      }
+      return null
+    }
+  }, {
+    title: '下移',
+    dataIndex: 'down',
+    key: 'down',
+    width: 60,
+    render: (_, record: ITableHeaderConfig) => {
+      const { localConfig } = this.state
+      const { key } = record
+      if (localConfig && localConfig.length && key !== localConfig[localConfig.length - 1].key) {
+        // 说明此时不是最后一行
+        return (
+          <Row type="flex" justify="center">
+            <Col>
+              <Icon type="arrow-down" style={{fontSize: '18px', cursor: 'pointer'}} onClick={this.goUpOrDown(key, 'down')} />
+            </Col>
+          </Row>
+        )
+      }
+      return null
+    }
+  }, {
+    title: '是否隐藏',
+    dataIndex: 'hide',
+    key: 'hide',
+    width: 80,
+    render: (_, record: ITableHeaderConfig) => {
+      const { hide } = record
+      return (
+        <Row type="flex" justify="center">
+          <Col>
+            <Checkbox checked={hide} onChange={this.propChange(record, 'hide')}></Checkbox>
+          </Col>
+        </Row>
       )
     }
   }, {
@@ -407,6 +677,110 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
     }
   }]
 
+  private styleChangeColumns: Array<ColumnProps<any>> = [{
+    title: '背景色',
+    dataIndex: 'backgroundColor',
+    key: 'backgroundColor',
+    width: 60,
+    render: (_, record: ITableHeaderConfig) => {
+      const { style } = record
+      const { backgroundColor } = style
+      return (
+        <Row type="flex" justify="center">
+          <Col>
+            <ColorPicker
+              className={stylesConfig.color}
+              value={backgroundColor}
+              onChange={this.styleChangeModalChange(record, 'backgroundColor')}
+            />
+          </Col>
+        </Row>
+      )
+    }
+  }, {
+    title: '字体',
+    dataIndex: 'font',
+    key: 'font',
+    width: 285,
+    render: (_, record: ITableHeaderConfig) => {
+      const { style } = record
+      const { fontSize, fontFamily, fontColor, fontStyle, fontWeight } = style
+      return (
+        <>
+          <Row gutter={8} type="flex" align="middle" className={stylesConfig.rowBlock}>
+            <Col span={14}>
+              <Select
+                size="small"
+                className={stylesConfig.colControl}
+                placeholder="字体"
+                value={fontFamily}
+                onChange={this.styleChangeModalChange(record, 'fontFamily')}
+              >
+                {fontFamilyOptions}
+              </Select>
+            </Col>
+            <Col span={6}>
+              <Select
+                size="small"
+                className={stylesConfig.colControl}
+                placeholder="文字大小"
+                value={fontSize}
+                onChange={this.styleChangeModalChange(record, 'fontSize')}
+              >
+                {fontSizeOptions}
+              </Select>
+            </Col>
+            <Col span={4}>
+              <ColorPicker
+                className={stylesConfig.color}
+                value={fontColor}
+                onChange={this.styleChangeModalChange(record, 'fontColor')}
+              />
+            </Col>
+          </Row>
+          <Row gutter={8} type="flex" align="middle" className={stylesConfig.rowBlock}>
+            <Col span={12}>
+              <Select
+                size="small"
+                className={stylesConfig.colControl}
+                value={fontStyle}
+                onChange={this.styleChangeModalChange(record, 'fontStyle')}
+              >
+                {fontStyleOptions}
+              </Select>
+            </Col>
+            <Col span={12}>
+              <Select
+                size="small"
+                className={stylesConfig.colControl}
+                value={fontWeight}
+                onChange={this.styleChangeModalChange(record, 'fontWeight')}
+              >
+                {fontWeightOptions}
+              </Select>
+            </Col>
+          </Row>
+        </>
+      )
+    }
+  }, {
+    title: '对齐',
+    dataIndex: 'justifyContent',
+    key: 'justifyContent',
+    width: 180,
+    render: (_, record: ITableHeaderConfig) => {
+      const { style } = record
+      const { justifyContent } = style
+      return (
+        <RadioGroup size="small" value={justifyContent} onChange={this.styleChangeModalChange(record, 'justifyContent')}>
+          <RadioButton value="flex-start">左对齐</RadioButton>
+          <RadioButton value="center">居中</RadioButton>
+          <RadioButton value="flex-end">右对齐</RadioButton>
+        </RadioGroup>
+      )
+    }
+  }]
+
   private modalFooter = [(
     <Button
       key="cancel"
@@ -439,9 +813,40 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
     // })
   }
 
+  // 点击 批量修改样式 弹框的OK
+  private styleChangeOk = () => {
+    const tempConfig = this.state.localConfig
+    tempConfig.forEach((config, index) => {
+      if (this.state.currentSelectedKeys.includes(config.key)) {
+        tempConfig[index].style = this.state.styleChangeDefaultConfig[0].style
+      }
+      this.setChildrenStyle(config)
+    })
+    this.setState({
+      localConfig: tempConfig,
+      styleChangeModalVisible: false
+    })
+  }
+
+  private setChildrenStyle = (item) => {
+    if (Array.isArray(item.children) && item.children.length > 0) {
+      for (let i = 0; i < item.children.length; i++) {
+        if (this.state.currentSelectedKeys.includes(item.children[i].key)) {
+          item.children[i].style = this.state.styleChangeDefaultConfig[0].style
+        }
+        if (Array.isArray(item.children[i].children) && item.children[i].children.length > 0) this.setChildrenStyle(item.children[i])
+      }
+    }
+  }
+
+  // 点击 批量修改样式 弹框的Cancel
+  private styleChangeCancel = () => {
+    this.setState({styleChangeModalVisible: false})
+  }
+
   public render () {
     const { visible } = this.props
-    const { localConfig, currentSelectedKeys } = this.state
+    const { localConfig, currentSelectedKeys, styleChangeDefaultConfig } = this.state
     const rowSelection: TableRowSelection<ITableHeaderConfig> = {
       ...this.tableRowSelection,
       selectedRowKeys: currentSelectedKeys
@@ -463,16 +868,31 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
       >
         <div className={stylesConfig.rows}>
           <Row gutter={8} className={stylesConfig.rowBlock} type="flex" align="middle">
-            <Col span={4}>
+            <Col span={6}>
               <Button type="primary" onClick={this.mergeColumns}>合并</Button>
+              <Button type="primary" style={{marginLeft: '10px'}} disabled={currentSelectedKeys.length <= 0} onClick={this.openStyleChangeModal}>批量修改样式</Button>
             </Col>
-            <Col span={19}>
-              <Row gutter={8} type="flex" justify="end" align="middle">
+            <Modal
+              title="批量样式修改"
+              visible={this.state.styleChangeModalVisible}
+              onOk={this.styleChangeOk}
+              onCancel={this.styleChangeCancel}
+              width={800}
+            >
+              <Table
+                bordered={true}
+                pagination={false}
+                columns={this.styleChangeColumns}
+                dataSource={styleChangeDefaultConfig}
+              />
+            </Modal>
+            <Col span={17}>
+              {/* <Row gutter={8} type="flex" justify="end" align="middle">
                 <ButtonGroup>
                   <Button onClick={this.moveUp}><Icon type="arrow-up" />上移</Button>
                   <Button onClick={this.moveDown}>下移<Icon type="arrow-down" /></Button>
                 </ButtonGroup>
-              </Row>
+              </Row> */}
             </Col>
             <Col span={1}>
               <Row type="flex" justify="end">
@@ -488,6 +908,7 @@ class HeaderConfigModal extends React.PureComponent<IHeaderConfigModalProps, IHe
         <div className={wrapTableCls}>
           <Row gutter={8} className={stylesConfig.rowBlock}>
             <Col span={24}>
+              {/* 这个Table的rowSelection逻辑是，父和子节点是单独被选中，如果选中父节点，子节点不会被同时联动选中，各个节点的选中逻辑是单独的 */}
               <Table
                 bordered={true}
                 pagination={false}

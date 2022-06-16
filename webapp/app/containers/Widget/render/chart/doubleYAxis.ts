@@ -70,6 +70,10 @@ export default function (chartProps: IChartProps, drillOptions) {
   const {
     yAxisLeft,
     yAxisRight,
+    leftMin,
+    leftMax,
+    rightMin,
+    rightMax,
     yAxisSplitNumber,
     dataZoomThreshold
   } = doubleYAxis
@@ -115,7 +119,6 @@ export default function (chartProps: IChartProps, drillOptions) {
     ? getAixsMetrics('metrics', metrics, data, stack, labelOption, selectedItems, {key: 'yAxisLeft', type: yAxisLeft})
       .concat(getAixsMetrics('secondaryMetrics', secondaryMetrics, data, stack, labelOption, selectedItems, {key: 'yAxisRight', type: yAxisRight}))
     : getAixsMetrics('metrics', metrics, data, stack, labelOption, selectedItems, {key: 'yAxisLeft', type: yAxisLeft})
-
   const seriesObj = {
     series: seriesData.map((series) => {
       if (series.type === 'line') {
@@ -143,19 +146,42 @@ export default function (chartProps: IChartProps, drillOptions) {
     }
   }
 
-  let leftMax
-  let rightMax
+  let leftMaxValue
+  let rightMaxValue
 
-  if (stack) {
-    leftMax = metrics.reduce((num, m) => num + Math.max(...data.map((d) => d[`${m.agg}(${decodeMetricName(m.name)})`])), 0)
-    rightMax = secondaryMetrics.reduce((num, m) => num + Math.max(...data.map((d) => d[`${m.agg}(${decodeMetricName(m.name)})`])), 0)
+  if (leftMax) {
+    leftMaxValue = leftMax
   } else {
-    leftMax = Math.max(...metrics.map((m) => Math.max(...data.map((d) => d[`${m.agg}(${decodeMetricName(m.name)})`]))))
-    rightMax = Math.max(...secondaryMetrics.map((m) => Math.max(...data.map((d) => d[`${m.agg}(${decodeMetricName(m.name)})`]))))
+    if (stack) {
+      leftMaxValue = metrics.reduce((num, m) => num + Math.max(...data.map((d) => d[`${m.agg}(${decodeMetricName(m.name)})`])), 0)
+    } else {
+      leftMaxValue = Math.max(...metrics.map((m) => {
+          return Math.max(...data.map((d) => {
+            return typeof d[`${m.agg}(${decodeMetricName(m.name)})`] === 'number' ? d[`${m.agg}(${decodeMetricName(m.name)})`] : 0
+          }
+        ))}
+      ))
+    }
+  }
+  if (rightMax) {
+    rightMaxValue = rightMax
+  } else {
+    if (stack) {
+      rightMaxValue = secondaryMetrics.reduce((num, m) => num + Math.max(...data.map((d) => d[`${m.agg}(${decodeMetricName(m.name)})`])), 0)
+    } else {
+      rightMaxValue = Math.max(...secondaryMetrics.map((m) => {
+        return Math.max(...data.map((d) => {
+            return typeof d[`${m.agg}(${decodeMetricName(m.name)})`] === 'number' ? d[`${m.agg}(${decodeMetricName(m.name)})`] : 0
+          }
+        ))
+      }))
+    }
   }
 
-  const leftInterval = getYaxisInterval(leftMax, (yAxisSplitNumber - 1))
-  const rightInterval = rightMax > 0 ? getYaxisInterval(rightMax, (yAxisSplitNumber - 1)) : leftInterval
+  const leftInterval = getYaxisInterval(leftMaxValue, (yAxisSplitNumber - 1))
+  // 右边根据左边的比例来
+  const rightInterval = rightMaxValue * leftInterval / leftMaxValue
+  // const rightInterval = rightMaxValue > 0 ? getYaxisInterval(rightMaxValue, (yAxisSplitNumber - 1)) : leftInterval
 
   const inverseOption = xAxis.inverse ? { inverse: true } : null
 
@@ -190,8 +216,10 @@ export default function (chartProps: IChartProps, drillOptions) {
       {
         type: 'value',
         key: 'yAxisIndex0',
-        min: 0,
-        max: rightMax > 0 ? rightInterval * (yAxisSplitNumber - 1) : leftInterval * (yAxisSplitNumber - 1),
+        min: rightMin ? rightMin : 0,
+        max: rightMaxValue,
+        // 不能直接用这个splitNumber，因为根据echarts的机制，这个分割段数只是个预估值，最后实际显示的段数会在这个基础上根据分割后坐标轴刻度显示的易读程度作调整。
+        // splitNumber: yAxisSplitNumber,
         interval: rightInterval,
         position: 'right',
         ...getDoubleYAxis(doubleYAxis)
@@ -199,8 +227,8 @@ export default function (chartProps: IChartProps, drillOptions) {
       {
         type: 'value',
         key: 'yAxisIndex1',
-        min: 0,
-        max: leftInterval * (yAxisSplitNumber - 1),
+        min: leftMin ? leftMin : 0,
+        max: leftMaxValue,
         interval: leftInterval,
         position: 'left',
         ...getDoubleYAxis(doubleYAxis)
@@ -210,8 +238,12 @@ export default function (chartProps: IChartProps, drillOptions) {
     ...gridOptions,
     ...legendOption
   }
-
   return option
+}
+
+function getDefaultValue (value, defaultValue) {
+  if (typeof value === 'number' && !isNaN(value) && value !== Infinity && value !== -Infinity) return value
+  return defaultValue
 }
 
 export function getAixsMetrics (type, axisMetrics, data, stack, labelOption, selectedItems, axisPosition?: {key: string, type: string}) {

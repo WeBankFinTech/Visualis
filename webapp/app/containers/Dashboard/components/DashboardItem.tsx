@@ -89,6 +89,7 @@ interface IDashboardItemProps {
   onGetControlOptions: OnGetControlOptions
   monitoredSyncDataAction?: () => any
   monitoredSearchDataAction?: () => any
+  executeQueryFailed?: boolean
 }
 
 interface IDashboardItemStates {
@@ -141,7 +142,7 @@ export class DashboardItem extends React.PureComponent<IDashboardItemProps, IDas
     const { itemId, widget, view, onGetChartData, container, datasource } = this.props
     const { cacheWidgetProps, cacheWidgetId } = this.state
     const widgetProps = JSON.parse(widget.config)
-    const { autoLoadData } = widgetProps
+    const { autoLoadData, model } = widgetProps
     const pagination = this.getPagination(widgetProps, datasource)
     const nativeQuery = this.getNativeQuery(widgetProps)
     if (container === 'share') {
@@ -154,7 +155,7 @@ export class DashboardItem extends React.PureComponent<IDashboardItemProps, IDas
       widgetProps,
       pagination,
       nativeQuery,
-      model: view.model
+      model: view && view.model ? view.model : model
     })
     if (!cacheWidgetProps) {
       this.setState({
@@ -231,16 +232,17 @@ export class DashboardItem extends React.PureComponent<IDashboardItemProps, IDas
     const { table } = chartStyles
     if (!table) { return null }
 
-    const { withPaging, pageSize } = table
+    const { withPaging, pageSize, pageNo, totalCount } = widgetProps.pagination
     const pagination: IPaginationParams = {
       withPaging,
       pageSize: 0,
       pageNo: 0,
-      totalCount: datasource.totalCount || 0
+      totalCount: 0
     }
     if (pagination.withPaging) {
-      pagination.pageSize = datasource.pageSize || +pageSize
-      pagination.pageNo = datasource.pageNo || 1
+      pagination.pageSize = datasource.pageSize || pageSize
+      pagination.pageNo = datasource.pageNo || pageNo
+      pagination.totalCount = datasource.totalCount || totalCount
     }
     return pagination
   }
@@ -968,6 +970,11 @@ export class DashboardItem extends React.PureComponent<IDashboardItemProps, IDas
       />
     )
 
+    // excel类型接的visualis的data
+    const visualisData = {
+      viewId: this.props.widget.viewId,
+      requestParams: widgetProps.query
+    }
 
     return (
       <div className={gridItemClass} ref={(f) => this.container = f}>
@@ -981,9 +988,9 @@ export class DashboardItem extends React.PureComponent<IDashboardItemProps, IDas
             {}
           </div>
           <div className={styles.tools}>
-            <Tooltip title="同步数据">
+            {/* <Tooltip title="同步数据">
               {!loading && <Icon type="reload" onClick={this.onSyncBizdatas} />}
-            </Tooltip>
+            </Tooltip> */}
             {widgetButton}
             <Tooltip title="全屏">
               <Icon type="arrows-alt" onClick={this.onFullScreen} className={styles.fullScreen} />
@@ -1045,7 +1052,9 @@ export class DashboardItem extends React.PureComponent<IDashboardItemProps, IDas
               whichDataDrillBrushed={this.state.whichDataDrillBrushed}
               onSelectChartsItems={this.selectChartsItems}
               selectedItems={this.props.selectedItems}
+              executeQueryFailed={this.props.executeQueryFailed}
             //  onHideDrillPanel={this.onHideDrillPanel}
+              visualisData={visualisData}
             />
             {dataDrillHistory}
           </div>

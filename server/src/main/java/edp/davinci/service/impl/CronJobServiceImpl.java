@@ -208,8 +208,7 @@ public class CronJobServiceImpl implements CronJobService {
             quartzUtils.removeJob(cronJob);
             cronJob.setJobStatus(CronJobStatusEnum.FAILED.getStatus());
             cronJobMapper.update(cronJob);
-
-            e.printStackTrace();
+            log.error("Failed to modify cron job: ", e);
         }
 
         return true;
@@ -331,7 +330,7 @@ public class CronJobServiceImpl implements CronJobService {
             try {
                 countDownLatch.await(15L, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                log.error("Failed to stop cron job: ", e);
             } finally {
                 countDownLatch.countDown();
             }
@@ -348,7 +347,7 @@ public class CronJobServiceImpl implements CronJobService {
                 cronJob.setJobStatus(CronJobStatusEnum.FAILED.getStatus());
                 cronJobMapper.update(cronJob);
 
-                e.printStackTrace();
+                log.error("Failed to stop cron job: ", e);
                 return cronJob;
             }
         }

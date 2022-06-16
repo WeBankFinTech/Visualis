@@ -39,12 +39,12 @@ export const LinkageOperatorTypes = [
 export const TableCellConditionOperatorTypes = {
   [OperatorTypes.Equal]: ['string', 'geoCountry', 'geoProvince', 'geoCity', 'number', 'date'],
   [OperatorTypes.NotEqual]: ['string', 'geoCountry', 'geoProvince', 'geoCity', 'number', 'date'],
-  [OperatorTypes.LessThan]: ['number', 'date'],
-  [OperatorTypes.GreaterThan]: ['number', 'date'],
-  [OperatorTypes.LessThanOrEqual]: ['number', 'date'],
-  [OperatorTypes.GreaterThanOrEqual]: ['number', 'date'],
-  [OperatorTypes.Contain]: ['string', 'geoCountry', 'geoProvince', 'geoCity'],
-  [OperatorTypes.Between]: ['number', 'date'],
+  [OperatorTypes.LessThan]: ['string', 'number', 'date'],
+  [OperatorTypes.GreaterThan]: ['string', 'number', 'date'],
+  [OperatorTypes.LessThanOrEqual]: ['string', 'number', 'date'],
+  [OperatorTypes.GreaterThanOrEqual]: ['string', 'number', 'date'],
+  [OperatorTypes.Contain]: ['geoCountry', 'geoProvince', 'geoCity'],
+  [OperatorTypes.Between]: ['string', 'number', 'date'],
   [OperatorTypes.In]: ['string', 'geoCountry', 'geoProvince', 'geoCity', 'number', 'date']
 }
 

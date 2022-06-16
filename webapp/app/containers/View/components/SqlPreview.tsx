@@ -6,10 +6,11 @@ import { Table } from 'antd'
 import { ColumnProps, TableProps } from 'antd/lib/table'
 import { PaginationConfig } from 'antd/lib/pagination'
 import Styles from '../View.less'
-
+import pivotStyles from '../../Widget/components/Pivot/Pivot.less'
 import { IExecuteSqlResponse, ISqlColumn } from '../types'
 import { DEFAULT_SQL_PREVIEW_PAGE_SIZE, SQL_PREVIEW_PAGE_SIZE_OPTIONS } from '../constants'
 import { getTextWidth } from 'utils/util'
+import WaterMask from '../../Widget/components/WaterMask/index'
 
 export interface ISqlPreviewProps {
   loading: boolean
@@ -109,19 +110,26 @@ export class SqlPreview extends React.PureComponent<ISqlPreviewProps, ISqlPrevie
       y: this.state.tableBodyHeight
     }
 
+    const username = localStorage.getItem('username');
+    const waterMaskProps = {
+      text: `${username}`,
+    }
+
     return (
-      <Table
-        ref={this.table}
-        className={Styles.sqlPreview}
-        bordered
-        size={size}
-        pagination={paginationConfig}
-        dataSource={resultList}
-        columns={tableColumns}
-        scroll={scroll}
-        loading={loading}
-        rowKey={rowKey}
-      />
+      <div className={pivotStyles.wrapper} style={{overflowY: 'auto', maxHeight: '100%'}}>
+        <WaterMask {...waterMaskProps} />
+        <Table
+          ref={this.table}
+          className={Styles.sqlPreview}
+          bordered
+          size={size}
+          pagination={paginationConfig}
+          dataSource={resultList}
+          columns={tableColumns}
+          loading={loading}
+          rowKey={rowKey}
+        />
+      </div>
     )
   }
 

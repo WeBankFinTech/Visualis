@@ -57,6 +57,7 @@ interface ILayerItemProps {
   onResizeLayer?: (itemId: number, deltaSize: IDeltaSize) => void
   onResizeLayerStop?: (itemId: number, deltaSize: IDeltaSize) => void
   onEditWidget?: (itemId: number, widgetId: number) => void
+  executeQueryFailed: boolean
 }
 
 interface ILayerItemStates {
@@ -118,17 +119,17 @@ export class LayerItem extends React.PureComponent<ILayerItemProps, ILayerItemSt
     const { chartStyles } = widgetProps
     const { table } = chartStyles
     if (!table) { return null }
-
-    const { withPaging, pageSize } = table
+    const { withPaging, pageSize, pageNo, totalCount } = widgetProps.pagination
     const pagination: IPaginationParams = {
       withPaging,
       pageSize: 0,
       pageNo: 0,
-      totalCount: datasource.totalCount || 0
+      totalCount: 0
     }
     if (pagination.withPaging) {
-      pagination.pageSize = datasource.pageSize || +pageSize
-      pagination.pageNo = datasource.pageNo || 1
+      pagination.pageSize = datasource.pageSize || pageSize
+      pagination.pageNo = datasource.pageNo || pageNo
+      pagination.totalCount = datasource.totalCount || totalCount
     }
     return pagination
   }
@@ -184,14 +185,17 @@ export class LayerItem extends React.PureComponent<ILayerItemProps, ILayerItemSt
   }
 
   public componentDidUpdate () {
-    const rect = (findDOMNode(this.refLayer) as Element).getBoundingClientRect()
-    const { top, height, right } = rect
-    const [ x, y ] = this.state.layerTooltipPosition
-    const [newX, newY] = [top + height / 2, right]
-    if (x !== newX || y !== newY) {
-      this.setState({
-        layerTooltipPosition: [newX, newY]
-      })
+    const element = findDOMNode(this.refLayer) as Element
+    if (element) {
+      const rect = element.getBoundingClientRect()
+      const { top, height, right } = rect
+      const [ x, y ] = this.state.layerTooltipPosition
+      const [newX, newY] = [top + height / 2, right]
+      if (x !== newX || y !== newY) {
+        this.setState({
+          layerTooltipPosition: [newX, newY]
+        })
+      }
     }
   }
 
@@ -238,7 +242,6 @@ export class LayerItem extends React.PureComponent<ILayerItemProps, ILayerItemSt
     this.setState({
       mousePos: [e.pageX, e.pageY]
     })
-    console.log('drag starts')
     return e.target !== data.node.lastElementChild
   }
 
@@ -251,7 +254,6 @@ export class LayerItem extends React.PureComponent<ILayerItemProps, ILayerItemSt
     if (mousePos[0] === e.pageX && mousePos[1] === e.pageY) {
       return
     }
-    console.log('drag stops')
     onDragLayerStop(itemId, data)
   }
 
@@ -275,8 +277,11 @@ export class LayerItem extends React.PureComponent<ILayerItemProps, ILayerItemSt
 
   private onResizeStop = (e, { size }) => {
     e.stopPropagation()
+    // prevWidth和prevHeight是这个layer拖拽前的长宽，不是widget的
     const { width: prevWidth, height: prevHeight } = this.state.layerParams
+    // size里的width和height是这个layer拖拽后的长宽
     const { width, height } = size
+    // 需要根据前后的值算出变动的长宽
     const delta = {
       deltaWidth:  width - prevWidth,
       deltaHeight: height - prevHeight
@@ -334,7 +339,8 @@ export class LayerItem extends React.PureComponent<ILayerItemProps, ILayerItemSt
       renderType,
       interactId,
       onCheckTableInteract,
-      onDoTableInteract
+      onDoTableInteract,
+      executeQueryFailed
     } = this.props
     const {
       layerParams,
@@ -351,6 +357,11 @@ export class LayerItem extends React.PureComponent<ILayerItemProps, ILayerItemSt
     const isLoading = !pure && loading
     const data = datasource.resultList || []
 
+    // excel类型接的visualis的data
+    const visualisData = {
+      viewId: this.props.widget.viewId,
+      requestParams: widgetProps.query
+    }
     return (
       <div
         ref={(f) => this.refLayer = f}
@@ -375,6 +386,8 @@ export class LayerItem extends React.PureComponent<ILayerItemProps, ILayerItemSt
             renderType={renderType}
             model={model}
             onPaginationChange={this.paginationChange}
+            executeQueryFailed={executeQueryFailed}
+            visualisData={visualisData}
           />)
         )}
       </div>
@@ -492,6 +505,7 @@ export class LayerItem extends React.PureComponent<ILayerItemProps, ILayerItemSt
 
     const labelStyle: React.CSSProperties = {
       wordBreak: 'break-all',
+      whiteSpace: 'pre',
       overflow: 'hidden',
       fontWeight,
       fontFamily,
@@ -734,6 +748,7 @@ export interface ILayerParams {
   paddingLeft: number
   paddingRight: number
   contentText: string
+  displayMode: 'dynamic' | 'static'
 
   src: string
   controlSetting: string[]

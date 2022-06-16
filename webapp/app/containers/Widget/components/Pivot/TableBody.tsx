@@ -63,9 +63,7 @@ export class TableBody extends React.Component<ITableBodyProps, ITableBodyState>
     }
   }
   private gridCutting = (width, height, chartGrid) => {
-    // console.log(chartGrid)
     const chunks = this.horizontalCutting(height, chartGrid)
-    // console.log(chunks)
     chunks.forEach((chunk) => {
       chunk.data = this.verticalCutting(width, chunk.data)
     })
@@ -232,6 +230,7 @@ export class TableBody extends React.Component<ITableBodyProps, ITableBodyState>
 
     if (dimetionAxis) {
       let metricAxisCount = 0
+
       if (colKeys.length && rowKeys.length) {
         let chartRowLineRecorder: IChartUnit[][] = []
 
@@ -548,6 +547,7 @@ export class TableBody extends React.Component<ITableBodyProps, ITableBodyState>
           )
         })
       } else if (colKeys.length) {
+
         const line = []
         tableWidth = 0
         colKeys.forEach((ck) => {

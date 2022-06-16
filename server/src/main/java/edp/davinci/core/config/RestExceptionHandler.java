@@ -50,7 +50,6 @@ public class RestExceptionHandler {
     @ResponseBody
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     private ResultMap commonExceptionHandler(HttpServletRequest request, Exception e) {
-        e.printStackTrace();
         log.error(e.getMessage());
         return new ResultMap(tokenUtils).failAndRefreshToken(request).message(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
     }
@@ -59,7 +58,6 @@ public class RestExceptionHandler {
     @ResponseBody
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     private ResultMap serverExceptionHandler(HttpServletRequest request, Exception e) {
-        e.printStackTrace();
         log.error(e.getMessage());
         return new ResultMap(tokenUtils).failAndRefreshToken(request).message(e.getMessage());
     }

@@ -22,6 +22,7 @@ package edp.davinci.controller;
 import com.alibaba.druid.util.StringUtils;
 import edp.core.annotation.AuthIgnore;
 import edp.core.annotation.CurrentUser;
+import edp.core.annotation.MethodLog;
 import edp.core.enums.HttpCodeEnum;
 import edp.davinci.common.controller.BaseController;
 import edp.davinci.core.common.Constants;
@@ -29,10 +30,6 @@ import edp.davinci.core.common.ResultMap;
 import edp.davinci.dto.userDto.*;
 import edp.davinci.model.User;
 import edp.davinci.service.UserService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,17 +38,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import springfox.documentation.annotations.ApiIgnore;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.List;
 
 
-@Api(value = "/users", tags = "users", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-@ApiResponses(@ApiResponse(code = 404, message = "user not found"))
 @RestController
-@RequestMapping(value = Constants.BASE_API_PATH + "/users", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+@RequestMapping(value = Constants.BASE_API_PATH + "/users", produces = MediaType.APPLICATION_JSON_VALUE)
 @Slf4j
 public class UserController extends BaseController {
 
@@ -65,10 +59,10 @@ public class UserController extends BaseController {
      * @param bindingResult
      * @return
      */
-    @ApiOperation(value = "insert user")
+    @MethodLog
     @AuthIgnore
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity regist(@Valid @RequestBody UserRegist userRegist, @ApiIgnore BindingResult bindingResult) {
+    public ResponseEntity regist(@Valid @RequestBody UserRegist userRegist, BindingResult bindingResult) {
 
         if (bindingResult.hasErrors()) {
             ResultMap resultMap = new ResultMap().fail().message(bindingResult.getFieldErrors().get(0).getDefaultMessage());
@@ -86,7 +80,7 @@ public class UserController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "active user")
+    @MethodLog
     @AuthIgnore
     @PostMapping(value = "/active/{token}")
     public ResponseEntity activate(@PathVariable String token,
@@ -101,8 +95,7 @@ public class UserController extends BaseController {
             ResultMap resultMap = userService.activateUserNoLogin(token, request);
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
+            log.error("user active error: " + e);
             return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
         }
     }
@@ -144,11 +137,11 @@ public class UserController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "user active sendmail")
+    @MethodLog
     @PostMapping(value = "/sendmail", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity sendMail(@Valid @RequestBody SendMail sendMail,
-                                   @ApiIgnore BindingResult bindingResult,
-                                   @ApiIgnore @CurrentUser User user,
+                                   BindingResult bindingResult,
+                                   @CurrentUser User user,
                                    HttpServletRequest request) {
 
         if (bindingResult.hasErrors()) {
@@ -169,11 +162,11 @@ public class UserController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "update user info", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity putUser(@PathVariable Long id,
                                   @RequestBody UserPut userPut,
-                                  @ApiIgnore @CurrentUser User user,
+                                  @CurrentUser User user,
                                   HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid user id");
@@ -198,12 +191,12 @@ public class UserController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "change user password", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PutMapping(value = "/{id}/changepassword", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity changeUserPassword(@PathVariable Long id,
                                              @Valid @RequestBody ChangePassword changePassword,
-                                             @ApiIgnore BindingResult bindingResult,
-                                             @ApiIgnore @CurrentUser User user,
+                                             BindingResult bindingResult,
+                                             @CurrentUser User user,
                                              HttpServletRequest request) {
 
         if (invalidId(id)) {
@@ -224,8 +217,7 @@ public class UserController extends BaseController {
             ResultMap resultMap = userService.changeUserPassword(user, changePassword.getOldPassword(), changePassword.getPassword(), request);
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
+            log.error("change password error: " + e);
             return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
         }
     }
@@ -239,11 +231,11 @@ public class UserController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "upload avatar")
+    @MethodLog
     @PostMapping(value = "/{id}/avatar")
     public ResponseEntity uploadAvatar(@PathVariable Long id,
                                        @RequestParam("file") MultipartFile file,
-                                       @ApiIgnore @CurrentUser User user,
+                                       @CurrentUser User user,
                                        HttpServletRequest request) {
 
         if (invalidId(id)) {
@@ -265,8 +257,7 @@ public class UserController extends BaseController {
             ResultMap resultMap = userService.uploadAvatar(user, file, request);
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
+            log.error("avatar user error: " + e);
             return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
         }
     }
@@ -279,11 +270,11 @@ public class UserController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get users by keyword")
+    @MethodLog
     @GetMapping
     public ResponseEntity getUsers(@RequestParam("keyword") String keyword,
                                    @RequestParam(value = "orgId", required = false) Long orgId,
-                                   @ApiIgnore @CurrentUser User user,
+                                   @CurrentUser User user,
                                    HttpServletRequest request) {
         if (StringUtils.isEmpty(keyword)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("keyword can not EMPTY");
@@ -300,10 +291,10 @@ public class UserController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get user profile")
+    @MethodLog
     @GetMapping("/profile/{id}")
     public ResponseEntity getUser(@PathVariable Long id,
-                                  @ApiIgnore @CurrentUser User user,
+                                  @CurrentUser User user,
                                   HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid user id");
@@ -313,8 +304,7 @@ public class UserController extends BaseController {
             ResultMap resultMap = userService.getUserProfile(id, user, request);
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
+            log.error("search user error: " + e);
             return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
         }
     }

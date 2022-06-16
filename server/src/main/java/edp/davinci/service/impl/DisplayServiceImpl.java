@@ -21,11 +21,13 @@ package edp.davinci.service.impl;
 
 import com.alibaba.druid.util.StringUtils;
 import com.alibaba.fastjson.JSONObject;
+import com.webank.wedatasphere.dss.visualis.auth.ProjectAuth;
 import edp.core.exception.NotFoundException;
 import edp.core.exception.ServerException;
 import edp.core.exception.UnAuthorizedExecption;
 import edp.core.utils.CollectionUtils;
 import edp.core.utils.FileUtils;
+import edp.davinci.common.utils.ComponentFilterUtils;
 import edp.davinci.core.common.Constants;
 import edp.davinci.core.enums.LogNameEnum;
 import edp.davinci.core.enums.UserPermissionEnum;
@@ -76,6 +78,10 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
 
     @Autowired
     private RelRoleDisplaySlideWidgetMapper relRoleDisplaySlideWidgetMapper;
+
+
+    @Autowired
+    private ProjectAuth projectAuth;
 
     @Override
     public synchronized boolean isExist(String name, Long id, Long projectId) {
@@ -208,6 +214,10 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
             return true;
         }
 
+        if(!projectAuth.isPorjectOwner(displayWithProject.getProjectId(), user.getId())) {
+            throw new UnAuthorizedExecption("current user has no permission.");
+        }
+
         ProjectDetail projectDetail = projectService.getProjectDetail(displayWithProject.getProjectId(), user, false);
         ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
 
@@ -264,6 +274,11 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
             throw new NotFoundException("display is not found");
         }
 
+
+        if(!projectAuth.isPorjectOwner(display.getProjectId(), user.getId())) {
+            throw new UnAuthorizedExecption("current user has no permission.");
+        }
+
         ProjectPermission projectPermission = projectService.getProjectPermission(projectService.getProjectDetail(display.getProjectId(), user, false), user);
 
         List<Long> disableDisplays = getDisableVizs(user.getId(), display.getProjectId(), null, VizEnum.DISPLAY);
@@ -309,6 +324,10 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
         Display display = displayMapper.getById(displayUpdate.getId());
         if (null == display) {
             throw new NotFoundException("display is not found");
+        }
+
+        if(!projectAuth.isPorjectOwner(display.getProjectId(), user.getId())) {
+            throw new UnAuthorizedExecption("current user has no permission.");
         }
 
         ProjectDetail projectDetail = projectService.getProjectDetail(display.getProjectId(), user, false);
@@ -380,6 +399,10 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
             throw new NotFoundException("display is not found");
         }
 
+        if(!projectAuth.isPorjectOwner(display.getProjectId(), user.getId())) {
+            throw new UnAuthorizedExecption("current user has no permission.");
+        }
+
         ProjectPermission projectPermission = projectService.getProjectPermission(projectService.getProjectDetail(display.getProjectId(), user, false), user);
 
         List<Long> disableDisplays = getDisableVizs(user.getId(), display.getProjectId(), null, VizEnum.DISPLAY);
@@ -435,6 +458,10 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
         Display display = displayMapper.getById(displayId);
         if (null == display) {
             throw new NotFoundException("display is not found");
+        }
+
+        if(!projectAuth.isPorjectOwner(display.getProjectId(), user.getId())) {
+            throw new UnAuthorizedExecption("current user has no permission.");
         }
 
         ProjectPermission projectPermission = projectService.getProjectPermission(projectService.getProjectDetail(display.getProjectId(), user, false), user);
@@ -792,6 +819,9 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
             }
         }
 
+        ComponentFilterUtils filter = new ComponentFilterUtils();
+        displays = filter.doFilterDisplays(displays);
+
         return displays;
     }
 
@@ -869,6 +899,7 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
      * @param user
      * @return
      */
+    // display id 467, slid id 462
     @Override
     public SlideWithMem getDisplaySlideMem(Long displayId, Long slideId, User user) throws NotFoundException, UnAuthorizedExecption, ServerException {
 
@@ -993,7 +1024,7 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
         try {
             avatar = fileUtils.upload(file, Constants.DISPLAY_AVATAR_PATH, fileName);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Failed to upload picture: ", e);
             throw new ServerException("display cover picture upload error");
         }
 
@@ -1077,7 +1108,7 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
                 jsonObject.put("slideParams", slideParams);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("display slide background upload error: ", e);
             throw new ServerException("display slide background upload error");
         }
 
@@ -1154,7 +1185,7 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
             }
             jsonObject.put(key, background);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("display slide sub widget backgroundImage upload error: ", e);
             throw new ServerException("display slide sub widget backgroundImage upload error");
         }
 

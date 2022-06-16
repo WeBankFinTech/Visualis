@@ -39,6 +39,7 @@ public class RedisConfig {
     @Autowired
     private BeanFactory beanFactory;
 
+    @SuppressWarnings("unchecked")
     @Bean
     public RedisTemplate<String, Object> InitRedisTemplate() {
         RedisTemplate<String, Object> redisTemplate = null;

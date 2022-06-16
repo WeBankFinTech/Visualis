@@ -53,6 +53,9 @@ import {
   getDashboard,
   getWidget,
   getResultset,
+  executeQuery,
+  getProgress,
+  getResult,
   setIndividualDashboard,
   loadWidgetCsv,
   loadSelectOptions,
@@ -96,6 +99,7 @@ import { IQueryConditions, IDataRequestParams, QueryVariable, IDataDownloadParam
 import { getShareClientId } from '../../util'
 import { IDownloadRecord, DownloadTypes } from 'app/containers/App/types'
 import { IFormedView } from 'app/containers/View/types'
+import { getBaseInfo } from './actions'
 
 const ResponsiveReactGridLayout = WidthProvider(Responsive)
 
@@ -134,11 +138,34 @@ interface IDashboardProps {
   downloadList: IDownloadRecord[]
   onLoadDashboard: (shareInfo: any, error: (err) => void) => void,
   onLoadWidget: (aesStr: string, success?: (widget) => void, error?: (err) => void) => void,
+  onGetBaseInfo: (resolve) => any,
   onLoadResultset: (
     renderType: RenderType,
     dashboardItemId: number,
     dataToken: string,
     requestParams: IDataRequestParams
+  ) => void,
+  onExecuteQuery: (
+    renderType: RenderType,
+    dashboardItemId: number,
+    dataToken: string,
+    requestParams: IDataRequestParams,
+    resolve: (data) => void,
+    reject: (data) => void,
+    parameters: string
+    ) => void,
+  onGetProgress: (
+    execId: string,
+    resolve: (data) => void,
+    reject: (data) => void
+    ) => void,
+  onGetResult: (
+    execId: string,
+    renderType: RenderType,
+    dashboardItemId: number,
+    requestParams: IDataRequestParams,
+    resolve: (data) => void,
+    reject: (data) => void
   ) => void,
   onSetIndividualDashboard: (id, shareInfo) => void,
   onLoadWidgetCsv: (
@@ -162,6 +189,7 @@ interface IDashboardProps {
 interface IDashboardStates {
   type: string,
   shareInfo: string
+  parameters: string
   views: {
     [key: string]: Partial<IFormedView>
   }
@@ -171,9 +199,11 @@ interface IDashboardStates {
   currentDataInFullScreen: any,
   showLogin: boolean,
   headlessBrowserRenderSign: boolean
+  WidgetExecuteFailedTag: boolean
   controlTokenMapping: {
     [key: string]: string
   }
+  executeQueryFailed: boolean
 }
 
 export class Share extends React.Component<IDashboardProps, IDashboardStates> {
@@ -182,6 +212,7 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
     this.state = {
       type: '',
       shareInfo: '',
+      parameters: '',
       views: {},
 
       modalLoading: false,
@@ -191,8 +222,10 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
       showLogin: false,
 
       headlessBrowserRenderSign: false,
+      WidgetExecuteFailedTag: false,
 
-      controlTokenMapping: {}
+      controlTokenMapping: {},
+      executeQueryFailed: false
     }
   }
 
@@ -221,8 +254,9 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
     if (qs.type === 'dashboard') {
       onLoadDashboard(qs.shareInfo, (err) => {
         if (err.response.status === 403) {
+          message.error('您无权访问！')
           this.setState({
-            showLogin: true
+            showLogin: false
           })
         }
       })
@@ -231,19 +265,24 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
         onSetIndividualDashboard(w.id, qs.shareInfo)
       }, (err) => {
         if (err.response.status === 403) {
+          message.error('您无权访问！')
           this.setState({
-            showLogin: true
+            showLogin: false
           })
         }
       })
     }
   }
   public componentWillMount () {
+    this.props.onGetBaseInfo(result => {
+      localStorage.setItem('username', result.username)
+    })
     // urlparse
     const qs = this.querystring(location.href.substr(location.href.indexOf('?') + 1))
     this.setState({
       type: qs.type,
-      shareInfo: qs.shareInfo
+      shareInfo: qs.shareInfo,
+      parameters: qs.parameters ? qs.parameters : ''
     })
     this.loadShareContent(qs)
     this.initPolling(qs.shareInfo)
@@ -293,6 +332,7 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
   }
 
   public componentWillUnmount () {
+    this.timeout.forEach(item => clearTimeout(item))
     window.removeEventListener('resize', this.onWindowResize, false)
     if (this.downloadListPollingTimer) {
       clearInterval(this.downloadListPollingTimer)
@@ -323,7 +363,178 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
   }
 
   private getChartData = (renderType: RenderType, itemId: number, widgetId: number, queryConditions?: Partial<IQueryConditions>) => {
-    this.getData(this.props.onLoadResultset, renderType, itemId, widgetId, queryConditions)
+    // 先处理数据
+    const {
+      currentItemsInfo,
+      widgets,
+      onExecuteQuery
+    } = this.props
+
+    const widget = widgets.find((w) => w.id === widgetId)
+    const widgetConfig: IWidgetConfig = JSON.parse(widget.config)
+    const { cols, rows, metrics, secondaryMetrics, filters, color, label, size, xAxis, tip, orders, cache, expired, view, engine } = widgetConfig
+    const updatedCols = cols.map((col) => widgetDimensionMigrationRecorder(col))
+    const updatedRows = rows.map((row) => widgetDimensionMigrationRecorder(row))
+    const customOrders = updatedCols.concat(updatedRows)
+      .filter(({ sort }) => sort && sort.sortType === FieldSortTypes.Custom)
+      .map(({ name, sort }) => ({ name, list: sort[FieldSortTypes.Custom].sortList }))
+
+    const cachedQueryConditions = currentItemsInfo[itemId].queryConditions
+
+    let tempFilters
+    let linkageFilters
+    let globalFilters
+    let tempOrders
+    let variables
+    let linkageVariables
+    let globalVariables
+    let drillStatus
+    let pagination
+    let nativeQuery
+
+    if (queryConditions) {
+      tempFilters = queryConditions.tempFilters !== void 0 ? queryConditions.tempFilters : cachedQueryConditions.tempFilters
+      linkageFilters = queryConditions.linkageFilters !== void 0 ? queryConditions.linkageFilters : cachedQueryConditions.linkageFilters
+      globalFilters = queryConditions.globalFilters !== void 0 ? queryConditions.globalFilters : cachedQueryConditions.globalFilters
+      tempOrders = queryConditions.orders !== void 0 ? queryConditions.orders : cachedQueryConditions.orders
+      variables = queryConditions.variables || cachedQueryConditions.variables
+      linkageVariables = queryConditions.linkageVariables || cachedQueryConditions.linkageVariables
+      globalVariables = queryConditions.globalVariables || cachedQueryConditions.globalVariables
+      drillStatus = queryConditions.drillStatus || void 0
+      pagination = queryConditions.pagination || cachedQueryConditions.pagination
+      nativeQuery = queryConditions.nativeQuery || cachedQueryConditions.nativeQuery
+    } else {
+      tempFilters = cachedQueryConditions.tempFilters
+      linkageFilters = cachedQueryConditions.linkageFilters
+      globalFilters = cachedQueryConditions.globalFilters
+      tempOrders = cachedQueryConditions.orders
+      variables = cachedQueryConditions.variables
+      linkageVariables = cachedQueryConditions.linkageVariables
+      globalVariables = cachedQueryConditions.globalVariables
+      pagination = cachedQueryConditions.pagination
+      nativeQuery = cachedQueryConditions.nativeQuery
+    }
+    let groups = cols.concat(rows).filter((g) => g.name !== '指标名称').map((g) => g.name)
+    let aggregators =  metrics.map((m) => ({
+      column: decodeMetricName(m.name),
+      func: m.agg
+    }))
+
+    if (secondaryMetrics && secondaryMetrics.length) {
+      aggregators = aggregators.concat(secondaryMetrics.map((second) => ({
+        column: decodeMetricName(second.name),
+        func: second.agg
+      })))
+    }
+
+    if (color) {
+      groups = groups.concat(color.items.map((c) => c.name))
+    }
+    if (label) {
+      groups = groups.concat(label.items
+        .filter((l) => l.type === 'category')
+        .map((l) => l.name))
+      aggregators = aggregators.concat(label.items
+        .filter((l) => l.type === 'value')
+        .map((l) => ({
+          column: decodeMetricName(l.name),
+          func: l.agg
+        })))
+    }
+    if (size) {
+      aggregators = aggregators.concat(size.items
+        .map((s) => ({
+          column: decodeMetricName(s.name),
+          func: s.agg
+        })))
+    }
+    if (xAxis) {
+      aggregators = aggregators.concat(xAxis.items
+        .map((l) => ({
+          column: decodeMetricName(l.name),
+          func: l.agg
+        })))
+    }
+    if (tip) {
+      aggregators = aggregators.concat(tip.items
+        .map((t) => ({
+          column: decodeMetricName(t.name),
+          func: t.agg
+        })))
+    }
+    
+    const requestParamsFilters = filters.reduce((a, b) => {
+      return a.concat(b.config.sqlModel)
+    }, [])
+
+    const requestParams = {
+      groups: drillStatus && drillStatus.groups ? drillStatus.groups : groups,
+      aggregators,
+      filters: drillStatus && drillStatus.filter ? drillStatus.filter.sqls : requestParamsFilters,
+      tempFilters,
+      linkageFilters,
+      globalFilters,
+      variables,
+      linkageVariables,
+      globalVariables,
+      orders,
+      cache,
+      expired,
+      flush: renderType === 'flush',
+      pagination,
+      nativeQuery,
+      customOrders
+    }
+    if (typeof view === 'object' && Object.keys(view).length > 0) requestParams.view = view
+
+    if (engine) requestParams.engineType = engine
+
+    if (tempOrders) {
+      requestParams.orders = requestParams.orders.concat(tempOrders)
+    }
+
+    this.setState({executeQueryFailed: false})
+    onExecuteQuery(renderType, itemId, widget.dataToken, requestParams, (result) => {
+      const { execId } = result
+      this.executeQuery(execId, renderType, itemId, requestParams, this)
+    }, () => {
+      this.setState({executeQueryFailed: true})
+      return message.error('查询失败！')
+    }, this.state.parameters)
+    // this.getData(this.props.onLoadResultset, renderType, itemId, widgetId, queryConditions)
+  }
+
+  private timeout = []
+
+  private executeQuery(execId, renderType, itemId, requestParams, that) {
+    const { onGetProgress, onGetResult } = that.props
+    // 空数据的话，会不请求数据，execId为undefined，这时候不需要getProgress
+    if (execId) {
+      onGetProgress(execId, (result) => {
+        const { progress, status } = result
+        if (status === 'Failed') {
+          // 提示 查询失败（显示表格头，就和现在的暂无数据保持一致的交互，只是提示换成“查询失败”）
+          that.setState({executeQueryFailed: true, WidgetExecuteFailedTag: true})
+          return message.error('查询失败！')
+        } else if (status === 'Succeed' && progress === 1) {
+          // 查询成功，调用 结果集接口，status为success时，progress一定为1
+          onGetResult(execId, renderType, itemId, requestParams, (result) => {
+            // 拿到结果
+          }, () => {
+            that.setState({executeQueryFailed: true})
+            return message.error('查询失败！')
+          })
+        } else {
+          // 说明还在运行中
+          // 三秒后再请求一次进度查询接口
+          const t = setTimeout(that.executeQuery, 3000, execId, renderType, itemId, requestParams, that)
+          that.timeout.push(t)
+        }
+      }, () => {
+        that.setState({executeQueryFailed: true})
+        return message.error('查询失败！')
+      })
+    }
   }
 
   private initPolling = (token) => {
@@ -386,6 +597,7 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
     widgetId: number,
     queryConditions?: Partial<IQueryConditions>
   ) => {
+    // 先执行以下逻辑
     const {
       currentItemsInfo,
       widgets
@@ -513,6 +725,7 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
       requestParams.orders = requestParams.orders.concat(tempOrders)
     }
 
+    // 处理完数据之后，最后处理回调函数
     callback(
       renderType,
       itemId,
@@ -977,7 +1190,9 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
       views,
       interactingStatus,
       allowFullScreen,
-      headlessBrowserRenderSign
+      headlessBrowserRenderSign,
+      WidgetExecuteFailedTag,
+      executeQueryFailed
     } = this.state
 
     let grids = null
@@ -1040,6 +1255,7 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
               container="share"
               selectedItems={selectedItems || []}
               onSelectChartsItems={this.selectChartsItems}
+              executeQueryFailed={executeQueryFailed}
             />
           </div>
         ))
@@ -1128,6 +1344,7 @@ export class Share extends React.Component<IDashboardProps, IDashboardStates> {
         {loginPanel}
         <HeadlessBrowserIdentifier
           renderSign={headlessBrowserRenderSign}
+          WidgetExecuteFailedTag={WidgetExecuteFailedTag}
           parentNode={headlessBrowserRenderParentNode}
         />
       </Container>
@@ -1153,7 +1370,14 @@ export function mapDispatchToProps (dispatch) {
     onLoadViewsDetail: (viewIds, resolve) => dispatch(loadViewsDetail(viewIds, resolve)),
     onLoadDashboard: (token, reject) => dispatch(getDashboard(token, reject)),
     onLoadWidget: (token, resolve, reject) => dispatch(getWidget(token, resolve, reject)),
+    onGetBaseInfo: (resolve) => dispatch(getBaseInfo(resolve)),
     onLoadResultset: (renderType, itemid, dataToken, requestParams) => dispatch(getResultset(renderType, itemid, dataToken, requestParams)),
+    // widget页面 提交查询数据接口
+    onExecuteQuery: (renderType, itemid, dataToken, requestParams, resolve, reject, parameters) => dispatch(executeQuery(renderType, itemid, dataToken, requestParams, resolve, reject, parameters)),
+    // widget页面 进度查询接口
+    onGetProgress: (execId, resolve, reject) => dispatch(getProgress(execId, resolve, reject)),
+    // widget页面 获取结果集接口
+    onGetResult: (execId, renderType, itemid, requestParams, resolve, reject) => dispatch(getResult(execId, renderType, itemid, requestParams, resolve, reject)),
     onSetIndividualDashboard: (widgetId, token) => dispatch(setIndividualDashboard(widgetId, token)),
     onLoadWidgetCsv: (itemId, requestParams, dataToken) => dispatch(loadWidgetCsv(itemId, requestParams, dataToken)),
     onLoadSelectOptions: (controlKey, dataToken, paramsOrOptions, itemId) => dispatch(loadSelectOptions(controlKey, dataToken, paramsOrOptions, itemId)),

@@ -65,7 +65,7 @@ interface IWidgetProps {
   params: any
   currentProject: IProject
   onLoadWidgets: (projectId: number) => void
-  onLoadViews: (projectId: number, resolve?: any) => void
+  onLoadViews: (projectId: number, contextId?: string, nodeName?: string, resolve?: any) => void
   onDeleteWidget: (id: any) => () => void
   onAddWidget: (widget: object, resolve: any) => Promise<any>
   onCheckUniqueName: (pathname: string, data: any, resolve: () => any, reject: (error: string) => any) => any
@@ -439,7 +439,7 @@ const mapStateToProps = createStructuredSelector({
 export function mapDispatchToProps (dispatch) {
   return {
     onLoadWidgets: (projectId) => dispatch(loadWidgets(projectId)),
-    onLoadViews: (projectId, resolve) => dispatch(loadViews(projectId, resolve)),
+    onLoadViews: (projectId, contextId, nodeName, resolve) => dispatch(loadViews(projectId, contextId, nodeName, resolve)),
     onDeleteWidget: (id) => () => dispatch(deleteWidget(id)),
     onAddWidget: (widget, resolve) => dispatch(addWidget(widget, resolve)),
     onCheckUniqueName: (pathname, data, resolve, reject) => dispatch(checkNameUniqueAction(pathname, data, resolve, reject))

@@ -1,44 +1,45 @@
+# ##################################
+# 1. Visualis Service configuration
+# ##################################
 server:
   protocol: http
-  address: 127.0.0.1 #server ip address
-  port:  9007 #该模块提供服务的端口（必须）
-  url: http://0.0.0.0:0000/dws/visualis #frontend index page full path
-  access: 
-    address: 0.0.0.0 #frontend address
-    port: 0000 #frontend port
+  address: 127.0.0.1 # server ip address
+  port:  9008 # server port
+  url: http://127.0.0.1:8088/dss/visualis # frontend index page full path
+  access:
+    address: 127.0.0.1 # frontend address
+    port: 8088 # frontend port
 
-#指定eureka Server的地址，用于注册（必须）
+
+# ##################################
+# 2. eureka configuration
+# ##################################
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://127.0.0.1:20303/eureka/
+      defaultZone: http://127.0.0.1:20303/eureka/ # Configuration required
   instance:
     metadata-map:
       test: wedatasphere
-#（必须）
 management:
   endpoints:
     web:
       exposure:
         include: refresh,info
 
-logging:
-  config: classpath:log4j2.xml
 
-file:
-  userfiles-path: ${DAVINCI3_HOME}/userfiles
-  web_resources: ${DAVINCI3_HOME}/davinci-ui/
-  phantomJs-path: ${DAVINCI3_HOME}/bin/phantom.js
-  base-path: ${DAVINCI3_HOME}
-
+# ##################################
+# 3. Spring configuration
+# ##################################
 spring:
+  main:
+    allow-bean-definition-overriding: true
   application:
-    name: visualis #模块名，用于做高可用（必须）
-  ## davinci datasouce config
-  datasource:
-    url: jdbc:mysql://127.0.0.1:3306/xxx?characterEncoding=UTF-8 #application mysql database jdbc url
-    username: xxx #application mysql database username
-    password: xxx #application mysql database password
+    name: visualis-dev
+  datasource: # visualis需要和dss部署在同一个数据库
+    url: jdbc:mysql://127.0.0.1:3306/dss?characterEncoding=UTF-8&allowMultiQueries=true # Configuration required
+    username: hadoop
+    password: hadoop
     driver-class-name: com.mysql.jdbc.Driver
     initial-size: 2
     min-idle: 1
@@ -71,7 +72,6 @@ spring:
 
   mvc:
     static-path-pattern: /**
-
 
   thymeleaf:
     mode: HTML5
@@ -106,14 +106,25 @@ spring:
         smtp:
           ssl:
             enable: false
-
-springfox:
-  documentation:
-    swagger:
-      v2:
-        path: /api-doc
+logging:
+  config: classpath:log4j2.xml
 
 
+# ##################################
+# 4. static resource configuration
+# ##################################
+file:
+  userfiles-path: ${DAVINCI3_HOME}/userfiles
+  web_resources: ${DAVINCI3_HOME}/davinci-ui/
+  base-path: ${DAVINCI3_HOME}
+
+sql_template_delimiter: $
+custom-datasource-driver-path: ${DAVINCI3_HOME}/conf/datasource_driver.yml
+
+
+# ##################################
+# 5. SQL configuration
+# ##################################
 pagehelper:
   supportMethodsArguments: true
   reasonable: true
@@ -134,16 +145,14 @@ mapper:
   not-empty: false
   mappers: edp.davinci.dao
 
-sql_template_delimiter: $
 
-custom-datasource-driver-path: ${DAVINCI3_HOME}/conf/datasource_driver.yml
-
-phantomjs_home: ${DAVINCI3_HOME}/bin/phantomjs
-
+# ##################################
+# 6. Screenshot drive
+# ##################################
 email:
   suffix: ""
 screenshot:
-  default_browser: PHANTOMJS                    # PHANTOMJS or CHROME
+  default_browser: PHANTOMJS
   timeout_second: 1800
   phantomjs_path: ${DAVINCI3_HOME}/bin/phantomjs
   chromedriver_path: $your_chromedriver_path$
