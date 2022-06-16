@@ -11,7 +11,7 @@ Visualis编译部署文档
 | Hadoop(2.7.2，Hadoop 其他版本需自行编译 Linkis) | 必装 | [Hadoop单机部署](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) ；[Hadoop分布式部署](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
 | Spark(2.4.3，Spark 其他版本需自行编译 Linkis) | 必装 | [Spark快速安装](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
 | DSS1.0.1 | 必装 | [如何安装DSS](https://github.com/WeBankFinTech/DataSphereStudio-Doc/blob/main/zh_CN/%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/DSS%E5%8D%95%E6%9C%BA%E9%83%A8%E7%BD%B2%E6%96%87%E6%A1%A3.md) |
-| Linkis1.1.1（大于等于该版本） | 必装 | [如何安装Linkis](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
+| Linkis1.1.1（大于等于该版本） | 必装(在linkis.properties中需要加入配置wds.linkis.session.ticket.key=bdp-user-ticket-id) | [如何安装Linkis](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
 | Nginx | 必装 | [如何安装 Nginx](http://nginx.org/en/linux_packages.html) |
 
 ## 1.2. 创建 Linux 用户
@@ -20,7 +20,7 @@ Visualis编译部署文档
 
 ## 1.3. 底层依赖组件检查
 &nbsp;&nbsp;&nbsp;&nbsp;<font color="red">如果想使用Visualis1.0.0-rc1版本，需要拉取最新的[DSS源码](https://github.com/WeBankFinTech/DataSphereStudio)master分支编译打包，或者下载6月15号后最新的DSS一键全家桶包。</font>  
-&nbsp;&nbsp;&nbsp;&nbsp;**请确保DSS1.0.1与Linkis1.1.1 基本可用，可在 DSS 前端界面执行 SparkQL 脚本，可正常创建并执行 DSS 工作流。**
+&nbsp;&nbsp;&nbsp;&nbsp;**在安装linkis后，需要在linkis.properties中加入配置wds.linkis.session.ticket.key=bdp-user-ticket-id，并重启服务，请确保DSS1.0.1与Linkis1.1.1 基本可用，可在 DSS 前端界面执行 SparkQL 脚本，可正常创建并执行 DSS 工作流。**
 
 ## 1.4. 下载源码包及编译后端
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis源码安装时，需要下载对应的源码包进行编译，目前Visualis在依赖的DSS 1.0.1版本和Linkis1.1.1版本已经上传到Maven中央仓库，只需Maven配置正常即可拉取相关依赖。
