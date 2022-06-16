@@ -129,7 +129,6 @@ mv * ./../ # 把静态资源文件移动dss/visualis路径下
 # 在nginx配置参考
 # 补充linkis gateway
 
-# 换个端口
 server {
     listen       8989; # 访问端口
     server_name  localhost;
@@ -142,12 +141,12 @@ server {
   }
 
   location /ws {
-    proxy_pass http://10.107.118.104:9001; # Linkis gateway地址
+    proxy_pass http://127.0.0.1:9001; # Linkis gateway地址
     # ...
   }
 
   location /api {
-    proxy_pass http://10.107.118.104:9001; # Linkis gateway地址
+    proxy_pass http://127.0.0.1:9001; # Linkis gateway地址
     # ...
   }
 }
