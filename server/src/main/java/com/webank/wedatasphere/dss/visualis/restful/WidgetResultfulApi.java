@@ -48,9 +48,7 @@ import java.util.Set;
 
 import static edp.davinci.common.utils.ScriptUtils.getExecuptParamScriptEngine;
 
-/**
- * Created by johnnwang on 2019/1/24.
- */
+
 @Slf4j
 @RestController
 @RequestMapping(path = Constants.RESTFUL_BASE_PATH + "widget", produces = MediaType.APPLICATION_JSON_VALUE)
