@@ -2,9 +2,7 @@ package com.webank.wedatasphere.dss.visualis.ujes
 
 import com.webank.wedatasphere.dss.visualis.utils.VisualisUtils
 
-/**
-  * Created by johnnwang on 2019/1/26.
-  */
+
 case class UJESJob(var code:String,
                    var user:String,
                    var jobType:String,
