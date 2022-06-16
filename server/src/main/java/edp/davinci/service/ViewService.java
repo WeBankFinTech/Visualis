@@ -19,12 +19,14 @@
 
 package edp.davinci.service;
 
+import com.webank.wedatasphere.dss.visualis.model.PaginateWithExecStatus;
 import edp.core.exception.NotFoundException;
 import edp.core.exception.ServerException;
 import edp.core.exception.UnAuthorizedExecption;
 import edp.core.model.Paginate;
 import edp.core.model.PaginateWithQueryColumns;
 import edp.davinci.core.service.CheckEntityService;
+import edp.davinci.dto.sourceDto.SourceWithProject;
 import edp.davinci.dto.viewDto.*;
 import edp.davinci.model.User;
 import edp.davinci.service.excel.SQLContext;
@@ -37,32 +39,34 @@ public interface ViewService extends CheckEntityService {
 
     List<ViewBaseInfo> getViews(Long projectId, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
 
-    ViewWithSourceBaseInfo createView(ViewCreate viewCreate, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
+    ViewWithSourceBaseInfo createView(ViewCreate viewCreate, User user, String ticketId) throws NotFoundException, UnAuthorizedExecption, ServerException;
 
     boolean updateView(ViewUpdate viewUpdate, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
 
-
     boolean deleteView(Long id, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
-//=======
-//    ResultMap updateViewColumns(ViewUpdate viewUpdate, User user, HttpServletRequest request);
-//
-//    ResultMap deleteView(Long id, User user, HttpServletRequest request);
-//>>>>>>> drawis
 
     PaginateWithQueryColumns executeSql(ViewExecuteSql executeSql, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
 
-    Paginate<Map<String, Object>> getData(Long id, ViewExecuteParam executeParam, User user) throws NotFoundException, UnAuthorizedExecption, ServerException, SQLException;
+    //异步执行语句
+    PaginateWithExecStatus AsyncSubmitSql(ViewExecuteSql executeSql, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
 
-    PaginateWithQueryColumns getResultDataList(boolean isMaintainer, ViewWithSource viewWithSource, ViewExecuteParam executeParam, User user) throws ServerException, SQLException;
+    Paginate<Map<String, Object>> getData(Long id, ViewExecuteParam executeParam, User user, boolean async) throws NotFoundException, UnAuthorizedExecption, ServerException, SQLException;
+
+    Paginate<Map<String, Object>> getAsyncProgress(String execId, User user) throws Exception;
+
+    Paginate<Map<String, Object>> killAsyncJob(String execId, User user) throws Exception;
+
+    Paginate<Map<String, Object>> getAsyncResult(String execId, User user) throws Exception;
+
+    PaginateWithQueryColumns getResultDataList(boolean isMaintainer, ViewWithSource viewWithSource, ViewExecuteParam executeParam, User user, boolean async) throws ServerException, SQLException;
 
     List<Map<String, Object>> getDistinctValue(Long id, DistinctParam param, User user) throws NotFoundException, ServerException, UnAuthorizedExecption;
-//=======
-//    List<Map<String, Object>> getResultDataList(ViewWithProjectAndSource viewWithProjectAndSource, ViewExecuteParam executeParam, User user,String sharedUser) throws ServerException;
-//>>>>>>> drawis
 
     List getDistinctValueData(boolean isMaintainer, ViewWithSource viewWithSource, DistinctParam param, User user) throws ServerException;
 
     ViewWithSourceBaseInfo getView(Long id, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
 
     SQLContext getSQLContext(boolean isMaintainer, ViewWithSource viewWithSource, ViewExecuteParam executeParam, User user);
+
+    SourceWithProject getDefaultSourceWithProject(Long sourceId, User user);
 }

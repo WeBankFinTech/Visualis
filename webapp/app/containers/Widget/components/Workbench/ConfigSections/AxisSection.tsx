@@ -5,6 +5,8 @@ import ColorPicker from 'components/ColorPicker'
 import { PIVOT_CHART_FONT_FAMILIES, PIVOT_CHART_LINE_STYLES, PIVOT_CHART_FONT_SIZES } from 'app/globalConstants'
 import { getCorrectInputNumber } from '../../util'
 const styles = require('../Workbench.less')
+import { NumericUnitList, FieldFormatTypes } from '../../Config/Format/constants'
+import { getFormattedValue } from '../../Config/Format'
 
 export interface IAxisConfig {
   inverse: boolean
@@ -31,6 +33,10 @@ export interface IAxisConfig {
   xAxisRotate?: number
   min?: number
   max?: number
+  digit?: number
+  unit?: string
+  thousand?: boolean
+  tenThousand?: boolean
 }
 
 interface IAxisSectionProps {
@@ -55,6 +61,29 @@ export class AxisSection extends React.PureComponent<IAxisSectionProps, {}> {
   private colorChange = (prop) => (color) => {
     this.props.onChange(prop, color)
   }
+
+  private format = (prop) => (value) => {
+
+    if (prop === 'digit' && value >= 0 && value <= 6) {
+      // 小数位数
+      this.props.onChange(prop, value)
+    } else if (prop === 'unit') {
+      // 单位
+      this.props.onChange(prop, value)
+    } else if (prop === 'thousand') {
+      // 使用千分位分隔符
+      this.props.onChange(prop, value.target.checked)
+      if (value.target.checked) this.props.onChange('tenThousand', false)
+    } else if (prop === 'tenThousand') {
+      // 使用万分位分隔符
+      this.props.onChange(prop, value.target.checked)
+      if (value.target.checked) this.props.onChange('thousand', false)
+    }
+  }
+
+  private numericUnitOptions = NumericUnitList.map((item) => (
+    <Option key={item} value={item}>{item}</Option>
+  ))
 
   public render () {
     const { title, config } = this.props
@@ -83,7 +112,11 @@ export class AxisSection extends React.PureComponent<IAxisSectionProps, {}> {
       xAxisInterval,
       xAxisRotate,
       min,
-      max
+      max,
+      digit,
+      unit,
+      thousand,
+      tenThousand
     } = config
 
     const lineStyles = PIVOT_CHART_LINE_STYLES.map((l) => (
@@ -230,6 +263,32 @@ export class AxisSection extends React.PureComponent<IAxisSectionProps, {}> {
             value={max}
             onChange={this.inputNumberChange('max')}
           />
+        </Col>
+      </Row>
+    ), (
+      <Row key="digit" gutter={8} type="flex" align="middle" className={styles.blockRow}>
+        <Col span={12}>小数位数</Col>
+        <Col span={10}>
+          <InputNumber min={0} max={5} value={digit} className={styles.blockElm} onChange={this.format('digit')} />
+        </Col>
+      </Row>
+    ), (
+      <Row key="unit" gutter={8} type="flex" align="middle" className={styles.blockRow}>
+        <Col span={12}>单位</Col>
+        <Col span={10}>
+          <Select className={styles.blockElm} value={unit} onChange={this.format('unit')} >{this.numericUnitOptions}</Select>
+        </Col>
+      </Row>
+    ), (
+      <Row key="thousand" gutter={8} type="flex" align="middle" className={styles.blockRow}>
+        <Col span={20}>
+          <Checkbox className={styles.blockElm} checked={thousand} onChange={this.format('thousand')} >使用千分位分隔符</Checkbox>
+        </Col>
+      </Row>
+    ), (
+      <Row key="tenThousand" gutter={8} type="flex" align="middle" className={styles.blockRow}>
+        <Col span={20}>
+          <Checkbox className={styles.blockElm} checked={tenThousand} onChange={this.format('tenThousand')} >使用万分位分隔符</Checkbox>
         </Col>
       </Row>
     )]

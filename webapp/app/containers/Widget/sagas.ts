@@ -36,6 +36,7 @@ import {
   widgetDeleted,
   deleteWidgetFail,
   widgetDetailLoaded,
+  widgetDetailLoadedWithoutViewDetail,
   loadWidgetDetailFail,
   widgetEdited,
   editWidgetFail
@@ -65,7 +66,7 @@ export function* addWidget ({ payload }) {
     })
 
     yield put(widgetAdded(result.payload))
-    payload.resolve()
+    payload.resolve(result.payload.id)
   } catch (err) {
     yield put(addWidgetFail())
     errorHandler(err)
@@ -87,11 +88,19 @@ export function* deleteWidget ({ payload }) {
 
 export function* getWidgetDetail (action) {
   const { payload } = action
+  const { resolve } = payload
   try {
     const result = yield call(request, `${api.widget}/${payload.id}`)
     const viewId = result.payload.viewId
-    const view = yield call(request, `${api.view}/${viewId}`)
-    yield put(widgetDetailLoaded(result.payload, view.payload))
+    // 直接从dss里面创建widget并且不绑定view的时候，是没有viewId的，这个时候不请求view详情接口
+    if (!viewId) {
+      yield put(widgetDetailLoadedWithoutViewDetail(result.payload)) 
+      resolve(result.payload)
+    } else {
+      const view = yield call(request, `${api.view}/${viewId}`)
+      yield put(widgetDetailLoaded(result.payload, view.payload))
+      resolve(result.payload)
+    }
   } catch (err) {
     yield put(loadWidgetDetailFail(err))
     errorHandler(err)

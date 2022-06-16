@@ -21,18 +21,16 @@ package edp.davinci.controller;
 
 import edp.core.annotation.AuthIgnore;
 import edp.core.annotation.CurrentUser;
+import edp.core.annotation.MethodLog;
 import edp.core.enums.HttpCodeEnum;
 import edp.core.utils.TokenUtils;
 import edp.davinci.core.common.Constants;
 import edp.davinci.core.common.ResultMap;
 import edp.davinci.core.enums.CheckEntityEnum;
+import edp.davinci.model.Project;
 import edp.davinci.model.User;
 import edp.davinci.service.CheckService;
 import edp.davinci.service.ProjectService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -41,15 +39,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import springfox.documentation.annotations.ApiIgnore;
 
 import javax.servlet.http.HttpServletRequest;
 
-@Api(value = "/check", tags = "check", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-@ApiResponses(@ApiResponse(code = 404, message = "sources not found"))
 @Slf4j
 @RestController
-@RequestMapping(value = Constants.BASE_API_PATH + "/check", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+@RequestMapping(value = Constants.BASE_API_PATH + "/check", produces = MediaType.APPLICATION_JSON_VALUE)
 public class CheckController {
 
     @Autowired
@@ -67,7 +62,7 @@ public class CheckController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "check unique username")
+    @MethodLog
     @AuthIgnore
     @GetMapping("/user")
     public ResponseEntity checkUser(@RequestParam String username,
@@ -77,8 +72,7 @@ public class CheckController {
             ResultMap resultMap = checkService.checkSource(username, id, CheckEntityEnum.USER, null, request);
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
+            log.error("check user error: " + e);
             return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
         }
     }
@@ -89,8 +83,8 @@ public class CheckController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "check unique organization name")
-    @GetMapping("/organization")
+    @MethodLog
+    @GetMapping("/organization" )
     public ResponseEntity checkOrganization(@RequestParam String name,
                                             @RequestParam(required = false) Long id,
                                             HttpServletRequest request) {
@@ -98,8 +92,7 @@ public class CheckController {
             ResultMap resultMap = checkService.checkSource(name, id, CheckEntityEnum.ORGANIZATION, null, request);
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
+            log.error("check organization error: " + e);
             return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
         }
     }
@@ -110,15 +103,15 @@ public class CheckController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "check unique project name")
+    @MethodLog
     @GetMapping("/project")
-    public ResponseEntity checkProject(@ApiIgnore @CurrentUser User user,
+    public ResponseEntity checkProject(@CurrentUser User user,
                                        @RequestParam String name,
                                        @RequestParam(required = false) Long id,
                                        @RequestParam(required = false) Long orgId, HttpServletRequest request) {
         try {
             ResultMap resultMap = new ResultMap(tokenUtils);
-            if(projectService.isExist(name, id, orgId, user.getId())){
+            if (projectService.isExist(name, id, orgId, user.getId())) {
                 resultMap = resultMap.failAndRefreshToken(request)
                         .message("the current project name is already taken");
             } else {
@@ -126,8 +119,7 @@ public class CheckController {
             }
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
+            log.error("check project error: " + e);
             return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
         }
     }
@@ -139,7 +131,7 @@ public class CheckController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "check unique display name")
+    @MethodLog
     @GetMapping("/display")
     public ResponseEntity checkDisplay(@RequestParam String name,
                                        @RequestParam(required = false) Long id,
@@ -148,8 +140,7 @@ public class CheckController {
             ResultMap resultMap = checkService.checkSource(name, id, CheckEntityEnum.DISPLAY, projectId, request);
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
+            log.error("check display error: " + e);
             return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
         }
     }
@@ -160,7 +151,7 @@ public class CheckController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "check unique source name")
+    @MethodLog
     @GetMapping("/source")
     public ResponseEntity checkSource(@RequestParam String name,
                                       @RequestParam(required = false) Long id,
@@ -169,8 +160,7 @@ public class CheckController {
             ResultMap resultMap = checkService.checkSource(name, id, CheckEntityEnum.SOURCE, projectId, request);
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
+            log.error("check source error: " + e);
             return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
         }
     }
@@ -181,7 +171,7 @@ public class CheckController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "check unique view name")
+    @MethodLog
     @GetMapping("/view")
     public ResponseEntity checkView(@RequestParam String name,
                                     @RequestParam(required = false) Long id,
@@ -190,8 +180,7 @@ public class CheckController {
             ResultMap resultMap = checkService.checkSource(name, id, CheckEntityEnum.VIEW, projectId, request);
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
+            log.error("check view error: " + e);
             return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
         }
     }
@@ -203,7 +192,7 @@ public class CheckController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "check unique widget name")
+    @MethodLog
     @GetMapping("/widget")
     public ResponseEntity checkWidget(@RequestParam String name,
                                       @RequestParam(required = false) Long id,
@@ -212,8 +201,7 @@ public class CheckController {
             ResultMap resultMap = checkService.checkSource(name, id, CheckEntityEnum.WIDGET, projectId, request);
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
+            log.error("check widget error: " + e);
             return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
         }
     }
@@ -224,7 +212,7 @@ public class CheckController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "check unique dashboard name")
+    @MethodLog
     @GetMapping("/dashboardPortal")
     public ResponseEntity checkDashboardPortal(@RequestParam String name,
                                                @RequestParam(required = false) Long id,
@@ -233,8 +221,7 @@ public class CheckController {
             ResultMap resultMap = checkService.checkSource(name, id, CheckEntityEnum.DASHBOARDPORTAL, projectId, request);
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
+            log.error("check dashboardPortal error: " + e);
             return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
         }
     }
@@ -245,7 +232,7 @@ public class CheckController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "check unique dashboard name")
+    @MethodLog
     @GetMapping("/dashboard")
     public ResponseEntity checkDashboard(@RequestParam String name,
                                          @RequestParam(required = false) Long id,
@@ -254,10 +241,26 @@ public class CheckController {
             ResultMap resultMap = checkService.checkSource(name, id, CheckEntityEnum.DASHBOARD, portal, request);
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
+            log.error("check dashboard error: " + e);
             return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
         }
+    }
+
+
+    /**
+     * 检查工程名是否存在
+     *
+     * @param keywords
+     * @param request
+     * @return
+     */
+    @MethodLog
+    @GetMapping("/projectName")
+    public ResponseEntity checkProjectName(@RequestParam(value = "keywords") String keywords,
+                                           HttpServletRequest request) {
+
+        Project project = projectService.checkProjectName(keywords);
+        return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(project));
     }
 
 
@@ -267,7 +270,7 @@ public class CheckController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "check unique dashboard name")
+    @MethodLog
     @GetMapping("/cronjob")
     public ResponseEntity checkCronJob(@RequestParam String name,
                                        @RequestParam(required = false) Long id,
@@ -276,8 +279,7 @@ public class CheckController {
             ResultMap resultMap = checkService.checkSource(name, id, CheckEntityEnum.CRONJOB, projectId, request);
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
+            log.error("check cronjob error: " + e);
             return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
         }
     }

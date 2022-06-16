@@ -39,11 +39,8 @@ public interface DisplayService extends CheckEntityService {
     SlideWithMem getDisplaySlideMem(Long displayId, Long slideId, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
 
     Display createDisplay(DisplayInfo displayInfo, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
-//=======
+
     Display copyDisplay(DisplayInfo displayInfo, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
-//
-//    ResultMap createDisplay(DisplayInfo displayInfo, User user, HttpServletRequest request);
-//>>>>>>> drawis
 
     boolean updateDisplay(DisplayUpdate displayUpdate, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
 

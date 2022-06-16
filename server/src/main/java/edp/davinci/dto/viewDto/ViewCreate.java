@@ -39,7 +39,7 @@ public class ViewCreate {
     @Min(value = 1, message = "Invalid project Id")
     private Long projectId;
 
-    @Min(value = 1, message = "Invalid source Id")
+    @Min(value = 0, message = "Invalid source Id")
     private Long sourceId;
 
     private String sql;
@@ -52,9 +52,10 @@ public class ViewCreate {
 
     private List<RelRoleViewDto> roles;
 
-    public ViewCreate(){}
+    public ViewCreate() {
+    }
 
-    public ViewCreate(String name,String description,Long projectId,Long sourceId,String sql,String model,String config){
+    public ViewCreate(String name, String description, Long projectId, Long sourceId, String sql, String model, String config) {
         this.name = name;
         this.description = description;
         this.projectId = projectId;

@@ -137,6 +137,11 @@ class FullScreenPanel extends React.PureComponent<IFullScreenPanelProps, IFullSc
       itemInfo = currentItemsInfo[c.itemId]
       const widgetProps = JSON.parse(currentDataInFullScreen.widget.config)
       const queryVariables = this.getQueryVariables(itemInfo.queryConditions)
+      // excel类型接的visualis的data
+      const visualisData = {
+        viewId: this.props.currentDataInFullScreen.widget.viewId,
+        requestParams: widgetProps.query
+      }
       charts = (
         <Widget
           {...widgetProps}
@@ -145,6 +150,7 @@ class FullScreenPanel extends React.PureComponent<IFullScreenPanelProps, IFullSc
           queryVariables={queryVariables}
           renderType={itemInfo && itemInfo.loading ? 'loading' : 'rerender'}
           loading={itemInfo && itemInfo.loading ? itemInfo.loading : false}
+          visualisData={visualisData}
         />
       )
     }

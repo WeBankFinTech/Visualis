@@ -24,7 +24,7 @@ import com.google.common.collect.Lists;
 import edp.core.utils.CollectionUtils;
 import edp.core.utils.FileUtils;
 import edp.core.utils.SqlUtils;
-import edp.davinci.common.utils.ScriptUtiils;
+import edp.davinci.common.utils.ScriptUtils;
 import edp.davinci.core.config.SpringContextHolder;
 import edp.davinci.core.enums.ActionEnum;
 import edp.davinci.core.enums.FileTypeEnum;
@@ -65,6 +65,7 @@ public class WorkbookWorker<T> extends MsgNotifier implements Callable {
     }
 
 
+    @SuppressWarnings("unchecked")
     @Override
     public T call() throws Exception {
         Stopwatch watch = Stopwatch.createStarted();
@@ -142,7 +143,7 @@ public class WorkbookWorker<T> extends MsgNotifier implements Callable {
             if (context.isHasExecuteParam() && null != context.getExecuteParam()) {
                 executeParam = context.getExecuteParam();
             } else {
-                executeParam = ScriptUtiils.getViewExecuteParam(ScriptUtiils.getExecuptParamScriptEngine(),
+                executeParam = ScriptUtils.getViewExecuteParam(ScriptUtils.getExecuptParamScriptEngine(),
                         context.getDashboard() != null ? context.getDashboard().getConfig() : null,
                         context.getWidget().getConfig(),
                         context.getMemDashboardWidget() != null ? context.getMemDashboardWidget().getId() : null);
@@ -157,7 +158,7 @@ public class WorkbookWorker<T> extends MsgNotifier implements Callable {
             boolean isTable;
             List<ExcelHeader> excelHeaders = null;
             if (isTable = ExcelUtils.isTable(context.getWidget().getConfig())) {
-                excelHeaders = ScriptUtiils.formatHeader(ScriptUtiils.getCellValueScriptEngine(), context.getWidget().getConfig(),
+                excelHeaders = ScriptUtils.formatHeader(ScriptUtils.getCellValueScriptEngine(), context.getWidget().getConfig(),
                         sqlContext.getViewExecuteParam().getParams());
             }
             SheetContext sheetContext = SheetContext.newSheetContextBuilder()

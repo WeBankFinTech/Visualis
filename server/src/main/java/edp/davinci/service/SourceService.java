@@ -61,4 +61,6 @@ public interface SourceService extends CheckEntityService {
     List<DatasourceType> getDatasources();
 
     boolean reconnect(Long id, User user) throws NotFoundException, UnAuthorizedExecption, ServerException;
+
+    List<String> getAvailableEngineTypes(String username);
 }

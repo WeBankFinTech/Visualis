@@ -14,9 +14,11 @@ const barChartStyles: IMigrationRecorder<IChartStyles> = {
       } = barDefaultConfig.style as IChartStyles
       if (!barConfig) {
         const newBarConfig = produce(defaultBarConfig, (draft) => {
-          draft.barChart = !!barSpec.barChart
-          draft.stack.on = !!barSpec.stack
-          draft.stack.percentage = barSpec.percentage
+          if (barSpec) {
+            draft.barChart = !!barSpec.barChart
+            draft.stack.on = !!barSpec.stack
+            draft.stack.percentage = barSpec.percentage
+          }
         })
         chartStyle.bar = newBarConfig
         return chartStyle

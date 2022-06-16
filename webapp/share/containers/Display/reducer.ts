@@ -43,9 +43,9 @@ function displayReducer (state = initialState, { type, payload }) {
         .set('title', payload.display.name)
         .set('display', payload.display)
         .set('slide', payload.slide)
-        .set('layers', payload.slide.relations)
+        .set('layers', payload.slide ? payload.slide.relations : [])
         .set('widgets', payload.widgets)
-        .set('layersInfo', payload.slide.relations.reduce((obj, layer) => {
+        .set('layersInfo', payload.slide ? payload.slide.relations.reduce((obj, layer) => {
           obj[layer.id] = (layer.type === GraphTypes.Chart) ? {
             status: DashboardItemStatus.Initial,
             datasource: { resultList: [] },
@@ -65,7 +65,7 @@ function displayReducer (state = initialState, { type, payload }) {
             loading: false
           }
           return obj
-        }, {}))
+        }, {}) : [])
     case ActionTypes.LOAD_SHARE_DISPLAY_FAILURE:
       return state
         .set('display', null)
@@ -74,6 +74,15 @@ function displayReducer (state = initialState, { type, payload }) {
         .set('widgets', [])
         .set('layersInfo', {})
     case ActionTypes.LOAD_LAYER_DATA:
+      return state
+        .set('layersInfo', {
+          ...layersInfo,
+          [payload.layerId]: {
+            ...layersInfo[payload.layerId],
+            loading: true
+          }
+        })
+    case ActionTypes.EXECUTE_QUERY:
       return state
         .set('layersInfo', {
           ...layersInfo,
@@ -96,6 +105,29 @@ function displayReducer (state = initialState, { type, payload }) {
           }
         })
     case ActionTypes.LOAD_LAYER_DATA_FAILURE:
+      return state
+        .set('loadings', {
+          ...layersInfo,
+          [payload.layerId]: {
+            ...layersInfo[payload.layerId],
+            status: DashboardItemStatus.Error,
+            loading: false
+          }
+        })
+    case ActionTypes.GET_RESULT_SUCCESS:
+      fieldGroupedSort(payload.data.resultList, payload.requestParams.customOrders)
+      return state
+        .set('layersInfo', {
+          ...layersInfo,
+          [payload.layerId]: {
+            ...layersInfo[payload.layerId],
+            status: DashboardItemStatus.Fulfilled,
+            loading: false,
+            datasource: payload.data,
+            renderType: payload.renderType
+          }
+        })
+    case ActionTypes.GET_RESULT_FAILURE:
       return state
         .set('loadings', {
           ...layersInfo,

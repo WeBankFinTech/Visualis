@@ -87,6 +87,8 @@ echarts.registerTheme('default', DEFAULT_ECHARTS_THEME)
 import configureStore from './store'
 import createRoutes from './routes'
 
+import 'default-passive-events'
+
 const initialState = {}
 const store = configureStore(initialState, hashHistory)
 const MOUNT_NODE = document.getElementById('app')

@@ -87,11 +87,12 @@ export function addWidgetFail () {
   }
 }
 
-export function loadWidgetDetail (id) {
+export function loadWidgetDetail (id, resolve) {
   return {
     type: LOAD_WIDGET_DETAIL,
     payload: {
-      id
+      id,
+      resolve
     }
   }
 }
@@ -105,6 +106,17 @@ export function widgetDetailLoaded (detail, view) {
     }
   }
 }
+
+// dss里创建widget且不绑定view时，打开widget页面，只请求widget的detail，不请求view的的tail
+export function widgetDetailLoadedWithoutViewDetail (detail) {
+  return {
+    type: 'LOAD_WIDGET_DETAIL_WITHOUT_VIEW_DETAIL',
+    payload: {
+      detail
+    }
+  }
+}
+
 
 export function loadWidgetDetailFail (error) {
   return {

@@ -35,7 +35,6 @@ export default function (chartProps: IChartProps, drillOptions?: any) {
     color,
     tip
   } = chartProps
-
   const { label, legend, spec, toolbox } = chartStyles
 
   const { legendPosition, fontSize } = legend

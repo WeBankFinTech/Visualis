@@ -248,95 +248,229 @@ export class Chart extends React.Component<IChartProps, IChartStates> {
 
             lineData.forEach((unit: IChartUnit, k) => {
               const { width, records } = unit
+              let name = ''
+              let chart = {}
+              let from = ''
+              for (let i = 0; i < metrics.length; i++) {
+                if (metrics[i].chart && metrics[i].chart.name && metrics[i].chart.name !== 'pivot') {
+                  name = metrics[i].chart.name
+                  chart = metrics[i].chart
+                  from = metrics[i].from
+                  break
+                }
+              }
 
               metrics.forEach((m, l) => {
+                metrics[l].chart = chart
+                metrics[l].from = from
                 const decodedMetricName = decodeMetricName(m.name)
                 const xAxisData = records.map((r) => r.key)
-                const {
-                  chartOption,
-                  stackOption,
-                  calcPieCenterAndRadius,
-                  getSymbolSize
-                } = chartOptionGenerator(m.chart.name, drawingData)
-
-                const currentColorItem = color.items.find((i) => i.config.actOn === m.name) || color.items.find((i) => i.config.actOn === 'all')
-                const currentLabelItem = label && (label.items.find((i) => i.config.actOn === m.name) || label.items.find((i) => i.config.actOn === 'all'))
-                const currentScatterXAxisItem = scatterXAxis && scatterXAxis.items[0]
-                const currentSizeItem = size && (size.items.find((i) => i.config.actOn === m.name) || size.items.find((i) => i.config.actOn === 'all'))
-                const currentSizeValue = size && (currentSizeItem ? getSizeValue(size.value[currentSizeItem.name] || size.value['all']) : getSizeValue(size.value['all']))
-                const groupingItems = [].concat(currentColorItem)
-                  .concat(currentLabelItem && currentLabelItem.type === 'category' && currentLabelItem)
-                  .filter((i) => !!i)
-
-                if (!(currentScatterXAxisItem && m.chart.id === PivotTypes.Scatter)) {
-                  grid.push({
-                    top: dimetionAxis === 'col' ? (xSum + l * height) : ySum,
-                    left: dimetionAxis === 'col' ? ySum - 1 : (xSum - 1 + l * width),    // 隐藏yaxisline
-                    width,
-                    height
-                  })
-                  xAxis.push(this.getXaxisOption(index, 'category', xAxisData))
-                  yAxis.push(this.getYaxisOption(index, metricAxisConfig[m.name].yAxis, m.chart.coordinate))
-                }
-
-                if (m.chart.coordinate === 'cartesian') {
-                  if (groupingItems.length) {
-                    const grouped = {}
-                    records.forEach((recordCollection) => {
-                      const { key: colKey, value: valueCollection } = recordCollection
-                      if (valueCollection) {
-                        valueCollection.forEach((record) => {
-                          const groupingKey = groupingItems.map((item) => record[item.name]).join(',')
-
-                          if (currentColorItem) {
-                            const legendSelectedItem = legend[currentColorItem.name]
-                            if (legendSelectedItem && legendSelectedItem.includes(record[currentColorItem.name])) {
-                              return false
-                            }
-                          }
-
-                          if (!grouped[groupingKey]) {
-                            grouped[groupingKey] = {}
-                          }
-                          if (!grouped[groupingKey][colKey]) {
-                            grouped[groupingKey][colKey] = []
-                          }
-                          grouped[groupingKey][colKey].push(record)
-                        })
-                      }
+                if (chartOptionGenerator(m.chart.name, drawingData)) {
+                  const {
+                    chartOption,
+                    stackOption,
+                    calcPieCenterAndRadius,
+                    getSymbolSize
+                  } = chartOptionGenerator(m.chart.name, drawingData)
+  
+                  const currentColorItem = color.items.find((i) => i.config.actOn === m.name) || color.items.find((i) => i.config.actOn === 'all')
+                  const currentLabelItem = label && (label.items.find((i) => i.config.actOn === m.name) || label.items.find((i) => i.config.actOn === 'all'))
+                  const currentScatterXAxisItem = scatterXAxis && scatterXAxis.items[0]
+                  const currentSizeItem = size && (size.items.find((i) => i.config.actOn === m.name) || size.items.find((i) => i.config.actOn === 'all'))
+                  const currentSizeValue = size && (currentSizeItem ? getSizeValue(size.value[currentSizeItem.name] || size.value['all']) : getSizeValue(size.value['all']))
+                  const groupingItems = [].concat(currentColorItem)
+                    .concat(currentLabelItem && currentLabelItem.type === 'category' && currentLabelItem)
+                    .filter((i) => !!i)
+  
+                  if (!(currentScatterXAxisItem && m.chart.id === PivotTypes.Scatter)) {
+                    grid.push({
+                      top: dimetionAxis === 'col' ? (xSum + l * height) : ySum,
+                      left: dimetionAxis === 'col' ? ySum - 1 : (xSum - 1 + l * width),    // 隐藏yaxisline
+                      width,
+                      height
                     })
-
-                    if (currentScatterXAxisItem && m.chart.id === PivotTypes.Scatter) {
-                      let tempXsum = xSum
-                      let tempYsum = ySum
-                      xAxisData.forEach((colKey, xdIndex) => {
-                        if (dimetionAxis === 'col') {
-                          grid.push({
-                            top: tempXsum + l * unitMetricHeight,
-                            left: tempYsum - 1,    // 隐藏yaxisline
-                            width: elementSize,
-                            height: unitMetricHeight
-                          })
-                        } else {
-                          grid.push({
-                            top: tempYsum,
-                            left: tempXsum - 1 + l * unitMetricWidth,    // 隐藏yaxisline
-                            width: unitMetricWidth,
-                            height: elementSize
+                    xAxis.push(this.getXaxisOption(index, 'category', xAxisData))
+                    yAxis.push(this.getYaxisOption(index, metricAxisConfig[m.name].yAxis, m.chart.coordinate))
+                  }
+  
+                  if (m.chart.coordinate === 'cartesian') {
+                    if (groupingItems.length) {
+                      const grouped = {}
+                      records.forEach((recordCollection) => {
+                        const { key: colKey, value: valueCollection } = recordCollection
+                        if (valueCollection) {
+                          valueCollection.forEach((record) => {
+                            const groupingKey = groupingItems.map((item) => record[item.name]).join(',')
+  
+                            if (currentColorItem) {
+                              const legendSelectedItem = legend[currentColorItem.name]
+                              if (legendSelectedItem && legendSelectedItem.includes(record[currentColorItem.name])) {
+                                return false
+                              }
+                            }
+  
+                            if (!grouped[groupingKey]) {
+                              grouped[groupingKey] = {}
+                            }
+                            if (!grouped[groupingKey][colKey]) {
+                              grouped[groupingKey][colKey] = []
+                            }
+                            grouped[groupingKey][colKey].push(record)
                           })
                         }
-                        xAxis.push(this.getYaxisOption(index, metricAxisConfig[m.name].scatterXAxis, m.chart.coordinate, true))
-                        yAxis.push(this.getYaxisOption(index, metricAxisConfig[m.name].yAxis, m.chart.coordinate))
+                      })
+  
+                      if (currentScatterXAxisItem && m.chart.id === PivotTypes.Scatter) {
+                        let tempXsum = xSum
+                        let tempYsum = ySum
+                        xAxisData.forEach((colKey, xdIndex) => {
+                          if (dimetionAxis === 'col') {
+                            grid.push({
+                              top: tempXsum + l * unitMetricHeight,
+                              left: tempYsum - 1,    // 隐藏yaxisline
+                              width: elementSize,
+                              height: unitMetricHeight
+                            })
+                          } else {
+                            grid.push({
+                              top: tempYsum,
+                              left: tempXsum - 1 + l * unitMetricWidth,    // 隐藏yaxisline
+                              width: unitMetricWidth,
+                              height: elementSize
+                            })
+                          }
+                          xAxis.push(this.getYaxisOption(index, metricAxisConfig[m.name].scatterXAxis, m.chart.coordinate, true))
+                          yAxis.push(this.getYaxisOption(index, metricAxisConfig[m.name].yAxis, m.chart.coordinate))
+                          Object.entries((grouped)).sort().forEach(([groupingKey, groupedRecords]: [string, any[]]) => {
+                            let data
+                            if (groupedRecords[colKey]) {
+                              data = groupedRecords[colKey].reduce((sum, record) => {
+                                return [
+                                  sum[0] + (Number(record[`${currentScatterXAxisItem.agg}(${decodeMetricName(currentScatterXAxisItem.name)})`]) || 0),
+                                  sum[1] + (Number(record[`${m.agg}(${decodedMetricName})`]) || 0),
+                                  currentSizeItem ? sum[2] + (Number(record[`${currentSizeItem.agg}(${decodeMetricName(currentSizeItem.name)})`]) || 0) : PIVOT_DEFAULT_SCATTER_SIZE
+                                ]
+                              }, [0, 0, 0])
+                              data = [{
+                                value: [data[0], data[1]],
+                                symbolSize: currentSizeItem
+                                  ? getSymbolSize(m.name, data[2]) * currentSizeValue
+                                  : PIVOT_DEFAULT_SCATTER_SIZE * currentSizeValue
+                              }]
+                            } else {
+                              data = [[0, 0, 0]]
+                            }
+                            series.push({
+                              data,
+                              color: currentColorItem
+                                ? currentColorItem.config.values[groupingKey.split(',')[0]]
+                                : (color.value[m.name] || color.value['all']),
+                              ...currentLabelItem && {
+                                label: {
+                                  show: true,
+                                  position: 'top',
+                                  formatter: getChartLabel(seriesData, currentLabelItem)
+                                }
+                              },
+                              xAxisIndex: index,
+                              yAxisIndex: index,
+                              ...chartOption
+                            })
+                            seriesData.push({
+                              type: 'scatter',
+                              grouped: true,
+                              records: groupedRecords[colKey]
+                            })
+                          })
+                          if (dimetionAxis === 'col') {
+                            tempYsum += elementSize
+                          } else {
+                            tempXsum += elementSize * metrics.length
+                          }
+                          if (xdIndex !== xAxisData.length - 1) {
+                            index += 1
+                          }
+                        })
+                      } else {
                         Object.entries((grouped)).sort().forEach(([groupingKey, groupedRecords]: [string, any[]]) => {
+                          const data = []
+                          const backupData = []
+                          xAxisData.forEach((colKey) => {
+                            if (m.chart.id === PivotTypes.Scatter) {
+                              const result = groupedRecords[colKey]
+                                ? groupedRecords[colKey].reduce(([value, size], record) => [
+                                    value + (Number(record[`${m.agg}(${decodedMetricName})`]) || 0),
+                                    currentSizeItem ? size + (Number(record[`${currentSizeItem.agg}(${decodeMetricName(currentSizeItem.name)})`]) || 0) : 0
+                                  ], [0, 0])
+                                : [0, 0]
+                              data.push({
+                                value: result[0],
+                                symbolSize: currentSizeItem
+                                  ? getSymbolSize(m.name, result[1]) * currentSizeValue
+                                  : PIVOT_DEFAULT_SCATTER_SIZE * currentSizeValue
+                              })
+                            } else {
+                              if (groupedRecords[colKey]) {
+                                data.push(groupedRecords[colKey].reduce((sum, record) => sum + (Number(record[`${m.agg}(${decodedMetricName})`]) || 0), 0))
+                              } else {
+                                data.push(0)
+                              }
+                            }
+                            backupData.push(groupedRecords[colKey])
+                          })
+                          series.push({
+                            ...stackOption && {stack: `${unit.key}${m.name}`},
+                            data,
+                            color: currentColorItem
+                              ? currentColorItem.config.values[groupingKey.split(',')[0]]
+                              : (color.value[m.name] || color.value['all']),
+                            ...currentLabelItem && {
+                              label: {
+                                show: true,
+                                position: m.chart.id === PivotTypes.Bar ? 'inside' : 'top',
+                                formatter: getChartLabel(seriesData, currentLabelItem)
+                              }
+                            },
+                            xAxisIndex: index,
+                            yAxisIndex: index,
+                            ...chartOption
+                          })
+                          seriesData.push({
+                            type: 'cartesian',
+                            grouped: true,
+                            records: backupData
+                          })
+                        })
+                      }
+                    } else {
+                      if (currentScatterXAxisItem && m.chart.id === PivotTypes.Scatter) {
+                        let tempXsum = xSum
+                        let tempYsum = ySum
+                        records.forEach((recordCollection, rcIndex) => {
+                          if (dimetionAxis === 'col') {
+                            grid.push({
+                              top: tempXsum + l * unitMetricHeight,
+                              left: tempYsum - 1,    // 隐藏yaxisline
+                              width: elementSize,
+                              height: unitMetricHeight
+                            })
+                          } else {
+                            grid.push({
+                              top: tempYsum,
+                              left: tempXsum - 1 + l * unitMetricWidth,    // 隐藏yaxisline
+                              width: unitMetricWidth,
+                              height: elementSize
+                            })
+                          }
+                          xAxis.push(this.getYaxisOption(index, metricAxisConfig[m.name].scatterXAxis, m.chart.coordinate, true))
+                          yAxis.push(this.getYaxisOption(index, metricAxisConfig[m.name].yAxis, m.chart.coordinate))
                           let data
-                          if (groupedRecords[colKey]) {
-                            data = groupedRecords[colKey].reduce((sum, record) => {
-                              return [
-                                sum[0] + (Number(record[`${currentScatterXAxisItem.agg}(${decodeMetricName(currentScatterXAxisItem.name)})`]) || 0),
-                                sum[1] + (Number(record[`${m.agg}(${decodedMetricName})`]) || 0),
-                                currentSizeItem ? sum[2] + (Number(record[`${currentSizeItem.agg}(${decodeMetricName(currentSizeItem.name)})`]) || 0) : PIVOT_DEFAULT_SCATTER_SIZE
-                              ]
-                            }, [0, 0, 0])
+                          if (recordCollection.value) {
+                            data = recordCollection.value.reduce((sum, record) => [
+                              sum[0] + (Number(record[`${currentScatterXAxisItem.agg}(${decodeMetricName(currentScatterXAxisItem.name)})`]) || 0),
+                              sum[1] + (Number(record[`${m.agg}(${decodedMetricName})`]) || 0),
+                              currentSizeItem ? sum[2] + (Number(record[`${currentSizeItem.agg}(${decodeMetricName(currentSizeItem.name)})`]) || 0) : PIVOT_DEFAULT_SCATTER_SIZE
+                            ], [0, 0, 0])
                             data = [{
                               value: [data[0], data[1]],
                               symbolSize: currentSizeItem
@@ -348,9 +482,7 @@ export class Chart extends React.Component<IChartProps, IChartStates> {
                           }
                           series.push({
                             data,
-                            color: currentColorItem
-                              ? currentColorItem.config.values[groupingKey.split(',')[0]]
-                              : (color.value[m.name] || color.value['all']),
+                            color: color.value[m.name] || color.value['all'],
                             ...currentLabelItem && {
                               label: {
                                 show: true,
@@ -364,110 +496,59 @@ export class Chart extends React.Component<IChartProps, IChartStates> {
                           })
                           seriesData.push({
                             type: 'scatter',
-                            grouped: true,
-                            records: groupedRecords[colKey]
+                            grouped: false,
+                            records: recordCollection.value
                           })
-                        })
-                        if (dimetionAxis === 'col') {
-                          tempYsum += elementSize
-                        } else {
-                          tempXsum += elementSize * metrics.length
-                        }
-                        if (xdIndex !== xAxisData.length - 1) {
-                          index += 1
-                        }
-                      })
-                    } else {
-                      Object.entries((grouped)).sort().forEach(([groupingKey, groupedRecords]: [string, any[]]) => {
-                        const data = []
-                        const backupData = []
-                        xAxisData.forEach((colKey) => {
-                          if (m.chart.id === PivotTypes.Scatter) {
-                            const result = groupedRecords[colKey]
-                              ? groupedRecords[colKey].reduce(([value, size], record) => [
-                                  value + (Number(record[`${m.agg}(${decodedMetricName})`]) || 0),
-                                  currentSizeItem ? size + (Number(record[`${currentSizeItem.agg}(${decodeMetricName(currentSizeItem.name)})`]) || 0) : 0
-                                ], [0, 0])
-                              : [0, 0]
-                            data.push({
-                              value: result[0],
-                              symbolSize: currentSizeItem
-                                ? getSymbolSize(m.name, result[1]) * currentSizeValue
-                                : PIVOT_DEFAULT_SCATTER_SIZE * currentSizeValue
-                            })
+                          if (dimetionAxis === 'col') {
+                            tempYsum += elementSize
                           } else {
-                            if (groupedRecords[colKey]) {
-                              data.push(groupedRecords[colKey].reduce((sum, record) => sum + (Number(record[`${m.agg}(${decodedMetricName})`]) || 0), 0))
-                            } else {
-                              data.push(0)
-                            }
+                            tempXsum += elementSize * metrics.length
                           }
-                          backupData.push(groupedRecords[colKey])
+                          if (rcIndex !== records.length - 1) {
+                            index += 1
+                          }
                         })
+                      } else {
                         series.push({
-                          ...stackOption && {stack: `${unit.key}${m.name}`},
-                          data,
-                          color: currentColorItem
-                            ? currentColorItem.config.values[groupingKey.split(',')[0]]
-                            : (color.value[m.name] || color.value['all']),
-                          ...currentLabelItem && {
-                            label: {
-                              show: true,
-                              position: m.chart.id === PivotTypes.Bar ? 'inside' : 'top',
-                              formatter: getChartLabel(seriesData, currentLabelItem)
+                          data: records.map((recordCollection, i) => {
+                            if (m.chart.id === PivotTypes.Scatter) {
+                              const result = recordCollection.value
+                                ? recordCollection.value.reduce(([value, size], record) => [
+                                    value + (Number(record[`${m.agg}(${decodedMetricName})`]) || 0),
+                                    currentSizeItem ? size + (Number(record[`${currentSizeItem.agg}(${decodeMetricName(currentSizeItem.name)})`]) || 0) : 0
+                                  ], [0, 0])
+                                : [0, 0]
+                              const itemStyle = selectedItems && selectedItems.length &&
+                              selectedItems.some((item) => Number(item.split('&')[0]) === i && Number(item.split('&')[1]) === index)
+                              ? {itemStyle: {normal: {opacity: 1, borderWidth: 6}}} : null
+                              return {
+                                value: result[0],
+                                ...itemStyle,
+                                symbolSize: currentSizeItem
+                                  ? getSymbolSize(m.name, result[1]) * currentSizeValue
+                                  : PIVOT_DEFAULT_SCATTER_SIZE * currentSizeValue
+                              }
+                            } else {
+                              // bar line scatter
+                              const itemStyle = selectedItems && selectedItems.length &&
+                              selectedItems.some((item) => Number(item.split('&')[0]) === i && Number(item.split('&')[1]) === index)
+                               ? {itemStyle: {normal: {opacity: 1, borderWidth: 6}}} : null
+                              return recordCollection.value
+                                ? {
+                                  value: recordCollection.value.reduce((sum, record) => sum + (Number(record[`${m.agg}(${decodedMetricName})`]) || 0), 0),
+                                  ...itemStyle
+                                }
+                                : {
+                                  value: 0,
+                                  ...itemStyle
+                                }
+                            }
+                          }),
+                          itemStyle: {
+                            normal: {
+                              opacity: selectedItems && selectedItems.length > 0 ? 0.25 : 1
                             }
                           },
-                          xAxisIndex: index,
-                          yAxisIndex: index,
-                          ...chartOption
-                        })
-                        seriesData.push({
-                          type: 'cartesian',
-                          grouped: true,
-                          records: backupData
-                        })
-                      })
-                    }
-                  } else {
-                    if (currentScatterXAxisItem && m.chart.id === PivotTypes.Scatter) {
-                      let tempXsum = xSum
-                      let tempYsum = ySum
-                      records.forEach((recordCollection, rcIndex) => {
-                        if (dimetionAxis === 'col') {
-                          grid.push({
-                            top: tempXsum + l * unitMetricHeight,
-                            left: tempYsum - 1,    // 隐藏yaxisline
-                            width: elementSize,
-                            height: unitMetricHeight
-                          })
-                        } else {
-                          grid.push({
-                            top: tempYsum,
-                            left: tempXsum - 1 + l * unitMetricWidth,    // 隐藏yaxisline
-                            width: unitMetricWidth,
-                            height: elementSize
-                          })
-                        }
-                        xAxis.push(this.getYaxisOption(index, metricAxisConfig[m.name].scatterXAxis, m.chart.coordinate, true))
-                        yAxis.push(this.getYaxisOption(index, metricAxisConfig[m.name].yAxis, m.chart.coordinate))
-                        let data
-                        if (recordCollection.value) {
-                          data = recordCollection.value.reduce((sum, record) => [
-                            sum[0] + (Number(record[`${currentScatterXAxisItem.agg}(${decodeMetricName(currentScatterXAxisItem.name)})`]) || 0),
-                            sum[1] + (Number(record[`${m.agg}(${decodedMetricName})`]) || 0),
-                            currentSizeItem ? sum[2] + (Number(record[`${currentSizeItem.agg}(${decodeMetricName(currentSizeItem.name)})`]) || 0) : PIVOT_DEFAULT_SCATTER_SIZE
-                          ], [0, 0, 0])
-                          data = [{
-                            value: [data[0], data[1]],
-                            symbolSize: currentSizeItem
-                              ? getSymbolSize(m.name, data[2]) * currentSizeValue
-                              : PIVOT_DEFAULT_SCATTER_SIZE * currentSizeValue
-                          }]
-                        } else {
-                          data = [[0, 0, 0]]
-                        }
-                        series.push({
-                          data,
                           color: color.value[m.name] || color.value['all'],
                           ...currentLabelItem && {
                             label: {
@@ -481,155 +562,89 @@ export class Chart extends React.Component<IChartProps, IChartStates> {
                           ...chartOption
                         })
                         seriesData.push({
-                          type: 'scatter',
+                          type: 'cartesian',
                           grouped: false,
-                          records: recordCollection.value
+                          records
                         })
-                        if (dimetionAxis === 'col') {
-                          tempYsum += elementSize
-                        } else {
-                          tempXsum += elementSize * metrics.length
-                        }
-                        if (rcIndex !== records.length - 1) {
-                          index += 1
-                        }
-                      })
-                    } else {
-                      series.push({
-                        data: records.map((recordCollection, i) => {
-                          if (m.chart.id === PivotTypes.Scatter) {
-                            const result = recordCollection.value
-                              ? recordCollection.value.reduce(([value, size], record) => [
-                                  value + (Number(record[`${m.agg}(${decodedMetricName})`]) || 0),
-                                  currentSizeItem ? size + (Number(record[`${currentSizeItem.agg}(${decodeMetricName(currentSizeItem.name)})`]) || 0) : 0
-                                ], [0, 0])
-                              : [0, 0]
-                            const itemStyle = selectedItems && selectedItems.length &&
-                            selectedItems.some((item) => Number(item.split('&')[0]) === i && Number(item.split('&')[1]) === index)
-                            ? {itemStyle: {normal: {opacity: 1, borderWidth: 6}}} : null
-                            return {
-                              value: result[0],
-                              ...itemStyle,
-                              symbolSize: currentSizeItem
-                                ? getSymbolSize(m.name, result[1]) * currentSizeValue
-                                : PIVOT_DEFAULT_SCATTER_SIZE * currentSizeValue
+                      }
+                    }
+                  } else {
+                    records.forEach((recordCollection, r) => {
+                      const centerAndRadius = calcPieCenterAndRadius(
+                        dimetionAxis,
+                        containerWidth,
+                        containerHeight,
+                        elementSize,
+                        [unitMetricHeight, unitMetricWidth],
+                        horizontalRecordCountOfCol,
+                        verticalRecordCountOfRow,
+                        lineRecordSum,
+                        dp.length,
+                        lineData.length,
+                        metrics.length,
+                        records.length,
+                        j,
+                        k,
+                        l,
+                        r
+                      )
+  
+                      let data = []
+                      if (groupingItems.length) {
+                        if (recordCollection.value) {
+                          const legendSelectedItem = currentColorItem && legend[currentColorItem.name]
+                          recordCollection.value.forEach((record) => {
+                            if (legendSelectedItem && legendSelectedItem.includes(record[currentColorItem.name])) {
+                              return false
                             }
-                          } else {
-                            // bar line scatter
-                            const itemStyle = selectedItems && selectedItems.length &&
-                            selectedItems.some((item) => Number(item.split('&')[0]) === i && Number(item.split('&')[1]) === index)
-                             ? {itemStyle: {normal: {opacity: 1, borderWidth: 6}}} : null
-                            return recordCollection.value
-                              ? {
-                                value: recordCollection.value.reduce((sum, record) => sum + (Number(record[`${m.agg}(${decodedMetricName})`]) || 0), 0),
-                                ...itemStyle
+                            data.push({
+                              name: recordCollection.key,
+                              value: record[`${m.agg}(${decodedMetricName})`],
+                              itemStyle: {
+                                color: currentColorItem
+                                  ? currentColorItem.config.values[record[currentColorItem.name]]
+                                  : (color.value[m.name] || color.value['all'])
                               }
-                              : {
-                                value: 0,
-                                ...itemStyle
-                              }
+                            })
+                          })
+                        }
+                      } else {
+                        data = [{
+                          name: recordCollection.key,
+                          value: recordCollection.value
+                            ? recordCollection.value.reduce((sum, record) => sum + (Number(record[`${m.agg}(${decodedMetricName})`]) || 0), 0)
+                            : 0,
+                          itemStyle: {
+                            color: color.value[m.name] || color.value['all']
                           }
-                        }),
-                        itemStyle: {
-                          normal: {
-                            opacity: selectedItems && selectedItems.length > 0 ? 0.25 : 1
+                        }]
+                      }
+                      series.push({
+                        data,
+                        ...currentLabelItem
+                          ? {
+                            label: {
+                              show: true,
+                              formatter: getChartLabel(seriesData, currentLabelItem)
+                            }
                           }
-                        },
-                        color: color.value[m.name] || color.value['all'],
-                        ...currentLabelItem && {
-                          label: {
-                            show: true,
-                            position: 'top',
-                            formatter: getChartLabel(seriesData, currentLabelItem)
-                          }
-                        },
-                        xAxisIndex: index,
-                        yAxisIndex: index,
+                          : {
+                            label: {
+                              show: false
+                            }
+                          },
+                        ...centerAndRadius,
                         ...chartOption
                       })
                       seriesData.push({
-                        type: 'cartesian',
-                        grouped: false,
-                        records
+                        type: 'polar',
+                        grouped: !!groupingItems.length,
+                        records: recordCollection.value
                       })
-                    }
+                    })
                   }
-                } else {
-                  records.forEach((recordCollection, r) => {
-                    const centerAndRadius = calcPieCenterAndRadius(
-                      dimetionAxis,
-                      containerWidth,
-                      containerHeight,
-                      elementSize,
-                      [unitMetricHeight, unitMetricWidth],
-                      horizontalRecordCountOfCol,
-                      verticalRecordCountOfRow,
-                      lineRecordSum,
-                      dp.length,
-                      lineData.length,
-                      metrics.length,
-                      records.length,
-                      j,
-                      k,
-                      l,
-                      r
-                    )
-
-                    let data = []
-                    if (groupingItems.length) {
-                      if (recordCollection.value) {
-                        const legendSelectedItem = currentColorItem && legend[currentColorItem.name]
-                        recordCollection.value.forEach((record) => {
-                          if (legendSelectedItem && legendSelectedItem.includes(record[currentColorItem.name])) {
-                            return false
-                          }
-                          data.push({
-                            name: recordCollection.key,
-                            value: record[`${m.agg}(${decodedMetricName})`],
-                            itemStyle: {
-                              color: currentColorItem
-                                ? currentColorItem.config.values[record[currentColorItem.name]]
-                                : (color.value[m.name] || color.value['all'])
-                            }
-                          })
-                        })
-                      }
-                    } else {
-                      data = [{
-                        name: recordCollection.key,
-                        value: recordCollection.value
-                          ? recordCollection.value.reduce((sum, record) => sum + (Number(record[`${m.agg}(${decodedMetricName})`]) || 0), 0)
-                          : 0,
-                        itemStyle: {
-                          color: color.value[m.name] || color.value['all']
-                        }
-                      }]
-                    }
-                    series.push({
-                      data,
-                      ...currentLabelItem
-                        ? {
-                          label: {
-                            show: true,
-                            formatter: getChartLabel(seriesData, currentLabelItem)
-                          }
-                        }
-                        : {
-                          label: {
-                            show: false
-                          }
-                        },
-                      ...centerAndRadius,
-                      ...chartOption
-                    })
-                    seriesData.push({
-                      type: 'polar',
-                      grouped: !!groupingItems.length,
-                      records: recordCollection.value
-                    })
-                  })
+                  index += 1
                 }
-                index += 1
               })
 
               lineRecordSum += records.length

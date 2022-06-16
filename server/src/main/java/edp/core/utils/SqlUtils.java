@@ -20,6 +20,8 @@
 package edp.core.utils;
 
 import com.alibaba.druid.util.StringUtils;
+import com.webank.wedatasphere.dss.visualis.configuration.CommonConfig;
+import com.webank.wedatasphere.dss.visualis.model.PaginateWithExecStatus;
 import edp.core.common.jdbc.JdbcDataSource;
 import edp.core.consts.Consts;
 import edp.core.enums.DataTypeEnum;
@@ -36,23 +38,17 @@ import net.sf.jsqlparser.expression.Alias;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.select.*;
-
 import org.apache.commons.lang.NotImplementedException;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.beans.factory.annotation.Value;
-
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.context.annotation.Scope;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
-import java.io.StringReader;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.*;
@@ -110,7 +106,7 @@ public class SqlUtils {
                 .SqlUtils()
                 .withJdbcUrl(source.getJdbcUrl())
                 .withUsername(source.getUsername())
-                .withPassword(source.getPassword())
+                .withPassword(decryptPassword(source.getJdbcUrl(), source.getPassword()))
                 .withDbVersion(source.getDbVersion())
                 .withIsExt(source.isExt())
                 .withJdbcDataSource(this.jdbcDataSource)
@@ -124,13 +120,21 @@ public class SqlUtils {
                 .SqlUtils()
                 .withJdbcUrl(jdbcUrl)
                 .withUsername(username)
-                .withPassword(password)
+                .withPassword(decryptPassword(jdbcUrl, password))
                 .withDbVersion(dbVersion)
                 .withIsExt(ext)
                 .withJdbcDataSource(this.jdbcDataSource)
                 .withResultLimit(this.resultLimit)
                 .withIsQueryLogEnable(this.isQueryLogEnable)
                 .build();
+    }
+
+    // decrypt password method.
+    private String decryptPassword(String jdbcUrl, String password) {
+        if (jdbcUrl.contains(CommonConfig.JDBC_ENCRYPT_PARAMETER().getValue())) {
+            return password;
+        }
+        return password;
     }
 
     public void execute(String sql) throws ServerException {
@@ -142,7 +146,7 @@ public class SqlUtils {
         try {
             jdbcTemplate().execute(sql);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SQL execution error: ", e);
             throw new ServerException(e.getMessage());
         }
     }
@@ -165,6 +169,41 @@ public class SqlUtils {
 
         PaginateWithQueryColumns paginate = query4Paginate(sql, pageNo, pageSize, totalCount, limit, excludeColumns);
         return paginate;
+    }
+
+    public PaginateWithExecStatus asyncQuery4Exec(String sql, Integer pageNo, Integer pageSize, Integer totalCount, Integer limit, Set<String> excludeColumns) throws Exception {
+        if (null == pageNo || pageNo < 1) {
+            pageNo = 0;
+        }
+        if (null == pageSize || pageSize < 1) {
+            pageSize = 0;
+        }
+        if (null == totalCount || totalCount < 1) {
+            totalCount = 0;
+        }
+
+        if (null == limit) {
+            limit = -1;
+        }
+
+        PaginateWithExecStatus paginate = submit4Exec(sql, pageNo, pageSize, totalCount, limit, excludeColumns);
+        return paginate;
+    }
+
+    public PaginateWithExecStatus submit4Exec(String sql, int pageNo, int pageSize, int totalCount, int limit, Set<String> excludeColumns) throws Exception {
+        throw new NotImplementedException("");
+    }
+
+    public PaginateWithExecStatus getProgress4Exec(String execId, String user) throws Exception {
+        throw new NotImplementedException("");
+    }
+
+    public PaginateWithExecStatus kill4Exec(String execId, String user) throws Exception {
+        throw new NotImplementedException("");
+    }
+
+    public PaginateWithExecStatus getResultSet4Exec(String execId, String user) throws Exception {
+        throw new NotImplementedException("");
     }
 
     @CachePut(value = "query", key = "#sql")
@@ -420,7 +459,7 @@ public class SqlUtils {
 
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
             throw new SourceException(e.getMessage() + ", jdbcUrl=" + this.jdbcUrl);
         } finally {
             sourceUtils.releaseConnection(connection);
@@ -467,7 +506,7 @@ public class SqlUtils {
                 tables.close();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
             throw new SourceException(e.getMessage() + ", jdbcUrl=" + this.jdbcUrl);
         } finally {
             sourceUtils.releaseConnection(connection);
@@ -519,7 +558,7 @@ public class SqlUtils {
                 tableInfo = new TableInfo(tableName, primaryKeys, columns);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            log.error("Failed to get table column: ", e);
             throw new SourceException(e.getMessage() + ", jdbcUrl=" + this.jdbcUrl);
         } finally {
             sourceUtils.releaseConnection(connection);
@@ -790,12 +829,12 @@ public class SqlUtils {
 
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
             if (null != connection) {
                 try {
                     connection.rollback();
                 } catch (SQLException se) {
-                    se.printStackTrace();
+                    log.error(se.getMessage());
                 }
             }
             throw new ServerException(e.getMessage());
@@ -804,7 +843,7 @@ public class SqlUtils {
                 try {
                     pstmt.close();
                 } catch (SQLException e) {
-                    e.printStackTrace();
+                    log.error(e.getMessage());
                     throw new ServerException(e.getMessage());
                 }
             }
