@@ -112,7 +112,7 @@ public class LdapServiceImpl implements LdapService {
                 ldapPerson = search.get(0);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("LDAP lookup user failed: ", e);
         } finally {
             if (null != ctx) {
                 LdapUtils.closeContext(ctx);

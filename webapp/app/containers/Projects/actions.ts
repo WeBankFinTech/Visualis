@@ -22,6 +22,9 @@ import {
   LOAD_PROJECTS,
   LOAD_PROJECTS_SUCCESS,
   LOAD_PROJECTS_FAILURE,
+  GET_BASE_INFO,
+  GET_BASE_INFO_SUCCESS,
+  GET_BASE_INFO_FAILURE,
   ADD_PROJECT,
   ADD_PROJECT_SUCCESS,
   ADD_PROJECT_FAILURE,
@@ -114,6 +117,27 @@ export function projectsLoaded (projects) {
 export function loadProjectsFail () {
   return {
     type: LOAD_PROJECTS_FAILURE
+  }
+}
+
+export function getBaseInfo (resolve) {
+  return {
+    type: GET_BASE_INFO,
+    payload: {
+      resolve
+    }
+  }
+}
+
+export function getBaseInfoLoaded () {
+  return {
+    type: GET_BASE_INFO_SUCCESS
+  }
+}
+
+export function loadGetBaseInfoFail () {
+  return {
+    type: GET_BASE_INFO_FAILURE
   }
 }
 

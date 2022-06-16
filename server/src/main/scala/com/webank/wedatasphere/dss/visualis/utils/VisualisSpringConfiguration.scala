@@ -1,35 +1,35 @@
-/*
- * Copyright 2019 WeBank
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
 package com.webank.wedatasphere.dss.visualis.utils
 
-import com.webank.wedatasphere.dss.visualis.entrance.spark.VisualisEntranceParser
-import com.webank.wedatasphere.linkis.entrance.EntranceParser
+import com.webank.wedatasphere.dss.visualis.entrance.spark.{VisualisCSEntranceInterceptor, VisualisEntranceParser}
+import org.apache.linkis.entrance.EntranceParser
+import org.apache.linkis.entrance.annotation._
+import org.apache.linkis.entrance.conf.EntranceConfiguration.ENTRANCE_SCHEDULER_MAX_PARALLELISM_USERS
+import org.apache.linkis.entrance.execute.impl.EntranceExecutorManagerImpl
+import org.apache.linkis.entrance.execute._
+import org.apache.linkis.entrance.interceptor.EntranceInterceptor
+import org.apache.linkis.entrance.interceptor.impl._
+import org.apache.linkis.entrance.persistence.PersistenceManager
+import org.apache.linkis.entrance.scheduler.EntranceSchedulerContext
+import org.apache.linkis.entrance.scheduler.cache.ReadCacheConsumerManager
+import org.apache.linkis.scheduler.SchedulerContext
+import org.apache.linkis.scheduler.executer.ExecutorManager
+import org.apache.linkis.scheduler.queue.{ConsumerManager, GroupFactory}
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.{Bean, Configuration, Primary}
 
-/**
-  * Created by shanhuang on 2019/1/23.
-  */
+
 @Configuration
 class VisualisSpringConfiguration {
 
   @Primary
-  @Bean(Array("entranceParser"))
-  @ConditionalOnMissingBean
-  def createEntranceParser(): EntranceParser = new VisualisEntranceParser
+  @EntranceInterceptorBeanAnnotation
+  def generateEntranceInterceptors: Array[EntranceInterceptor] = Array[EntranceInterceptor](new VisualisCSEntranceInterceptor, new ShellDangerousGrammerInterceptor, new PythonCodeCheckInterceptor, new DBInfoCompleteInterceptor, new SparkCodeCheckInterceptor, new SQLCodeCheckInterceptor, new VarSubstitutionInterceptor, new LogPathCreateInterceptor, new StorePathEntranceInterceptor, new ScalaCodeInterceptor, new SQLLimitEntranceInterceptor, new CommentInterceptor, new PythonCodeCheckInterceptor)
 
+  @Primary
+  @ConsumerManagerBeanAnnotation
+  def generateConsumerManager(@PersistenceManagerBeanAnnotation.PersistenceManagerAutowiredAnnotation persistenceManager: PersistenceManager) = new ReadCacheConsumerManager(ENTRANCE_SCHEDULER_MAX_PARALLELISM_USERS.getValue, persistenceManager)
+
+  @SchedulerContextBeanAnnotation
+  def generateSchedulerContext(@GroupFactoryBeanAnnotation.GroupFactoryAutowiredAnnotation groupFactory: GroupFactory, @EntranceExecutorManagerBeanAnnotation.EntranceExecutorManagerAutowiredAnnotation executorManager: ExecutorManager, @ConsumerManagerBeanAnnotation.ConsumerManagerAutowiredAnnotation consumerManager: ConsumerManager) = new EntranceSchedulerContext(groupFactory, consumerManager, executorManager)
 }

@@ -17,12 +17,6 @@
   limitations under the License.
   >>
   -->
-
-
-
-
-
-
 <assembly>
     <id>release-beta.4</id>
     <formats>
@@ -91,11 +85,4 @@
             <useProjectArtifact>false</useProjectArtifact>
         </dependencySet>
     </dependencySets>
-
-    <!--<files>
-        <file>
-            <source>${project.parent.basedir}/server/target/davinci-server_2.11-${project.parent.version}-jar-with-dependencies.jar</source>
-            <outputDirectory>plugin</outputDirectory>
-        </file>
-    </files>-->
 </assembly>

@@ -20,8 +20,11 @@
 package edp.davinci.controller;
 
 import com.alibaba.druid.util.StringUtils;
+import com.alibaba.fastjson.JSONArray;
 import com.google.common.collect.Iterables;
+import com.webank.wedatasphere.dss.visualis.auth.ProjectAuth;
 import edp.core.annotation.CurrentUser;
+import edp.core.annotation.MethodLog;
 import edp.core.common.job.ScheduleService;
 import edp.davinci.common.controller.BaseController;
 import edp.davinci.core.common.Constants;
@@ -32,22 +35,17 @@ import edp.davinci.dto.displayDto.*;
 import edp.davinci.model.*;
 import edp.davinci.service.DisplayService;
 import edp.davinci.service.screenshot.ImageContent;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import springfox.documentation.annotations.ApiIgnore;
 
-import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
@@ -55,12 +53,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
-@Api(value = "/displays", tags = "displays", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-@ApiResponses(@ApiResponse(code = 404, message = "display not found"))
 @Slf4j
 @RestController
-@RequestMapping(value = Constants.BASE_API_PATH + "/displays", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+@RequestMapping(value = Constants.BASE_API_PATH + "/displays", produces = MediaType.APPLICATION_JSON_VALUE)
 public class DisplayController extends BaseController {
 
     @Autowired
@@ -72,11 +69,15 @@ public class DisplayController extends BaseController {
     //TODO not this layer, should be removed
     @Autowired
     DisplayMapper displayMapper;
+
     @Autowired
     ProjectMapper projectMapper;
 
     @Value("${file.userfiles-path}")
     private String fileBasePath;
+
+    @Autowired
+    private ProjectAuth projectAuth;
 
     /**
      * 新建display
@@ -87,15 +88,20 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "create new display", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity createDisplay(@Valid @RequestBody DisplayInfo displayInfo,
-                                        @ApiIgnore BindingResult bindingResult,
-                                        @ApiIgnore @CurrentUser User user,
+                                        BindingResult bindingResult,
+                                        @CurrentUser User user,
                                         HttpServletRequest request) {
         if (bindingResult.hasErrors()) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message(bindingResult.getFieldErrors().get(0).getDefaultMessage());
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
+        }
+
+
+        if(!projectAuth.isPorjectOwner(displayInfo.getProjectId(), user.getId())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         Display display;
@@ -117,11 +123,11 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "update display info", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateDisplay(@Valid @RequestBody DisplayUpdate display,
-                                        @ApiIgnore BindingResult bindingResult,
-                                        @ApiIgnore @CurrentUser User user,
+                                        BindingResult bindingResult,
+                                        @CurrentUser User user,
                                         @PathVariable Long id, HttpServletRequest request) {
 
         if (bindingResult.hasErrors()) {
@@ -146,10 +152,10 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "delete a display", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @DeleteMapping("/{id}")
     public ResponseEntity deleteDisplay(@PathVariable Long id,
-                                        @ApiIgnore @CurrentUser User user,
+                                        @CurrentUser User user,
                                         HttpServletRequest request) {
 
         if (invalidId(id)) {
@@ -173,12 +179,12 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "create new display slide", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PostMapping(value = "/{id}/slides", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity createDisplaySlide(@Valid @RequestBody DisplaySlideCreate displaySlideCreate,
-                                             @ApiIgnore BindingResult bindingResult,
+                                             BindingResult bindingResult,
                                              @PathVariable("id") Long displayId,
-                                             @ApiIgnore @CurrentUser User user,
+                                             @CurrentUser User user,
                                              HttpServletRequest request) {
 
         if (bindingResult.hasErrors()) {
@@ -205,11 +211,11 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "update display slides info", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PutMapping(value = "/{id}/slides", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateDisplaySlide(@Valid @RequestBody DisplaySlide[] displaySlides,
-                                             @ApiIgnore BindingResult bindingResult,
-                                             @ApiIgnore @CurrentUser User user,
+                                             BindingResult bindingResult,
+                                             @CurrentUser User user,
                                              @PathVariable("id") Long displayId, HttpServletRequest request) {
 
         if (bindingResult.hasErrors()) {
@@ -240,10 +246,10 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "delete display slide", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @DeleteMapping("/slides/{slideId}")
     public ResponseEntity deleteDisplaySlide(@PathVariable("slideId") Long slideId,
-                                             @ApiIgnore @CurrentUser User user,
+                                             @CurrentUser User user,
                                              HttpServletRequest request) {
 
         if (invalidId(slideId)) {
@@ -267,13 +273,13 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "add display slide widgets", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PostMapping(value = "/{displayId}/slides/{slideId}/widgets", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity addMemDisplaySlideWidgets(@PathVariable("displayId") Long displayId,
                                                     @PathVariable("slideId") Long slideId,
                                                     @Valid @RequestBody MemDisplaySlideWidgetCreate[] slideWidgetCreates,
-                                                    @ApiIgnore BindingResult bindingResult,
-                                                    @ApiIgnore @CurrentUser User user,
+                                                    BindingResult bindingResult,
+                                                    @CurrentUser User user,
                                                     HttpServletRequest request) {
 
         if (invalidId(displayId)) {
@@ -322,13 +328,13 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "update display slide widgets", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PutMapping(value = "/{displayId}/slides/{slideId}/widgets", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateMemDisplaySlideWidgets(@PathVariable("displayId") Long displayId,
                                                        @PathVariable("slideId") Long slideId,
                                                        @Valid @RequestBody MemDisplaySlideWidgetDto[] memDisplaySlideWidgets,
-                                                       @ApiIgnore BindingResult bindingResult,
-                                                       @ApiIgnore @CurrentUser User user,
+                                                       BindingResult bindingResult,
+                                                       @CurrentUser User user,
                                                        HttpServletRequest request) {
 
         if (invalidId(displayId)) {
@@ -377,12 +383,12 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "update display slide widget", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PutMapping(value = "/slides/widgets/{relationId}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateMemDisplaySlideWidget(@PathVariable("relationId") Long relationId,
                                                       @Valid @RequestBody MemDisplaySlideWidget memDisplaySlideWidget,
-                                                      @ApiIgnore BindingResult bindingResult,
-                                                      @ApiIgnore @CurrentUser User user,
+                                                      BindingResult bindingResult,
+                                                      @CurrentUser User user,
                                                       HttpServletRequest request) {
 
         if (bindingResult.hasErrors()) {
@@ -408,10 +414,10 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "delete display slide widget", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @DeleteMapping("/slides/widgets/{relationId}")
     public ResponseEntity deleteMemDisplaySlideWidget(@PathVariable("relationId") Long relationId,
-                                                      @ApiIgnore @CurrentUser User user,
+                                                      @CurrentUser User user,
                                                       HttpServletRequest request) {
 
         if (invalidId(relationId)) {
@@ -431,10 +437,10 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get displays")
+    @MethodLog
     @GetMapping
     public ResponseEntity getDisplays(@RequestParam Long projectId,
-                                      @ApiIgnore @CurrentUser User user,
+                                      @CurrentUser User user,
                                       HttpServletRequest request) {
 
         if (invalidId(projectId)) {
@@ -454,10 +460,10 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get display slides")
+    @MethodLog
     @GetMapping("/{id}/slides")
     public ResponseEntity getDisplaySlide(@PathVariable Long id,
-                                          @ApiIgnore @CurrentUser User user,
+                                          @CurrentUser User user,
                                           HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid Display id");
@@ -477,11 +483,11 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get display slide widgets")
+    @MethodLog
     @GetMapping("/{displayId}/slides/{slideId}")
     public ResponseEntity getDisplaySlideWidgets(@PathVariable("displayId") Long displayId,
                                                  @PathVariable("slideId") Long slideId,
-                                                 @ApiIgnore @CurrentUser User user,
+                                                 @CurrentUser User user,
                                                  HttpServletRequest request) {
 
         if (invalidId(displayId)) {
@@ -508,13 +514,16 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "delete display slide widgets")
+    // RequestBody: {"slides":["83"],"labels":{"route":"dev"}}
+    @MethodLog
     @DeleteMapping("/{displayId}/slides/{slideId}/widgets")
     public ResponseEntity deleteDisplaySlideWeight(@PathVariable("displayId") Long displayId,
                                                    @PathVariable("slideId") Long slideId,
-                                                   @RequestBody Long[] ids,
-                                                   @ApiIgnore @CurrentUser User user,
+                                                   @RequestBody Map<String, Object> param,
+                                                   @CurrentUser User user,
                                                    HttpServletRequest request) {
+
+        Long[] ids = ((JSONArray) param.get("slides")).toJavaList(Long.class).toArray(new Long[]{});
 
         if (invalidId(displayId)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid Display id");
@@ -543,7 +552,7 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "upload avatar")
+    @MethodLog
     @PostMapping(value = "/upload/coverImage")
     public ResponseEntity uploadAvatar(@RequestParam("coverImage") MultipartFile file,
                                        HttpServletRequest request) {
@@ -568,11 +577,11 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "upload avatar")
+    @MethodLog
     @PostMapping(value = "/slide/{slideId}/upload/bgImage")
     public ResponseEntity uploadSlideBGImage(@PathVariable Long slideId,
                                              @RequestParam("backgroundImage") MultipartFile file,
-                                             @ApiIgnore @CurrentUser User user,
+                                             @CurrentUser User user,
                                              HttpServletRequest request) {
 
         if (invalidId(slideId)) {
@@ -598,11 +607,11 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "upload subwidget bgImage")
+    @MethodLog
     @PostMapping(value = "/slide/widget/{relationId}/bgImage")
     public ResponseEntity uploadSlideSubWidgetBGImage(@PathVariable Long relationId,
                                                       @RequestParam("backgroundImage") MultipartFile file,
-                                                      @ApiIgnore @CurrentUser User user,
+                                                      @CurrentUser User user,
                                                       HttpServletRequest request) {
 
         if (invalidId(relationId)) {
@@ -628,11 +637,11 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "share display")
+    @MethodLog
     @GetMapping("/{id}/share")
     public ResponseEntity shareDisplay(@PathVariable Long id,
                                        @RequestParam(required = false) String username,
-                                       @ApiIgnore @CurrentUser User user,
+                                       @CurrentUser User user,
                                        HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid id");
@@ -651,7 +660,7 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get display  exclude roles")
+    @MethodLog
     @GetMapping("/{id}/exclude/roles")
     public ResponseEntity getDisplayExcludeRoles(@PathVariable Long id,
                                                  HttpServletRequest request) {
@@ -672,7 +681,7 @@ public class DisplayController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get display slide exclude roles")
+    @MethodLog
     @GetMapping("/slide/{id}/exclude/roles")
     public ResponseEntity getSlideExcludeRoles(@PathVariable Long id,
                                                HttpServletRequest request) {
@@ -685,37 +694,35 @@ public class DisplayController extends BaseController {
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(excludeRoles));
     }
 
-    @ApiOperation(value = "preview display")
+    @MethodLog
     @GetMapping(value = "/{id}/preview", produces = MediaType.IMAGE_PNG_VALUE)
     @ResponseBody
     public void previewDisplay(@PathVariable Long id,
                                         @RequestParam(required = false) String username,
-                                        @ApiIgnore @CurrentUser User user,
+                                        @CurrentUser User user,
                                         HttpServletRequest request,
                                         HttpServletResponse response) throws IOException {
         Display display = displayMapper.getById(id);
         Project project = projectMapper.getById(display.getProjectId());
-        if(!user.getId().equals(project.getUserId())){
-            response.setContentType(MediaType.TEXT_PLAIN_VALUE);
-            response.getWriter().write("You have no access to this display.");
-            return;
-        }
 
         FileInputStream inputStream = null;
         try {
             List<ImageContent> imageFiles = scheduleService.getPreviewImage(user.getId(), "display", id);
             File imageFile = Iterables.getFirst(imageFiles, null).getImageFile();
-            inputStream = new FileInputStream(imageFile);
-            response.setContentType(MediaType.IMAGE_PNG_VALUE);
-            IOUtils.copy(inputStream, response.getOutputStream());
-        } catch (IOException e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
+            if(null != imageFile) {
+                inputStream = new FileInputStream(imageFile);
+                response.setContentType(MediaType.IMAGE_PNG_VALUE);
+                IOUtils.copy(inputStream, response.getOutputStream());
+            } else {
+                log.error("Execute display failed, because image file is null.");
+                response.sendError(504, "Execute display failed, because image file is null.");
+            }
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error(e.getMessage());
+            log.error("display preview error: ", e);
         } finally {
-            inputStream.close();
+            if(null != inputStream) {
+                inputStream.close();
+            }
         }
     }
 }

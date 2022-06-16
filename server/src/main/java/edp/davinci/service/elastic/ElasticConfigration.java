@@ -25,6 +25,7 @@ public class ElasticConfigration {
     @Autowired
     public Environment environment;
 
+    @SuppressWarnings("unchecked")
     @PostConstruct
     public void initialize() throws Exception {
         String statistic_open = environment.getProperty("statistic.enable");

@@ -102,8 +102,10 @@ export class Cell extends React.PureComponent <ICellProps, ICellState> {
         if (currentColorItem) {
           const legendSelectedItem = legend[currentColorItem.name]
           if (!(legendSelectedItem && legendSelectedItem.includes(d[currentColorItem.name]))) {
+            // 后台返回的数据中，可能会因为区分就在名字上加个 'T.'，而且要么是原名，要么只会是加个 'T.'
+            const name = d[currentColorItem.name] ? d[currentColorItem.name] : d['T.' + currentColorItem.name]
             styleColor = {
-              color: currentColorItem.config.values[d[currentColorItem.name]]
+              color: currentColorItem.config.values[name]
             }
           }
         }
@@ -118,7 +120,6 @@ export class Cell extends React.PureComponent <ICellProps, ICellState> {
         )
       })
     })
-
     const cellStyles = {
       width,
       ...(height && { height }),

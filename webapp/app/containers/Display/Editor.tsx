@@ -75,7 +75,7 @@ const styles = require('./Display.less')
 import { IWidgetConfig, RenderType } from '../Widget/components/Widget'
 import { decodeMetricName } from '../Widget/components/util'
 import { ViewActions } from '../View/actions'
-const { loadViewDataFromVizItem, loadViewsDetail } = ViewActions // @TODO global filter in Display
+const { loadViewDataFromVizItem, loadViewExecuteQuery, loadViewGetProgress, loadViewGetResult, loadViewKillExecute, loadViewsDetail } = ViewActions // @TODO global filter in Display
 import { makeSelectWidgets } from '../Widget/selectors'
 import { makeSelectFormedViews } from '../View/selectors'
 import { GRID_ITEM_MARGIN, DEFAULT_BASELINE_COLOR, DEFAULT_SPLITER, MAX_LAYER_COUNT } from 'app/globalConstants'
@@ -148,8 +148,38 @@ interface IEditorProps extends RouteComponentProps<{}, IParams> {
     renderType: RenderType,
     layerItemId: number,
     viewId: number,
-    requestParams: IDataRequestParams
+    requestParams: IDataRequestParams,
+    statistic: any
   ) => void
+  onViewExecuteQuery: (
+    renderType: RenderType,
+    dashboardItemId: number,
+    viewId: number,
+    requestParams: IDataRequestParams,
+    statistic: any,
+    resolve: (data) => void,
+    reject: (data) => void
+  ) => void
+  onViewGetProgress: (
+    execId: string,
+    resolve: (data) => void,
+    reject: (data) => void
+    ) => void
+  onViewGetResult: (
+    execId: string,
+    renderType: RenderType,
+    dashboardItemId: number,
+    viewId: number,
+    requestParams: IDataRequestParams,
+    statistic: any,
+    resolve: (data) => void,
+    reject: (data) => void
+    ) => void
+  onViewKillExecute: (
+    execId: string,
+    resolve: (data) => void,
+    reject: (data) => void
+    ) => void
   onLoadViewsDetail: (viewIds: number[], resolve: () => void) => void
 
   onShowEditorBaselines: (baselines: IBaseline[]) => void
@@ -168,7 +198,8 @@ interface IEditorStates {
     id: number
     setting: any
     param: ILayerParams | Partial<ISlideParams>
-  }
+  },
+  executeQueryFailed: boolean
 }
 
 export class Editor extends React.Component<IEditorProps, IEditorStates> {
@@ -181,14 +212,15 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
       slideParams: {},
       currentLocalLayers: [],
       zoomRatio: 1,
-      sliderValue: 20,
+      sliderValue: 100,
       scale: 1,
       settingInfo: {
         key: '',
         id: 0,
         setting: null,
         param: null
-      }
+      },
+      executeQueryFailed: false
     }
   }
 
@@ -200,12 +232,26 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
     onHideNavigator()
   }
 
+  private execIds = []
+
+  private deleteExecId = (execId) => {
+    const index = this.execIds.indexOf(execId);
+    if (index > -1) this.execIds.splice(index, 1)
+  }
+
   public componentWillUnmount () {
+    this.timeout.forEach(item => clearTimeout(item))
+    this.execIds.forEach((execId) => {
+      this.props.onViewKillExecute(execId, () => {}, () => {})
+    })
     this.props.onResetDisplayState()
   }
 
   public componentWillReceiveProps (nextProps: IEditorProps) {
     const { currentSlide, currentLayers } = nextProps
+    if (this.state.slideParams && this.state.slideParams.displayMode) {
+      this.setDisplayMode(this.state.slideParams.displayMode)
+    }
 
     let { slideParams, currentLocalLayers } = this.state
     if (currentSlide && currentSlide !== this.props.currentSlide) {
@@ -284,12 +330,13 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
     const {
       currentLayersInfo,
       widgets,
-      onLoadViewDataFromVizItem
+      // onLoadViewDataFromVizItem
+      onViewExecuteQuery
     } = this.props
 
     const widget = widgets.find((w) => w.id === widgetId)
     const widgetConfig: IWidgetConfig = JSON.parse(widget.config)
-    const { cols, rows, metrics, secondaryMetrics, filters, color, label, size, xAxis, tip, orders, cache, expired } = widgetConfig
+    const { cols, rows, metrics, secondaryMetrics, filters, color, label, size, xAxis, tip, orders, cache, expired, view, engine } = widgetConfig
     const updatedCols = cols.map((col) => widgetDimensionMigrationRecorder(col))
     const updatedRows = rows.map((row) => widgetDimensionMigrationRecorder(row))
     const customOrders = updatedCols.concat(updatedRows)
@@ -307,7 +354,6 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
     let globalVariables
     let pagination
     let nativeQuery
-
     if (queryConditions) {
       tempFilters = queryConditions.tempFilters !== void 0 ? queryConditions.tempFilters : cachedQueryConditions.tempFilters
       linkageFilters = queryConditions.linkageFilters !== void 0 ? queryConditions.linkageFilters : cachedQueryConditions.linkageFilters
@@ -385,7 +431,7 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
     }, [])
 
     const requestParams = {
-      groups,
+      groups: Array.from(new Set(groups)),
       aggregators,
       filters: requestParamsFilters,
       tempFilters,
@@ -402,17 +448,68 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
       nativeQuery,
       customOrders
     }
+    if (typeof view === 'object' && Object.keys(view).length > 0) requestParams.view = view
+
+    if (engine) requestParams.engineType = engine
 
     if (tempOrders) {
       requestParams.orders = requestParams.orders.concat(tempOrders)
     }
 
-    onLoadViewDataFromVizItem(
-      renderType,
-      itemId,
-      widget.viewId,
-      requestParams
-    )
+    // onLoadViewDataFromVizItem(
+    //   renderType,
+    //   itemId,
+    //   widget.viewId,
+    //   requestParams
+    // )
+    
+    // 本身这里源代码就少一个statistic参数，可能没啥用，先随便赋个{}
+    const statistic = {}
+    this.setState({executeQueryFailed: false})
+    onViewExecuteQuery(renderType, itemId, widget.viewId, requestParams, statistic,  (result) => {
+      const { execId } = result
+      this.execIds.push(execId)
+      this.executeQuery(execId, renderType, itemId, widget.viewId, requestParams, statistic, this)
+    }, () => {
+      this.setState({executeQueryFailed: true})
+      return message.error('查询失败！')
+    })
+  }
+
+  private timeout = []
+
+  private executeQuery(execId, renderType, itemId, viewId, requestParams, statistic, that) {
+    const { onViewGetProgress, onViewGetResult } = that.props
+    // 空数据的话，会不请求数据，execId为undefined，这时候不需要getProgress
+    if (execId) {
+      onViewGetProgress(execId, (result) => {
+        const { progress, status } = result
+        if (status === 'Failed') {
+          // 提示 查询失败（显示表格头，就和现在的暂无数据保持一致的交互，只是提示换成“查询失败”）
+          that.setState({executeQueryFailed: true})
+          that.deleteExecId(execId)
+          return message.error('查询失败！')
+        } else if (status === 'Succeed' && progress === 1) {
+          // 查询成功，调用 结果集接口，status为success时，progress一定为1
+          onViewGetResult(execId, renderType, itemId, viewId, requestParams, statistic, (result) => {
+            that.deleteExecId(execId)
+          }, () => {
+            that.setState({executeQueryFailed: true})
+            that.deleteExecId(execId)
+            return message.error('查询失败！')
+          })
+        } else {
+          // 说明还在运行中
+          // 三秒后再请求一次进度查询接口
+          const t = setTimeout(that.executeQuery, 3000, execId, renderType, itemId, viewId, requestParams, statistic, that)
+          that.timeout.push(t)
+        }
+      }, () => {
+        that.setState({executeQueryFailed: true})
+        that.deleteExecId(execId)
+        return message.error('查询失败！')
+      })
+    }
   }
 
   private updateCurrentLocalLayers = (
@@ -506,6 +603,54 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
     this.props.toggleLayersResizingStatus(editLayers.map((l) => l.id), false)
   }
 
+  // 设置展示模式为静态模式或者是动态模式
+  private setDisplayMode = (value) => {
+    const widgetDOMs = document.getElementsByClassName('widget-class')
+    const paginationDOMs = document.getElementsByClassName('ant-pagination')
+    const tableHeaderDOMs = document.getElementsByClassName('ant-table-header')
+    const tableBodyDOMs = document.getElementsByClassName('ant-table-body')
+    const tableWrapperDOMs = document.getElementsByClassName('ant-table-wrapper')
+    if (value === 'static') {
+      // 静态模式，隐藏掉所有滚动条和分页组件
+      for (let i = 0; i < widgetDOMs.length; i++) {
+        widgetDOMs[i].style.overflow = 'hidden'
+      }
+      for (let i = 0; i < tableHeaderDOMs.length; i++) {
+        tableHeaderDOMs[i].style.setProperty('overflow', 'hidden', 'important')
+      }
+      for (let i = 0; i < tableBodyDOMs.length; i++) {
+        tableBodyDOMs[i].style.overflow = 'hidden'
+      }
+      for (let i = 0; i < tableWrapperDOMs.length; i++) {
+        tableWrapperDOMs[i].style.overflow = 'hidden'
+      }
+      for (let i = 0; i < paginationDOMs.length; i++) {
+        paginationDOMs[i].style.display = 'none'
+      }
+    } else {
+      // 动态模式 恢复原值
+      for (let i = 0; i < widgetDOMs.length; i++) {
+        widgetDOMs[i].style.overflow = 'auto hidden'
+      }
+      for (let i = 0; i < tableHeaderDOMs.length; i++) {
+        tableHeaderDOMs[i].style.overflow = ''
+        tableHeaderDOMs[i].style.overflowX = 'hidden !important'
+        tableHeaderDOMs[i].style.overflowY = 'scroll !important'
+      }
+      for (let i = 0; i < tableBodyDOMs.length; i++) {
+        tableBodyDOMs[i].style.overflow = ''
+        tableBodyDOMs[i].style.overflowY = 'auto'
+      }
+      for (let i = 0; i < tableWrapperDOMs.length; i++) {
+        tableWrapperDOMs[i].style.overflowY = 'scroll'
+        tableWrapperDOMs[i].style.overflow = ''
+      }
+      for (let i = 0; i < paginationDOMs.length; i++) {
+        paginationDOMs[i].style.display = ''
+      }
+    }
+  }
+
   private formItemChange = (field, val) => {
     const { slideParams, currentLocalLayers } = this.state
 
@@ -597,7 +742,8 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
       })
     })
     if (viewIds && viewIds.length) {
-      const loadViewIds = viewIds.filter((viewId) => !formedViews[viewId])
+      const loadViewIds = viewIds.filter((viewId) => typeof viewId === 'number' && viewId > 0 && !formedViews[viewId])
+
       if (loadViewIds.length) {
         onLoadViewsDetail(loadViewIds, () => {
           onAddDisplayLayers(currentDisplay.id, currentSlide.id, layers)
@@ -807,14 +953,23 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
       zoomRatio,
       sliderValue,
       scale,
-      settingInfo
+      settingInfo,
+      executeQueryFailed
     } = this.state
 
     if (!currentDisplay) { return null }
 
     const layerItems = !Array.isArray(widgets) ? null : currentLocalLayers.map((layer, idx) => {
       const widget = widgets.find((w) => w.id === layer.widgetId)
-      const model = widget && formedViews[widget.viewId].model
+      let model = {}
+      if (widget) {
+        if (widget.viewId) {
+          model = widget && formedViews[widget.viewId].model
+        } else {
+          const config = JSON.parse(widget.config)
+          model = config.model
+        }
+      }
       const layerId = layer.id
 
       const { polling, frequency } = JSON.parse(layer.params)
@@ -849,6 +1004,7 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
           onResizeLayerStop={this.resizeLayerStop}
           onDragLayerStop={this.dragLayerStop}
           onEditWidget={this.toWorkbench}
+          executeQueryFailed={executeQueryFailed}
         />
         // </LayerContextMenu>
       )
@@ -871,6 +1027,7 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
       settingContent = (
         // 最右侧的 设置栏
         <SettingForm
+          currentLocalLayers={currentLocalLayers}
           key={settingInfo.key}
           id={settingInfo.id}
           // 设置项
@@ -917,6 +1074,7 @@ export class Editor extends React.Component<IEditorProps, IEditorStates> {
           <DisplayContainer
             key="editor"
             slideParams={slideParams}
+            sliderValue={sliderValue}
             zoomRatio={zoomRatio}
             onScaleChange={this.scaleChange}
             onCoverCutCreated={this.coverCutCreated}
@@ -978,7 +1136,12 @@ function mapDispatchToProps (dispatch) {
     onEditCurrentDisplay: (display, resolve?) => dispatch(DisplayActions.editCurrentDisplay(display, resolve)),
     onEditCurrentSlide: (displayId, slide, resolve?) => dispatch(DisplayActions.editCurrentSlide(displayId, slide, resolve)),
     onUploadCurrentSlideCover: (cover, resolve) => dispatch(DisplayActions.uploadCurrentSlideCover(cover, resolve)),
-    onLoadViewDataFromVizItem: (renderType, itemId, viewId, requestParams) => dispatch(loadViewDataFromVizItem(renderType, itemId, viewId, requestParams, 'display')),
+    onLoadViewDataFromVizItem: (renderType, itemId, viewId, requestParams, statistic) => dispatch(loadViewDataFromVizItem(renderType, itemId, viewId, requestParams, 'display', statistic)),
+    onViewExecuteQuery: (renderType, itemId, viewId, requestParams, statistic, resolve, reject) => dispatch(loadViewExecuteQuery(renderType, itemId, viewId, requestParams, 'display', statistic, resolve, reject)),
+    onViewGetProgress: (execId, resolve, reject) => dispatch(loadViewGetProgress(execId, resolve, reject)),
+    onViewGetResult: (execId, renderType, itemId, viewId, requestParams, statistic, resolve, reject) => dispatch(loadViewGetResult(execId, renderType, itemId, viewId, requestParams, 'display', statistic, resolve, reject)),
+    onViewKillExecute: (execId, resolve, reject) => dispatch(loadViewKillExecute(execId, resolve, reject)),
+
     onLoadViewsDetail: (viewIds, resolve) => dispatch(loadViewsDetail(viewIds, resolve)),
     onSelectLayer: ({ id, selected, exclusive }) => dispatch(DisplayActions.selectLayer({ id, selected, exclusive })),
     onClearLayersSelection: () => dispatch(DisplayActions.clearLayersSelection()),

@@ -5308,6 +5308,7 @@ function getWidgetExecuteParam(widgetConfig) {
     var rows = _widgetConfig.rows;
     var metrics = _widgetConfig.metrics;
     var filters = _widgetConfig.filters;
+    var view = _widgetConfig.view;
     var color = _widgetConfig.color;
     var label = _widgetConfig.label;
     var size = _widgetConfig.size;
@@ -5397,7 +5398,8 @@ function getWidgetExecuteParam(widgetConfig) {
         orders: orders,
         cache: cache,
         expired: expired,
-        nativeQuery: nativeQuery
+        nativeQuery: nativeQuery,
+        view: view
     };
     return requestParams
 }
