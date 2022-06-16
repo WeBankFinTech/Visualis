@@ -129,7 +129,6 @@ mv * ./../ # 把静态资源文件移动dss/visualis路径下
 # 在nginx配置参考
 # 补充linkis gateway
 
-# 换个端口
 server {
     listen       8989; # 访问端口
     server_name  localhost;
