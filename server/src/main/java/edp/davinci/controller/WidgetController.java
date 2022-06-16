@@ -20,7 +20,9 @@
 package edp.davinci.controller;
 
 
+import com.webank.wedatasphere.dss.visualis.auth.ProjectAuth;
 import edp.core.annotation.CurrentUser;
+import edp.core.annotation.MethodLog;
 import edp.davinci.common.controller.BaseController;
 import edp.davinci.core.common.Constants;
 import edp.davinci.core.common.ResultMap;
@@ -30,31 +32,28 @@ import edp.davinci.dto.widgetDto.WidgetUpdate;
 import edp.davinci.model.User;
 import edp.davinci.model.Widget;
 import edp.davinci.service.WidgetService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.List;
 
-@Api(value = "/widgets", tags = "widgets", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-@ApiResponses(@ApiResponse(code = 404, message = "widget not found"))
 @Slf4j
 @RestController
-@RequestMapping(value = Constants.BASE_API_PATH + "/widgets", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+@RequestMapping(value = Constants.BASE_API_PATH + "/widgets", produces = MediaType.APPLICATION_JSON_VALUE)
 public class WidgetController extends BaseController {
 
     @Autowired
     private WidgetService widgetService;
+
+    @Autowired
+    private ProjectAuth projectAuth;
 
     /**
      * 获取widget列表
@@ -64,10 +63,10 @@ public class WidgetController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get widgets")
+    @MethodLog
     @GetMapping
     public ResponseEntity getWidgets(@RequestParam Long projectId,
-                                     @ApiIgnore @CurrentUser User user,
+                                     @CurrentUser User user,
                                      HttpServletRequest request) {
         if (invalidId(projectId)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid project id");
@@ -87,10 +86,10 @@ public class WidgetController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get widget info")
+    @MethodLog
     @GetMapping("/{id}")
     public ResponseEntity getWidgetInfo(@PathVariable Long id,
-                                        @ApiIgnore @CurrentUser User user,
+                                        @CurrentUser User user,
                                         HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid id");
@@ -110,15 +109,20 @@ public class WidgetController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "create widget")
+    @MethodLog
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity createWidgets(@Valid @RequestBody WidgetCreate widget,
-                                        @ApiIgnore BindingResult bindingResult,
-                                        @ApiIgnore @CurrentUser User user,
+                                        BindingResult bindingResult,
+                                        @CurrentUser User user,
                                         HttpServletRequest request) {
         if (bindingResult.hasErrors()) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message(bindingResult.getFieldErrors().get(0).getDefaultMessage());
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
+        }
+
+
+        if(!projectAuth.isPorjectOwner(widget.getProjectId(), user.getId())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         Widget newWidget = widgetService.createWidget(widget, user);
@@ -136,12 +140,12 @@ public class WidgetController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "update widget")
+    @MethodLog
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateWidget(@PathVariable Long id,
                                        @Valid @RequestBody WidgetUpdate widget,
-                                       @ApiIgnore BindingResult bindingResult,
-                                       @ApiIgnore @CurrentUser User user,
+                                       BindingResult bindingResult,
+                                       @CurrentUser User user,
                                        HttpServletRequest request) {
 
         if (bindingResult.hasErrors()) {
@@ -167,10 +171,10 @@ public class WidgetController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "delete widget")
+    @MethodLog
     @DeleteMapping("/{id}")
     public ResponseEntity deleteWidget(@PathVariable Long id,
-                                       @ApiIgnore @CurrentUser User user,
+                                       @CurrentUser User user,
                                        HttpServletRequest request) {
 
         if (invalidId(id)) {
@@ -191,13 +195,13 @@ public class WidgetController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "download widget")
+    @MethodLog
     @PostMapping("/{id}/{type}")
     public ResponseEntity downloadWidget(@PathVariable("id") Long id,
                                          @PathVariable("type") String type,
                                          @Valid @RequestBody ViewExecuteParam executeParam,
-                                         @ApiIgnore BindingResult bindingResult,
-                                         @ApiIgnore @CurrentUser User user,
+                                         BindingResult bindingResult,
+                                         @CurrentUser User user,
                                          HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid id");
@@ -223,11 +227,11 @@ public class WidgetController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "share widget")
+    @MethodLog
     @GetMapping("/{id}/share")
     public ResponseEntity shareWidget(@PathVariable Long id,
                                       @RequestParam(required = false) String username,
-                                      @ApiIgnore @CurrentUser User user,
+                                      @CurrentUser User user,
                                       HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid id");

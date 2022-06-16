@@ -7,10 +7,35 @@ const argv = require('./argv')
 const port = require('./port')
 const setup = require('./middlewares/frontendMiddleware')
 const { resolve } = require('path')
+const proxy = require('http-proxy-middleware');
 const app = express()
 
 // If you need a backend, e.g. an API, add your custom backend-specific middleware here
 // app.use('/api', myApi);
+
+// get the intended host and port number, use localhost and port 3000 if not provided
+const customHost = argv.host || process.env.HOST
+const host = customHost || null // Let http.Server use its default IPv6/4 host
+const prettyHost = customHost || 'localhost'
+
+// proxy 中间件的选择项
+var options = {
+  target: 'http://10.107.116.246:8088', // 目标服务器 host
+  changeOrigin: true,               // 默认false，是否需要改变原始主机头为目标URL
+  pathRewrite: {
+      '^/api' : '/api/rest_s/v1/visualis',     // 重写请求，比如我们源访问的是api/old-path，那么请求会被解析为/api/new-path
+      '^/restj' : '/api/rest_j/v1/visualis',     // 重写请求，比如我们源访问的是api/old-path，那么请求会被解析为/api/new-path
+  },
+  onProxyReq(proxyReq, req, res) {
+    proxyReq.setHeader('cookie', 'bdp-user-ticket-id=y4h8zre1zbG7a5OlwX8oUNdqC/7/PMWHvWa5euePers=;workspaceId=104');
+  }
+}
+// 创建代理
+var exampleProxy = proxy(options);
+
+app.use('/api', exampleProxy);
+app.use('/restj', exampleProxy);
+app.use('/login', exampleProxy);
 
 // In production we need to pass these values in instead of relying on webpack
 setup(app, {
@@ -18,10 +43,6 @@ setup(app, {
   publicPath: '/'
 })
 
-// get the intended host and port number, use localhost and port 3000 if not provided
-const customHost = argv.host || process.env.HOST
-const host = customHost || null // Let http.Server use its default IPv6/4 host
-const prettyHost = customHost || 'localhost'
 
 // use the gzipped bundle
 app.get('*.js', (req, res, next) => {

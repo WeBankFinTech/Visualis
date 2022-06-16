@@ -33,6 +33,7 @@ interface IFieldConfigProps extends FormComponentProps {
   queryInfo: string[]
   onSave: (config: IFieldConfig) => void
   onCancel: () => void
+  currentEditingItemName: string
 }
 
 interface IFieldConfigStates {
@@ -103,7 +104,6 @@ class FieldConfig extends React.PureComponent<IFieldConfigProps, IFieldConfigSta
   private setFieldsValue = (form: WrappedFormUtils, config: IFieldConfig) => {
     const { alias, desc, useExpression } = config
     form.setFieldsValue({
-      [`alias_${useExpression ? 1 : 0}`]: alias,
       desc,
       useExpression
     })
@@ -237,7 +237,7 @@ class FieldConfig extends React.PureComponent<IFieldConfigProps, IFieldConfigSta
   )
 
   public render () {
-    const { visible, queryInfo, form } = this.props
+    const { visible, queryInfo, form, currentEditingItemName } = this.props
     const { getFieldDecorator } = form
     const { localConfig, testResult, testModalVisible, queryVariableNames } = this.state
     const { desc, useExpression } = localConfig
@@ -247,7 +247,7 @@ class FieldConfig extends React.PureComponent<IFieldConfigProps, IFieldConfigSta
 
     const textAreaCls = classnames({ [utilStyles.hide]: !useExpression })
     const inputCls = classnames({ [utilStyles.hide]: useExpression })
-
+    const tempName = currentEditingItemName.split('@').length > 0 ? currentEditingItemName.split('@')[0] : currentEditingItemName
     return (
       <Modal
         title="字段设置"
@@ -259,7 +259,12 @@ class FieldConfig extends React.PureComponent<IFieldConfigProps, IFieldConfigSta
       >
         <Form>
           <FormItem label="字段别名" className={inputCls}>
-            {getFieldDecorator('alias_0')(<Input />)}
+            {getFieldDecorator('alias_0', {
+              initialValue: tempName,
+              rules: [{required: true, message: '名称不能为空'}]
+            })(
+              <Input />
+            )}
           </FormItem>
           <FormItem label="字段别名" className={textAreaCls} style={{ height: '325px' }}>
             <TextArea ref={this.codeEditor} placeholder="请输入动态表达式" />

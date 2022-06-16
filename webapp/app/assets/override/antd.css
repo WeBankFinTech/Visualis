@@ -176,6 +176,10 @@
   margin: 0 4px;
 }
 
+.ant-table-thead > tr > th {
+  padding: 10px 15px !important;
+}
+
 /* 缩小默认行高（override variable） */
 /* .ant-table-thead > tr > th,
 .ant-table-tbody > tr > td {

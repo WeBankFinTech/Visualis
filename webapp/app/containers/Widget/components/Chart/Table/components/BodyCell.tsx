@@ -87,7 +87,7 @@ function hasMatchedTheCondition (
       matchTheCondition = cellVal.toString().indexOf(conditionValues[0].toString()) >= 0
       break
     case OperatorTypes.Equal:
-      matchTheCondition = (cellVal === conditionValues[0])
+      matchTheCondition = (cellVal === conditionValues[0] || cellVal.toString() === conditionValues[0])
       break
     case OperatorTypes.GreaterThan:
       matchTheCondition = (cellVal > conditionValues[0])

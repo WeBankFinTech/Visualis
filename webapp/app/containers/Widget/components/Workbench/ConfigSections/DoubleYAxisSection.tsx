@@ -12,6 +12,10 @@ const styles = require('../Workbench.less')
 export interface IDoubleYAxisConfig {
   yAxisLeft: string
   yAxisRight: string
+  leftMin: number
+  leftMax: number
+  rightMin: number
+  rightMax: number
   yAxisSplitNumber: number
   dataZoomThreshold: number
   inverse: boolean
@@ -54,6 +58,10 @@ export class DoubleYAxisSection extends React.PureComponent<IDoubleYAxisSectionP
     const {
       yAxisLeft,
       yAxisRight,
+      leftMin,
+      leftMax,
+      rightMin,
+      rightMax,
       yAxisSplitNumber,
       dataZoomThreshold,
       showLine,
@@ -87,9 +95,9 @@ export class DoubleYAxisSection extends React.PureComponent<IDoubleYAxisSectionP
         <div className={styles.blockBody}>
           <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
             <Col span={10}>左Y轴</Col>
-            <Col span={10}>右Y轴</Col>
           </Row>
           <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
+            <Col span={10}>类型</Col>
             <Col span={10}>
               <Select
                 placeholder="yAxisLeft"
@@ -100,6 +108,34 @@ export class DoubleYAxisSection extends React.PureComponent<IDoubleYAxisSectionP
                 {yAixsOptions}
               </Select>
             </Col>
+          </Row>
+          <Row key="min" gutter={8} type="flex" align="middle" className={styles.blockRow}>
+            <Col span={10}>最小值</Col>
+            <Col span={10}>
+              <InputNumber
+                className={styles.blockElm}
+                value={leftMin}
+                onChange={this.inputNumberChange('leftMin')}
+              />
+            </Col>
+          </Row>
+          <Row key="max" gutter={8} type="flex" align="middle" className={styles.blockRow}>
+            <Col span={10}>最大值</Col>
+            <Col span={10}>
+              <InputNumber
+                className={styles.blockElm}
+                value={leftMax}
+                onChange={this.inputNumberChange('leftMax')}
+              />
+            </Col>
+          </Row>
+
+          <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
+            {/* <Col span={10}>左Y轴</Col> */}
+            <Col span={10}>右Y轴</Col>
+          </Row>
+          <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
+            <Col span={10}>类型</Col>
             <Col span={10}>
               <Select
                 placeholder="yAxisRight"
@@ -111,12 +147,33 @@ export class DoubleYAxisSection extends React.PureComponent<IDoubleYAxisSectionP
               </Select>
             </Col>
           </Row>
-          <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
-            <Col span={10}>y轴刻度条数</Col>
-            <Col span={10}>超出后缩放</Col>
-          </Row>
-          <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
+          <Row key="min" gutter={8} type="flex" align="middle" className={styles.blockRow}>
+            <Col span={10}>最小值</Col>
             <Col span={10}>
+              <InputNumber
+                className={styles.blockElm}
+                value={rightMin}
+                onChange={this.inputNumberChange('rightMin')}
+              />
+            </Col>
+          </Row>
+          <Row key="max" gutter={8} type="flex" align="middle" className={styles.blockRow}>
+            <Col span={10}>最大值</Col>
+            <Col span={10}>
+              <InputNumber
+                className={styles.blockElm}
+                value={rightMax}
+                onChange={this.inputNumberChange('rightMax')}
+              />
+            </Col>
+          </Row>
+
+          <Row gutter={8} type="flex" align="middle" className={styles.blockRow}>
+            {/* <Col span={10}>y轴刻度条数</Col> */}
+            <Col span={10}>超出后缩放</Col>
+          {/* </Row>
+          <Row gutter={8} type="flex" align="middle" className={styles.blockRow}> */}
+            {/* <Col span={10}>
               <InputNumber
                 placeholder="yAxisSplitNumber"
                 className={styles.blockElm}
@@ -124,7 +181,7 @@ export class DoubleYAxisSection extends React.PureComponent<IDoubleYAxisSectionP
                 min={2}
                 onChange={this.inputNumberChange('yAxisSplitNumber')}
               />
-            </Col>
+            </Col> */}
             <Col span={10}>
               <InputNumber
                 placeholder="dataZoomThreshold"

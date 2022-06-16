@@ -21,6 +21,7 @@ package edp.core.utils;
 
 import com.alibaba.druid.util.StringUtils;
 import com.webank.wedatasphere.dss.visualis.configuration.CommonConfig;
+import com.webank.wedatasphere.dss.visualis.utils.VisualisUtils;
 import edp.core.common.jdbc.ESDataSource;
 import edp.core.common.jdbc.ExtendedJdbcClassLoader;
 import edp.core.common.jdbc.JdbcDataSource;
@@ -119,7 +120,6 @@ public class SourceUtils {
                 connection.close();
                 connection = null;
             } catch (Exception e) {
-                e.printStackTrace();
                 log.error("connection close error", e.getMessage());
             }
         }
@@ -132,7 +132,7 @@ public class SourceUtils {
                 rs.close();
                 rs = null;
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("Failed to close result set: ", e);
             }
         }
     }
@@ -190,6 +190,9 @@ public class SourceUtils {
     public static String getDataSourceName(String jdbcUrl) {
         if(CommonConfig.HIVE_DATASOURCE_URL().getValue().equals(jdbcUrl)){
             return CommonConfig.HIVE_DATASOURCE_NAME().getValue();
+        }
+        if(VisualisUtils.PRESTO().getValue().equalsIgnoreCase(jdbcUrl)){
+            return jdbcUrl;
         }
         String dataSourceName = null;
         jdbcUrl = jdbcUrl.replaceAll(NEW_LINE_CHAR, EMPTY).replaceAll(SPACE, EMPTY).trim().toLowerCase();

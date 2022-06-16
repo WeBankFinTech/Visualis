@@ -98,7 +98,7 @@ public interface DashboardMapper {
             "	p.visibility 'p.visibility'",
             "from dashboard d ",
             "LEFT JOIN dashboard_portal dp on dp.id = d.dashboard_portal_id",
-            "LEFT JOIN dss_project p on p.id = dp.project_id",
+            "LEFT JOIN visualis_project p on p.id = dp.project_id",
             "WHERE d.id = #{dashboardId}"
     })
     DashboardWithPortal getDashboardWithPortalAndProject(@Param("dashboardId") Long dashboardId);

@@ -23,6 +23,7 @@ import edp.core.exception.NotFoundException;
 import edp.core.exception.ServerException;
 import edp.core.exception.UnAuthorizedExecption;
 import edp.core.utils.CollectionUtils;
+import edp.davinci.common.utils.ComponentFilterUtils;
 import edp.davinci.core.enums.LogNameEnum;
 import edp.davinci.core.enums.UserPermissionEnum;
 import edp.davinci.core.enums.VizEnum;
@@ -119,6 +120,9 @@ public class DashboardPortalServiceImpl extends VizCommonService implements Dash
             }
 
         }
+
+        ComponentFilterUtils filter = new ComponentFilterUtils();
+        dashboardPortals = filter.doFilterDashboardPortal(dashboardPortals);
 
 
         return dashboardPortals;

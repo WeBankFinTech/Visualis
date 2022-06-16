@@ -244,6 +244,23 @@ function displayReducer (state = initialState, action) {
             }
           }
         })
+    case ViewActionTypes.VIEW_EXECUTE_QUERY:
+      return payload.vizType !== 'display' ? state : state
+        .set('currentLayersInfo', {
+          ...layersInfo,
+          [payload.itemId]: {
+            ...layersInfo[payload.itemId],
+            loading: true,
+            queryConditions: {
+              tempFilters: payload.requestParams.tempFilters,
+              linkageFilters: payload.requestParams.linkageFilters,
+              globalFilters: payload.requestParams.globalFilters,
+              variables: payload.requestParams.variables,
+              linkageVariables: payload.requestParams.linkageVariables,
+              globalVariables: payload.requestParams.globalVariables
+            }
+          }
+        })
     case ViewActionTypes.LOAD_VIEW_DATA_FROM_VIZ_ITEM_SUCCESS:
       fieldGroupedSort(payload.result.resultList, payload.requestParams.customOrders)
       return payload.vizType !== 'display' ? state : state
@@ -257,6 +274,26 @@ function displayReducer (state = initialState, action) {
           }
         })
     case ViewActionTypes.LOAD_VIEW_DATA_FROM_VIZ_ITEM_FAILURE:
+      return payload.vizType !== 'display' ? state : state.set('currentLayersInfo', {
+        ...layersInfo,
+        [payload.layerId]: {
+          ...layersInfo[payload.layerId],
+          loading: false
+        }
+      })
+    case ViewActionTypes.VIEW_GET_RESULT_SUCCESS:
+      fieldGroupedSort(payload.result.resultList, payload.requestParams.customOrders)
+      return payload.vizType !== 'display' ? state : state
+        .set('currentLayersInfo', {
+          ...layersInfo,
+          [payload.itemId]: {
+            ...layersInfo[payload.itemId],
+            loading: false,
+            datasource: payload.result,
+            renderType: payload.renderType
+          }
+        })
+    case ViewActionTypes.VIEW_GET_RESULT_FAILURE:
       return payload.vizType !== 'display' ? state : state.set('currentLayersInfo', {
         ...layersInfo,
         [payload.layerId]: {

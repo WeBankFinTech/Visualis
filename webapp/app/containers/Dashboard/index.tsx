@@ -788,6 +788,7 @@ export class Dashboard extends React.Component<IDashboardProps, IDashboardStates
               maxSize={this.maxSplitSize}
               onChange={this.saveSplitSize}
             >
+              {/* dashboard编辑页下方左侧 */}
               <div className={styles.portalTree} style={{ width: portalTreeWidth || 190 }}>
                 <div className={styles.portalRow}>
                   <span className={styles.portalAction}>
@@ -856,6 +857,7 @@ export class Dashboard extends React.Component<IDashboardProps, IDashboardStates
                   : isGrid ? <h3 className={styles.loadingTreeMsg}>Loading tree......</h3> : ''
                 }
               </div>
+              {/* dashboard编辑页下方右侧 */}
               <div className={styles.gridClass}>
                 {
                   isGrid
