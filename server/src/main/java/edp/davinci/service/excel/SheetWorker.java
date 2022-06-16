@@ -55,6 +55,7 @@ public class SheetWorker<T> extends AbstractSheetWriter implements Callable {
         this.context = context;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public T call() throws Exception {
         Stopwatch watch = Stopwatch.createStarted();

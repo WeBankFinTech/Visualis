@@ -94,7 +94,6 @@ public class MailUtils {
             log.info("send mail success, in {} million seconds", System.currentTimeMillis() - startTimestamp);
         } catch (MailException e) {
             log.error("send mail failed, {} \n", e.getMessage());
-            e.printStackTrace();
             throw new ServerException(e.getMessage());
         }
     }
@@ -196,11 +195,9 @@ public class MailUtils {
             log.info("Send mail success, in {} million seconds", System.currentTimeMillis() - startTimestamp);
         } catch (MessagingException e) {
             log.error("Send mail failed, {}\n", e.getMessage());
-            e.printStackTrace();
             throw new ServerException(e.getMessage());
         } catch (UnsupportedEncodingException e) {
             log.error("Send mail failed, {}\n", e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -343,11 +340,9 @@ public class MailUtils {
             log.info("Send mail success, in {} million seconds", System.currentTimeMillis() - startTimestamp);
         } catch (MessagingException e) {
             log.error("Send mail failed, {}\n", e.getMessage());
-            e.printStackTrace();
             throw new ServerException(e.getMessage());
         } catch (UnsupportedEncodingException e) {
             log.error("Send mail failed, {}\n", e.getMessage());
-            e.printStackTrace();
         }
     }
 

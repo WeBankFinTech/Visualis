@@ -25,6 +25,22 @@
       "default": [255,255,255,50]
     }]
   }, {
+    "name": "display",
+    "title": "展示",
+    "items": [{
+      "name": "displayMode",
+      "title": "展示模式",
+      "component": "radio",
+      "values": [{
+        "name": "交互模式",
+        "value": "dynamic"
+      }, {
+        "name": "静态模式",
+        "value": "static"
+      }],
+      "default": "static"
+    }]
+  }, {
     "name": "scale",
     "title": "缩放",
     "items": [{

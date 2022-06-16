@@ -400,6 +400,7 @@ export class ViewEditor extends React.Component<IViewEditorProps, IViewEditorSta
             <SqlEditor value={editingView.sql} hints={sqlHints} onSqlChange={this.sqlChange} />
             <SqlPreview size="small" loading={loading.execute} response={sqlDataSource} />
             <EditorBottom
+              view={editingView}
               sqlLimit={sqlLimit}
               loading={loading.execute}
               nextDisabled={nextDisabled}

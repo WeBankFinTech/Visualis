@@ -20,7 +20,10 @@
 package edp.davinci.core.utils;
 
 import com.sun.tools.javac.util.ListBuffer;
-import com.webank.wedatasphere.linkis.entrance.interceptor.impl.CustomVariableUtils;
+import org.apache.linkis.entrance.interceptor.impl.CustomVariableUtils;
+import org.apache.linkis.governance.common.entity.job.JobRequest;
+import org.apache.linkis.manager.label.entity.Label;
+import org.apache.linkis.manager.label.entity.engine.CodeLanguageLabel;
 import edp.core.consts.Consts;
 import edp.core.exception.ServerException;
 import edp.core.utils.CollectionUtils;
@@ -131,7 +134,7 @@ public class SqlParseUtils {
                 }
 
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                log.error("Thread interrupt for parsing SQL: ", e);
             } finally {
                 executorService.shutdown();
             }
@@ -212,11 +215,30 @@ public class SqlParseUtils {
         while (matcherQuery.find()) {
             String group = matcherQuery.group();
             String key = StringUtils.substringBetween(group, "${", "}");
-            sql = StringUtils.replace(sql, group, queryParamMap.getOrDefault(key, "").toString());
+            if(queryParamMap.get(key) != null){
+                sql = StringUtils.replace(sql, group, queryParamMap.getOrDefault(key, "").toString());
+            }
         }
 
+        //linkis variable
+        sql = linkisVariabelReplace(sql, user.username);
         log.info("after variable substitution sql is {} ", sql);
         return sql;
+    }
+
+    // 1.0.6 linkis
+    private static String linkisVariabelReplace(String sql, String username) {
+        JobRequest jobRequest = new JobRequest();
+
+        jobRequest.setExecutionCode(sql);
+        jobRequest.setExecuteUser(username);
+        CodeLanguageLabel codeLabel = new CodeLanguageLabel();
+        codeLabel.setCodeType("sql");
+        Map<String, Object> configMap = new HashMap<>();
+        jobRequest.setParams(configMap);
+
+        jobRequest.setLabels(Arrays.asList(codeLabel));
+        return CustomVariableUtils.replaceCustomVar(jobRequest, "sql")._2;
     }
 
 
@@ -270,7 +292,7 @@ public class SqlParseUtils {
             try {
                 map.put(exp, getAuthVarExpression(exp, authParamMap, sqlTempDelimiter));
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("Failed to generate expression: ", e);
                 continue;
             }
         }

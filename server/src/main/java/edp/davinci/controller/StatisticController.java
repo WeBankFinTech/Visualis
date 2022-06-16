@@ -17,6 +17,7 @@
  */
 package edp.davinci.controller;
 
+import edp.core.annotation.MethodLog;
 import edp.core.utils.TokenUtils;
 import edp.davinci.common.model.ValidList;
 import edp.davinci.core.common.Constants;
@@ -25,10 +26,6 @@ import edp.davinci.dto.statistic.DavinciStatisticDurationInfo;
 import edp.davinci.dto.statistic.DavinciStatisticTerminalInfo;
 import edp.davinci.dto.statistic.DavinciStatisticVisitorOperationInfo;
 import edp.davinci.service.BuriedPointsService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -41,11 +38,9 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
-@Api(value = "/statistic", tags = "statistic", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-@ApiResponses(@ApiResponse(code = 404, message = "statistic not found"))
 @Slf4j
 @RestController
-@RequestMapping(value = Constants.BASE_API_PATH + "/statistic", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+@RequestMapping(value = Constants.BASE_API_PATH + "/statistic", produces = MediaType.APPLICATION_JSON_VALUE)
 public class StatisticController {
 
     @Autowired
@@ -54,7 +49,6 @@ public class StatisticController {
     @Autowired
     public TokenUtils tokenUtils;
 
-    @ApiOperation(value = "collect duration info ")
     @PostMapping(value = "/duration", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity collectDurationInfo(@Valid @RequestBody ValidList<DavinciStatisticDurationInfo> durationInfos,
                                               HttpServletRequest request){
@@ -64,7 +58,7 @@ public class StatisticController {
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
     }
 
-    @ApiOperation(value = "collect terminal info ")
+    @MethodLog
     @PostMapping(value = "/terminal", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity collectTerminalInfo(@Valid @RequestBody ValidList<DavinciStatisticTerminalInfo> terminalInfoInfos,
                                               HttpServletRequest request){
@@ -74,7 +68,7 @@ public class StatisticController {
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
     }
 
-    @ApiOperation(value = "collect visitor operation info ")
+    @MethodLog
     @PostMapping(value = "/visitoroperation", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity collectVisitorOperationInfo(@Valid @RequestBody ValidList<DavinciStatisticVisitorOperationInfo> visitorOperationInfos,
                                               HttpServletRequest request){

@@ -21,6 +21,7 @@ package edp.davinci.controller;
 
 
 import edp.core.annotation.CurrentUser;
+import edp.core.annotation.MethodLog;
 import edp.davinci.common.controller.BaseController;
 import edp.davinci.core.common.Constants;
 import edp.davinci.core.common.ResultMap;
@@ -28,28 +29,21 @@ import edp.davinci.dto.roleDto.*;
 import edp.davinci.model.Role;
 import edp.davinci.model.User;
 import edp.davinci.service.RoleService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.Arrays;
 import java.util.List;
 
-@Api(value = "/roles", tags = "roles", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-@ApiResponses(@ApiResponse(code = 404, message = "role not found"))
 @Slf4j
 @RestController
-@RequestMapping(value = Constants.BASE_API_PATH + "/roles", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+@RequestMapping(value = Constants.BASE_API_PATH + "/roles", produces = MediaType.APPLICATION_JSON_VALUE)
 public class RoleController extends BaseController {
 
     @Autowired
@@ -65,11 +59,11 @@ public class RoleController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "create role", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity createRole(@Valid @RequestBody RoleCreate role,
-                                     @ApiIgnore BindingResult bindingResult,
-                                     @ApiIgnore @CurrentUser User user,
+                                     BindingResult bindingResult,
+                                     @CurrentUser User user,
                                      HttpServletRequest request) {
         if (bindingResult.hasErrors()) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message(bindingResult.getFieldErrors().get(0).getDefaultMessage());
@@ -90,10 +84,10 @@ public class RoleController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "delete role")
+    @MethodLog
     @DeleteMapping("/{id}")
     public ResponseEntity deleteRole(@PathVariable Long id,
-                                     @ApiIgnore @CurrentUser User user,
+                                     @CurrentUser User user,
                                      HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid role id");
@@ -116,12 +110,12 @@ public class RoleController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "update role")
+    @MethodLog
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateRole(@PathVariable Long id,
                                      @Valid @RequestBody RoleUpdate role,
-                                     @ApiIgnore BindingResult bindingResult,
-                                     @ApiIgnore @CurrentUser User user,
+                                     BindingResult bindingResult,
+                                     @CurrentUser User user,
                                      HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid role id");
@@ -147,10 +141,10 @@ public class RoleController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get role")
+    @MethodLog
     @GetMapping("/{id}")
     public ResponseEntity getRole(@PathVariable Long id,
-                                  @ApiIgnore @CurrentUser User user,
+                                  @CurrentUser User user,
                                   HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid role id");
@@ -171,11 +165,11 @@ public class RoleController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "add relation between a role and members")
+    @MethodLog
     @PostMapping(value = "/{id}/members", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity addMember(@PathVariable Long id,
                                     @RequestBody Long[] memberIds,
-                                    @ApiIgnore @CurrentUser User user,
+                                    @CurrentUser User user,
                                     HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid role id");
@@ -195,10 +189,10 @@ public class RoleController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "delete relation between a role and a member")
+    @MethodLog
     @DeleteMapping("/member/{relationId}")
     public ResponseEntity deleteMember(@PathVariable Long relationId,
-                                       @ApiIgnore @CurrentUser User user,
+                                       @CurrentUser User user,
                                        HttpServletRequest request) {
         if (invalidId(relationId)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid relation id");
@@ -219,11 +213,11 @@ public class RoleController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "update role member relations", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PutMapping(value = "/{id}/members", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateMembers(@PathVariable Long id,
                                         @RequestBody Long[] memberIds,
-                                        @ApiIgnore @CurrentUser User user,
+                                        @CurrentUser User user,
                                         HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid role id");
@@ -248,10 +242,10 @@ public class RoleController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get members")
+    @MethodLog
     @GetMapping("/{id}/members")
     public ResponseEntity getMembers(@PathVariable Long id,
-                                     @ApiIgnore @CurrentUser User user,
+                                     @CurrentUser User user,
                                      HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid role id");
@@ -272,11 +266,11 @@ public class RoleController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "add relation between a role and a project", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PostMapping(value = "/{id}/project/{projectId}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity addProject(@PathVariable Long id,
                                      @PathVariable Long projectId,
-                                     @ApiIgnore @CurrentUser User user,
+                                     @CurrentUser User user,
                                      HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid role id");
@@ -302,11 +296,11 @@ public class RoleController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "delete relation between a role and a project")
+    @MethodLog
     @DeleteMapping("/{id}/project/{projectId}")
     public ResponseEntity deleteProject(@PathVariable Long id,
                                         @PathVariable Long projectId,
-                                        @ApiIgnore @CurrentUser User user,
+                                        @CurrentUser User user,
                                         HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid relation id");
@@ -334,13 +328,13 @@ public class RoleController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "update relation between a role and a project", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PutMapping(value = "/{id}/project/{projectId}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateProjet(@PathVariable Long id,
                                        @PathVariable Long projectId,
                                        @Valid @RequestBody RelRoleProjectDto projectRole,
-                                       @ApiIgnore BindingResult bindingResult,
-                                       @ApiIgnore @CurrentUser User user,
+                                       BindingResult bindingResult,
+                                       @CurrentUser User user,
                                        HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid role id");
@@ -371,11 +365,11 @@ public class RoleController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get role viz permission")
+    @MethodLog
     @GetMapping(value = "/{id}/project/{projectId}/viz/visibility")
     public ResponseEntity getVizVisibility(@PathVariable Long id,
                                            @PathVariable Long projectId,
-                                           @ApiIgnore @CurrentUser User user,
+                                           @CurrentUser User user,
                                            HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid role id");
@@ -402,11 +396,11 @@ public class RoleController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "exclude role viz permission", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PostMapping(value = "/{id}/viz/visibility", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity postVizvisibility(@PathVariable Long id,
                                             @RequestBody VizVisibility vizVisibility,
-                                            @ApiIgnore @CurrentUser User user,
+                                            @CurrentUser User user,
                                             HttpServletRequest request) {
 
         if (invalidId(id)) {

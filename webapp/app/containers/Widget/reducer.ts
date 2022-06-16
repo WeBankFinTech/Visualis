@@ -96,6 +96,10 @@ function widgetReducer (state = initialState, action) {
       return state
         .set('loading', false)
         .set('currentWidget', payload.detail)
+    case 'LOAD_WIDGET_DETAIL_WITHOUT_VIEW_DETAIL':
+      return state
+        .set('loading', false)
+        .set('currentWidget', payload.detail)
     case LOAD_WIDGET_DETAIL_FAILURE:
       return state.set('loading', false)
     case EDIT_WIDGET:

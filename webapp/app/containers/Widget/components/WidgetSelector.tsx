@@ -174,9 +174,9 @@ export class WidgetSelector extends React.Component<IWidgetSelectorProps, IWidge
 
       return (
         <Col lg={8} md={12} sm={24} key={w.id} onClick={this.onWidgetSelect(w)}>
-          <div className={widgetClassName}>
+          <div className={widgetClassName} style={{overflowY: 'auto'}}>
             <h3 className={styles.title}>{w.name}</h3>
-            <p className={styles.content}>{w.desc}</p>
+            <p className={styles.content}>{w.description}</p>
             <i className={`${styles.pic} iconfont ${iconMapping[widgetType]}`} />
             {checkmark}
           </div>

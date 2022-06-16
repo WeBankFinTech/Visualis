@@ -34,8 +34,10 @@ export function ColumnTitle (props: IColumnTitleProps) {
       className={styles.columnTitle}
       style={{
         width: tableWidth,
-        color: fontColor
+        color: fontColor,
+        minWidth: '200px'
       }}
+      title= {cols.join(`  /  `)}
     >
       {cols.join(`  /  `)}
     </div>

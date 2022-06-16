@@ -80,7 +80,7 @@ export class ColorSettingForm extends React.PureComponent<IColorSettingFormProps
   private colorChange = ({hex}) => {
     const { selected, list } = this.state
     const selectedItem = list.find((l) => l.key === selected.key)
-    selectedItem.color = hex
+    if (selectedItem) selectedItem.color = hex
     this.setState({
       list: [...list]
     })

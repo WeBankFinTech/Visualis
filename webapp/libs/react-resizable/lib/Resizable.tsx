@@ -188,6 +188,9 @@ export default class Resizable extends React.Component<IResizableProps, IResizab
     // We are then defining its children as:
     // Its original children (resizable's child's children), and
     // A draggable handle.
+
+    // 当display的高度大于某个值时（大概是18000-19000之间），缩放比例会到0%，这时候children会变为null，页面上不显示编辑区域
+    if (children === null) return null
     return cloneElement(children, {
       ...p,
       className,

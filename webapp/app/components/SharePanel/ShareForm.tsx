@@ -1,6 +1,6 @@
 import React, { createRef } from 'react'
 
-import { Input, Row, Col} from 'antd'
+import { Input, Row, Col, message} from 'antd'
 import config, { env } from 'app/globalConfig'
 // FIXME
 const apiHost = `${location.origin}${config[env].host}`
@@ -20,6 +20,7 @@ export class ShareForm extends React.PureComponent<IShareFormProps, {}> {
   private handleInputSelect = () => {
     this.shareLinkInput.current.input.select()
     document.execCommand('copy')
+    message.success('复制成功')
   }
 
   public render () {

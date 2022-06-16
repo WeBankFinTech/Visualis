@@ -23,21 +23,29 @@ import com.alibaba.druid.util.StringUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import edp.core.consts.Consts;
-import edp.core.exception.NotFoundException;
-import com.webank.wedatasphere.linkis.server.BDPJettyServerHelper;
-import com.webank.wedatasphere.dss.visualis.model.DWCResultInfo;
+import com.webank.wedatasphere.dss.visualis.auth.ProjectAuth;
+import com.webank.wedatasphere.dss.visualis.model.PaginateWithExecStatus;
+import com.webank.wedatasphere.dss.visualis.query.utils.ChartUtils;
+import com.webank.wedatasphere.dss.visualis.query.utils.EnvLimitUtils;
+import com.webank.wedatasphere.dss.visualis.query.utils.JdbcAsyncUtils;
 import com.webank.wedatasphere.dss.visualis.ujes.UJESJob;
 import com.webank.wedatasphere.dss.visualis.utils.VisualisUtils;
+import org.apache.linkis.adapt.LinkisUtils;
+import org.apache.linkis.entrance.utils.JobHistoryHelper;
+import org.apache.linkis.protocol.query.cache.CacheTaskResult;
+import edp.core.consts.Consts;
+import edp.core.exception.NotFoundException;
 import edp.core.exception.ServerException;
 import edp.core.exception.UnAuthorizedExecption;
+import edp.core.model.BaseSource;
 import edp.core.model.Paginate;
 import edp.core.model.PaginateWithQueryColumns;
 import edp.core.utils.CollectionUtils;
-import edp.core.utils.MD5Util;
 import edp.core.utils.RedisUtils;
 import edp.core.utils.SqlUtils;
+import edp.davinci.common.utils.ComponentFilterUtils;
 import edp.davinci.core.common.Constants;
 import edp.davinci.core.enums.LogNameEnum;
 import edp.davinci.core.enums.SqlVariableTypeEnum;
@@ -57,10 +65,12 @@ import edp.davinci.dto.sourceDto.SourceWithProject;
 import edp.davinci.dto.viewDto.*;
 import edp.davinci.model.*;
 import edp.davinci.service.ProjectService;
+import edp.davinci.service.SourceService;
 import edp.davinci.service.ViewService;
 import edp.davinci.service.excel.SQLContext;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.lucene.analysis.tokenattributes.PackedTokenAttributeImpl;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -78,7 +88,6 @@ import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static edp.core.consts.Consts.COMMA;
-import static edp.core.consts.Consts.MINUS;
 import static edp.davinci.core.common.Constants.N0_AUTH_PERMISSION;
 import static edp.davinci.core.enums.SqlVariableTypeEnum.AUTHVARE;
 import static edp.davinci.core.enums.SqlVariableTypeEnum.QUERYVAR;
@@ -111,10 +120,16 @@ public class ViewServiceImpl implements ViewService {
     private ProjectService projectService;
 
     @Autowired
+    private SourceService sourceService;
+
+    @Autowired
     private SqlParseUtils sqlParseUtils;
 
     @Value("${sql_template_delimiter:$}")
     private String sqlTempDelimiter;
+
+    @Autowired
+    private ProjectAuth projectAuth;
 
     private static final String SQL_VARABLE_KEY = "name";
 
@@ -156,6 +171,9 @@ public class ViewServiceImpl implements ViewService {
                 return null;
             }
         }
+
+        ComponentFilterUtils filter = new ComponentFilterUtils();
+        views = filter.doFilterViews(views);
 
         return views;
     }
@@ -230,7 +248,7 @@ public class ViewServiceImpl implements ViewService {
      */
     @Override
     @Transactional
-    public ViewWithSourceBaseInfo createView(ViewCreate viewCreate, User user) throws NotFoundException, UnAuthorizedExecption, ServerException {
+    public ViewWithSourceBaseInfo createView(ViewCreate viewCreate, User user, String ticketId) throws NotFoundException, UnAuthorizedExecption, ServerException {
         ProjectDetail projectDetail = projectService.getProjectDetail(viewCreate.getProjectId(), user, false);
         ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
 
@@ -242,19 +260,26 @@ public class ViewServiceImpl implements ViewService {
             log.info("the view {} name is already taken", viewCreate.getName());
             throw new ServerException("the view name is already taken");
         }
+        Long sourceId = viewCreate.getSourceId();
+        Source source;
 
-        Source source = sourceMapper.getById(viewCreate.getSourceId());
-        if (null == source) {
-            log.info("source (:{}) not found", viewCreate.getSourceId());
-            throw new NotFoundException("source is not found");
+        if (sourceId == 0) {
+            source = createViewByDss(viewCreate, user, ticketId);
+        } else {
+            source = sourceMapper.getById(sourceId);
+            if (null == source) {
+                log.info("source (:{}) not found", sourceId);
+                throw new NotFoundException("source is not found");
+            }
         }
+
 
         /**
          *update by johnnwang
          * 如果为hive数据源则直接保存
          */
-        if(VisualisUtils.isHiveDataSource(source)){
-            return createViewMethod(viewCreate,source);
+        if (VisualisUtils.isLinkisDataSource(source)) {
+            return createViewMethod(viewCreate, source);
         }
         //测试连接
         boolean testConnection = sqlUtils.init(source).testConnection();
@@ -285,15 +310,43 @@ public class ViewServiceImpl implements ViewService {
         }
     }
 
+    /**
+     * DSS创建view节点，默认传值为0
+     *
+     * @param viewCreate
+     * @return
+     */
+    private Source createViewByDss(ViewCreate viewCreate, User user, String ticketId) {
+        Source source;
+        List<Source> sourceList = sourceMapper.getByProject(viewCreate.getProjectId());
+        if (sourceList != null && sourceList.size() > 0) {
+            source = sourceList.get(0);
+            viewCreate.setSourceId(source.getId());
+        } else {
+            // 看看工程中有没有可用source
+            sourceList = sourceService.getSources(viewCreate.getProjectId(), user, ticketId);
+            if (sourceList != null && sourceList.size() > 0) {
+                source = sourceList.get(0);
+                viewCreate.setSourceId(source.getId());
+                return source;
+            } else {
+                log.info("source was not found int project，projectId:{}", viewCreate.getProjectId());
+                throw new NotFoundException("source is not found,DSS create view failed");
+            }
+        }
+        return source;
+    }
+
 
     /**
      * update by johnnwang
      * 保存view方法
+     *
      * @param viewCreate
      * @param source
      * @return
      */
-    private ViewWithSourceBaseInfo createViewMethod(ViewCreate viewCreate,Source source){
+    private ViewWithSourceBaseInfo createViewMethod(ViewCreate viewCreate, Source source) {
         View view = new View();
         BeanUtils.copyProperties(viewCreate, view);
 
@@ -326,6 +379,10 @@ public class ViewServiceImpl implements ViewService {
             throw new NotFoundException("view is not found");
         }
 
+        if(!projectAuth.isPorjectOwner(viewWithSource.getProjectId(), user.getId())) {
+            throw new UnAuthorizedExecption("current user has no permission.");
+        }
+
         ProjectDetail projectDetail = projectService.getProjectDetail(viewWithSource.getProjectId(), user, false);
 
         ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
@@ -343,11 +400,14 @@ public class ViewServiceImpl implements ViewService {
             log.info("source not found");
             throw new NotFoundException("source is not found");
         }
-        /**
-         *update by johnnwang
-         * 如果为hive数据源则直接修改
-         */
-        if(VisualisUtils.isHiveDataSource(source)){
+        //判断下model数据长度，如果数据太长，不允许保存
+        String model = viewUpdate.getModel();
+        if (!StringUtils.isEmpty(model) && model.length() > Constants.TEXT_MAX_LENGTH) {
+            throw new ServerException("your saved view data is too long");
+        }
+
+        //如果为hive数据源则直接修改
+        if (VisualisUtils.isLinkisDataSource(source)) {
             View view = new View();
             BeanUtils.copyProperties(viewUpdate, view);
             view.setProjectId(projectDetail.getId());
@@ -400,6 +460,10 @@ public class ViewServiceImpl implements ViewService {
             throw new NotFoundException("view is not found");
         }
 
+        if(!projectAuth.isPorjectOwner(view.getProjectId(), user.getId())) {
+            throw new UnAuthorizedExecption("current user has no permission.");
+        }
+
         ProjectDetail projectDetail = null;
         try {
             projectDetail = projectService.getProjectDetail(view.getProjectId(), user, false);
@@ -430,13 +494,14 @@ public class ViewServiceImpl implements ViewService {
 
     /**
      * 获得默认的SourceWithProject
+     *
      * @param
      * @param user
      * @return
      */
-    private SourceWithProject getDefaultSourceWithProject(Long sourceId, User user){
+    public  SourceWithProject getDefaultSourceWithProject(Long sourceId, User user) {
         SourceWithProject sourceWithProject = new SourceWithProject();
-        if(VisualisUtils.getHiveDataSourceId() == sourceId ){
+        if (VisualisUtils.getHiveDataSourceId() == sourceId || VisualisUtils.getPrestoDataSourceId() == sourceId) {
             Source source = sourceMapper.getById(sourceId);
             Project project = new Project();
             project.setName(VisualisUtils.DEFAULT_PROJECT_NAME().getValue());
@@ -456,81 +521,195 @@ public class ViewServiceImpl implements ViewService {
      * @param user
      * @return
      */
+    @SuppressWarnings("unchecked")
     @Override
     public PaginateWithQueryColumns executeSql(ViewExecuteSql executeSql, User user) throws NotFoundException, UnAuthorizedExecption, ServerException {
 
         Source source = sourceMapper.getById(executeSql.getSourceId());
-        if(source == null && VisualisUtils.isHiveDataSource(source)){
-            source = getDefaultSourceWithProject(source.getId(),user);
-        }
+        if (source == null && VisualisUtils.isLinkisDataSource(source)) {
+        source = getDefaultSourceWithProject(source.getId(), user);
+    }
         if (null == source) {
-            throw new NotFoundException("source is not found");
-        }
+        throw new NotFoundException("source is not found");
+    }
 
-        ProjectDetail projectDetail = projectService.getProjectDetail(source.getProjectId(), user, false);
+    ProjectDetail projectDetail = projectService.getProjectDetail(source.getProjectId(), user, false);
 
-        ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
+    ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
 
         if (projectPermission.getSourcePermission() == UserPermissionEnum.HIDDEN.getPermission()
                 || projectPermission.getViewPermission() < UserPermissionEnum.WRITE.getPermission()) {
-            throw new UnAuthorizedExecption("you have not permission to execute sql");
-        }
-
-        //结构化Sql
-        PaginateWithQueryColumns paginateWithQueryColumns = null;
-        try {
-            SqlEntity sqlEntity = sqlParseUtils.parseSql(executeSql.getSql(), executeSql.getVariables(), sqlTempDelimiter);
-            if (null != sqlUtils && null != sqlEntity) {
-                if (!StringUtils.isEmpty(sqlEntity.getSql())) {
-
-                    if (isMaintainer(user, projectDetail)) {
-                        sqlEntity.setAuthParams(null);
-                    }
-
-                    if (!CollectionUtils.isEmpty(sqlEntity.getQuaryParams())) {
-                        sqlEntity.getQuaryParams().forEach((k, v) -> {
-                            if (v instanceof List && ((List) v).size() > 0) {
-                                v = ((List) v).stream().collect(Collectors.joining(COMMA)).toString();
-                            }
-                            sqlEntity.getQuaryParams().put(k, v);
-                        });
-                    }
-
-                    String srcSql = sqlParseUtils.replaceParams(sqlEntity.getSql(), sqlEntity.getQuaryParams(), sqlEntity.getAuthParams(), sqlTempDelimiter, user);
-
-                    SqlUtils sqlUtils = this.sqlUtils.init(source);
-
-                    List<String> executeSqlList = sqlParseUtils.getSqls(srcSql, false);
-
-                    List<String> querySqlList = sqlParseUtils.getSqls(srcSql, true);
-
-                    if(VisualisUtils.isHiveDataSource(source)){
-                        //srcSql = srcSql.substring(1, srcSql.length() - 1);
-
-                        paginateWithQueryColumns = sqlUtils.syncQuery4Paginate(getRunningScript(user, source, null, projectDetail, false, srcSql), null, null, null, executeSql.getLimit(), null);
-
-                    } else {
-                        if (!CollectionUtils.isEmpty(executeSqlList)) {
-                            executeSqlList.forEach(sql -> sqlUtils.execute(sql));
-                        }
-                        if (!CollectionUtils.isEmpty(querySqlList)) {
-                            for (String sql : querySqlList) {
-                                paginateWithQueryColumns = sqlUtils.syncQuery4Paginate(sql, null, null, null, executeSql.getLimit(), null);
-                            }
-                        }
-                    }
-
-                }else{
-                    log.warn("sql is empty, we will ignore it");
-                    throw new ServerException("您提交的sql是空");
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new ServerException(e.getMessage());
-        }
-        return paginateWithQueryColumns;
+        throw new UnAuthorizedExecption("you have not permission to execute sql");
     }
+
+    //结构化Sql
+    PaginateWithQueryColumns paginateWithQueryColumns = null;
+        try {
+        SqlEntity sqlEntity = sqlParseUtils.parseSql(executeSql.getSql(), executeSql.getVariables(), sqlTempDelimiter);
+        if (null != sqlUtils && null != sqlEntity) {
+            if (!StringUtils.isEmpty(sqlEntity.getSql())) {
+
+                if (isMaintainer(user, projectDetail)) {
+                    sqlEntity.setAuthParams(null);
+                }
+
+                if (!CollectionUtils.isEmpty(sqlEntity.getQuaryParams())) {
+                    sqlEntity.getQuaryParams().forEach((k, v) -> {
+                        if (v instanceof List && ((List) v).size() > 0) {
+                            v = ((List) v).stream().collect(Collectors.joining(COMMA)).toString();
+                        }
+                        sqlEntity.getQuaryParams().put(k, v);
+                    });
+                }
+
+                String srcSql = sqlParseUtils.replaceParams(sqlEntity.getSql(), sqlEntity.getQuaryParams(), sqlEntity.getAuthParams(), sqlTempDelimiter, user);
+
+                SqlUtils sqlUtils = this.sqlUtils.init(source);
+
+                List<String> executeSqlList = sqlParseUtils.getSqls(srcSql, false);
+
+                List<String> querySqlList = sqlParseUtils.getSqls(srcSql, true);
+
+                if (VisualisUtils.isLinkisDataSource(source)) {
+                    List<String> limitedQuerySqlList = Lists.newArrayList();
+                    for (String querySql : querySqlList) {
+                        String limitedQuerySql;
+                        if (!org.apache.commons.lang.StringUtils.containsIgnoreCase(querySql, "limit")
+                                && executeSql.getLimit() > 0) {
+                            if (org.apache.commons.lang.StringUtils.containsIgnoreCase(querySql, ";")) {
+                                limitedQuerySql = querySql.replaceAll(";", " limit " + executeSql.getLimit() + ";");
+                            } else {
+                                limitedQuerySql = querySql + " limit " + executeSql.getLimit() + ";";
+                            }
+                            limitedQuerySqlList.add(limitedQuerySql);
+                        } else {
+                            limitedQuerySqlList.add(querySql);
+                        }
+                    }
+                    srcSql = org.apache.commons.lang.StringUtils.join(executeSqlList, ";");
+                    if (org.apache.commons.lang.StringUtils.isNotBlank(srcSql)) {
+                        srcSql = srcSql + ";";
+                    }
+                    srcSql = srcSql + org.apache.commons.lang.StringUtils.join(limitedQuerySqlList, ";");
+                    paginateWithQueryColumns = sqlUtils.syncQuery4Paginate(getRunningScript(user, source, null, projectDetail, false, srcSql, false, 300L), null, null, null, executeSql.getLimit(), null);
+
+                } else {
+                    if (!CollectionUtils.isEmpty(executeSqlList)) {
+                        executeSqlList.forEach(sql -> sqlUtils.execute(sql));
+                    }
+                    if (!CollectionUtils.isEmpty(querySqlList)) {
+                        for (String sql : querySqlList) {
+                            paginateWithQueryColumns = sqlUtils.syncQuery4Paginate(sql, null, null, null, executeSql.getLimit(), null);
+                        }
+                    }
+                }
+
+            } else {
+                log.warn("sql is empty, we will ignore it");
+                throw new ServerException("您提交的sql是空");
+            }
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+        throw new ServerException(e.getMessage());
+    }
+        return paginateWithQueryColumns;
+}
+
+@SuppressWarnings("unchecked")
+public PaginateWithExecStatus AsyncSubmitSql(ViewExecuteSql executeSql, User user) throws NotFoundException, UnAuthorizedExecption, ServerException{
+
+    Source source = sourceMapper.getById(executeSql.getSourceId());
+    if (source == null && VisualisUtils.isLinkisDataSource(source)) {
+        source = getDefaultSourceWithProject(source.getId(), user);
+    }
+    if (null == source) {
+        throw new NotFoundException("source is not found");
+    }
+
+    ProjectDetail projectDetail = projectService.getProjectDetail(source.getProjectId(), user, false);
+
+    ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
+
+    if (projectPermission.getSourcePermission() == UserPermissionEnum.HIDDEN.getPermission()
+            || projectPermission.getViewPermission() < UserPermissionEnum.WRITE.getPermission()) {
+        throw new UnAuthorizedExecption("you have not permission to execute sql");
+    }
+
+    //结构化Sql
+    PaginateWithExecStatus paginateWithExecStatus = null;
+    try {
+        SqlEntity sqlEntity = sqlParseUtils.parseSql(executeSql.getSql(), executeSql.getVariables(), sqlTempDelimiter);
+        if (null != sqlUtils && null != sqlEntity) {
+            if (!StringUtils.isEmpty(sqlEntity.getSql())) {
+
+                if (isMaintainer(user, projectDetail)) {
+                    sqlEntity.setAuthParams(null);
+                }
+
+                if (!CollectionUtils.isEmpty(sqlEntity.getQuaryParams())) {
+                    sqlEntity.getQuaryParams().forEach((k, v) -> {
+                        if (v instanceof List && ((List) v).size() > 0) {
+                            v = ((List) v).stream().collect(Collectors.joining(COMMA)).toString();
+                        }
+                        sqlEntity.getQuaryParams().put(k, v);
+                    });
+                }
+
+                String srcSql = sqlParseUtils.replaceParams(sqlEntity.getSql(), sqlEntity.getQuaryParams(), sqlEntity.getAuthParams(), sqlTempDelimiter, user);
+
+                SqlUtils sqlUtils = this.sqlUtils.init(source);
+
+                List<String> executeSqlList = sqlParseUtils.getSqls(srcSql, false);
+
+                List<String> querySqlList = sqlParseUtils.getSqls(srcSql, true);
+
+                if (VisualisUtils.isLinkisDataSource(source)) {
+                    List<String> limitedQuerySqlList = Lists.newArrayList();
+                    for (String querySql : querySqlList) {
+                        String limitedQuerySql;
+                        if (!org.apache.commons.lang.StringUtils.containsIgnoreCase(querySql, "limit")
+                                && executeSql.getLimit() > 0) {
+                            if (org.apache.commons.lang.StringUtils.containsIgnoreCase(querySql, ";")) {
+                                limitedQuerySql = querySql.replaceAll(";", " limit " + executeSql.getLimit() + ";");
+                            } else {
+                                limitedQuerySql = querySql + " limit " + executeSql.getLimit() + ";";
+                            }
+                            limitedQuerySqlList.add(limitedQuerySql);
+                        } else {
+                            limitedQuerySqlList.add(querySql);
+                        }
+                    }
+                    srcSql = org.apache.commons.lang.StringUtils.join(executeSqlList, ";");
+                    if (org.apache.commons.lang.StringUtils.isNotBlank(srcSql)) {
+                        srcSql = srcSql + ";";
+                    }
+                    srcSql = srcSql + org.apache.commons.lang.StringUtils.join(limitedQuerySqlList, ";");
+                    paginateWithExecStatus = sqlUtils.asyncQuery4Exec(getRunningScript(user, source, null, projectDetail, false, srcSql, false, 300L), null, null, null, executeSql.getLimit(), null);
+
+                } else {
+                    // TODO: 2021/10/30 jdbc执行还不支持异步
+/*                    if (!CollectionUtils.isEmpty(executeSqlList)) {
+                        executeSqlList.forEach(sql -> sqlUtils.execute(sql));
+                    }
+                    if (!CollectionUtils.isEmpty(querySqlList)) {
+                        for (String sql : querySqlList) {
+                            paginateWithExecStatus = sqlUtils.asyncQuery4Exec(sql, null, null, null, executeSql.getLimit(), null);
+                        }
+                    }*/
+                }
+
+            } else {
+                log.warn("sql is empty, we will ignore it");
+                throw new ServerException("您提交的sql是空");
+            }
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+        throw new ServerException(e.getMessage());
+    }
+    return paginateWithExecStatus;
+}
 
     private boolean isMaintainer(User user, ProjectDetail projectDetail) {
         return projectService.isMaintainer(projectDetail, user);
@@ -542,10 +721,11 @@ public class ViewServiceImpl implements ViewService {
      * @param id
      * @param executeParam
      * @param user
+     * @param async
      * @return
      */
     @Override
-    public Paginate<Map<String, Object>> getData(Long id, ViewExecuteParam executeParam, User user) throws NotFoundException, UnAuthorizedExecption, ServerException, SQLException {
+    public Paginate<Map<String, Object>> getData(Long id, ViewExecuteParam executeParam, User user, boolean async) throws NotFoundException, UnAuthorizedExecption, ServerException, SQLException {
         if (null == executeParam || (CollectionUtils.isEmpty(executeParam.getGroups()) && CollectionUtils.isEmpty(executeParam.getAggregators()))) {
             return null;
         }
@@ -554,6 +734,25 @@ public class ViewServiceImpl implements ViewService {
         if (null == viewWithSource) {
             log.info("view (:{}) not found", id);
             throw new NotFoundException("view is not found");
+        }
+        if (EnvLimitUtils.isProdEnv()) {
+            executeParam.setEngineType(VisualisUtils.SPARK().getValue());
+        }
+        if (org.apache.commons.lang.StringUtils.isNotBlank(executeParam.getEngineType())) {
+            String dataSourceName = VisualisUtils.getDataSourceName(executeParam.getEngineType()) + "DataSource";
+            if (!dataSourceName.equalsIgnoreCase(viewWithSource.getSource().getName())) {
+                Long realDataSourceId = sourceMapper.getByNameWithProjectId(dataSourceName, viewWithSource.getProjectId());
+                Source realDataSource = sourceMapper.getById(realDataSourceId);
+                if (realDataSource == null) {
+                    List<Source> sources = sourceService.getSources(viewWithSource.getProjectId(), user, "");
+                    for (Source source : sources) {
+                        if (source.getName().contains(dataSourceName)) {
+                            realDataSource = source;
+                        }
+                    }
+                }
+                viewWithSource.setSource(realDataSource);
+            }
         }
 
         ProjectDetail projectDetail = projectService.getProjectDetail(viewWithSource.getProjectId(), user, false);
@@ -565,8 +764,46 @@ public class ViewServiceImpl implements ViewService {
         }
 
         boolean maintainer = projectService.isMaintainer(projectDetail, user);
-        return getResultDataList(maintainer, viewWithSource, executeParam, user);
+        return getResultDataList(maintainer, viewWithSource, executeParam, user, async);
     }
+
+    public Paginate<Map<String, Object>> getAsyncProgress(String execId, User user) throws Exception {
+        if (JdbcAsyncUtils.isJdbcExecId(execId)) {
+            return JdbcAsyncUtils.getJdbcProgress(execId);
+        }
+        BaseSource source = null;
+        if (NumberUtils.isDigits(execId)) {
+            source = sourceMapper.getById(VisualisUtils.getPrestoDataSourceId());
+        }
+        SqlUtils sqlUtils = this.sqlUtils.init(source);
+        return sqlUtils.getProgress4Exec(execId, user.username);
+    }
+
+    public Paginate<Map<String, Object>> killAsyncJob(String execId, User user) throws Exception {
+        if (JdbcAsyncUtils.isJdbcExecId(execId)) {
+            return JdbcAsyncUtils.getJdbcProgress(execId);
+        }
+        BaseSource source = null;
+        if (NumberUtils.isDigits(execId)) {
+            source = sourceMapper.getById(VisualisUtils.getPrestoDataSourceId());
+        }
+        SqlUtils sqlUtils = this.sqlUtils.init(source);
+        return sqlUtils.kill4Exec(execId, user.username);
+    }
+
+
+    public Paginate<Map<String, Object>> getAsyncResult(String execId, User user) throws Exception {
+        if (JdbcAsyncUtils.isJdbcExecId(execId)) {
+            return JdbcAsyncUtils.getResult(execId);
+        }
+        BaseSource source = null;
+        if (NumberUtils.isDigits(execId)) {
+            source = sourceMapper.getById(VisualisUtils.getPrestoDataSourceId());
+        }
+        SqlUtils sqlUtils = this.sqlUtils.init(source);
+        return sqlUtils.getResultSet4Exec(execId, user.username);
+    }
+
 
     public void buildQuerySql(List<String> querySqlList, Source source, ViewExecuteParam executeParam) {
         if (null != executeParam) {
@@ -594,24 +831,24 @@ public class ViewServiceImpl implements ViewService {
         }
     }
 
-    public List<String> convertFilters(List<String> filterStrs, Source source){
+    public List<String> convertFilters(List<String> filterStrs, Source source) {
         List<String> whereClauses = new ArrayList<>();
         List<SqlFilter> filters = new ArrayList<>();
-        try{
-            if(null == filterStrs || filterStrs.isEmpty()){
+        try {
+            if (null == filterStrs || filterStrs.isEmpty()) {
                 return null;
             }
 
-            for(String str : filterStrs){
+            for (String str : filterStrs) {
                 SqlFilter obj = JSON.parseObject(str, SqlFilter.class);
-                if(!StringUtils.isEmpty(obj.getName())){
+                if (!StringUtils.isEmpty(obj.getName())) {
                     obj.setName(ViewExecuteParam.getField(obj.getName(), source.getJdbcUrl(), source.getDbVersion()));
                 }
                 filters.add(obj);
             }
             filters.forEach(filter -> whereClauses.add(SqlFilter.dealFilter(filter)));
 
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("convertFilters error . filterStrs = {}, source = {}, filters = {} , whereClauses = {} ",
                     JSON.toJSON(filterStrs), JSON.toJSON(source), JSON.toJSON(filters), JSON.toJSON(whereClauses));
             throw e;
@@ -627,12 +864,13 @@ public class ViewServiceImpl implements ViewService {
      * @param viewWithSource
      * @param executeParam
      * @param user
+     * @param async
      * @return
      * @throws ServerException
      */
     @Override
-    public PaginateWithQueryColumns getResultDataList(boolean isMaintainer, ViewWithSource viewWithSource, ViewExecuteParam executeParam, User user) throws ServerException, SQLException {
-        PaginateWithQueryColumns paginate = null;
+    public PaginateWithQueryColumns getResultDataList(boolean isMaintainer, ViewWithSource viewWithSource, ViewExecuteParam executeParam, User user, boolean async) throws ServerException, SQLException {
+        PaginateWithQueryColumns paginate = new PaginateWithQueryColumns();
 
         if (null == executeParam || (CollectionUtils.isEmpty(executeParam.getGroups()) && CollectionUtils.isEmpty(executeParam.getAggregators()))) {
             return null;
@@ -644,6 +882,8 @@ public class ViewServiceImpl implements ViewService {
 
         String cacheKey = null;
         try {
+
+            ChartUtils.processViewExecuteParam(executeParam);
 
             if (!StringUtils.isEmpty(viewWithSource.getSql())) {
                 //解析变量
@@ -664,56 +904,94 @@ public class ViewServiceImpl implements ViewService {
                 if (!CollectionUtils.isEmpty(querySqlList)) {
                     executeParam.addExcludeColumn(excludeColumns, source.getJdbcUrl(), source.getDbVersion());
 
-                    if (null != executeParam
-                            && null != executeParam.getCache()
-                            && executeParam.getCache()
-                            && executeParam.getExpired() > 0L) {
+//                    if (null != executeParam
+//                            && null != executeParam.getCache()
+//                            && executeParam.getCache()
+//                            && executeParam.getExpired() > 0L) {
+//
+//                        StringBuilder slatBuilder = new StringBuilder();
+//                        slatBuilder.append(executeParam.getPageNo());
+//                        slatBuilder.append(MINUS);
+//                        slatBuilder.append(executeParam.getLimit());
+//                        slatBuilder.append(MINUS);
+//                        slatBuilder.append(executeParam.getPageSize());
+//                        excludeColumns.forEach(slatBuilder::append);
+//
+//                        cacheKey = MD5Util.getMD5(slatBuilder.toString() + querySqlList.get(querySqlList.size() - 1), true, 32);
+//
+//                        if (!executeParam.getFlush()) {
+//                            try {
+//                                Object object = redisUtils.get(cacheKey);
+//                                if (null != object && executeParam.getCache()) {
+//                                    paginate = (PaginateWithQueryColumns) object;
+//                                    return paginate;
+//                                }
+//                            } catch (Exception e) {
+//                                log.warn("get data by cache: {}", e.getMessage());
+//                            }
+//                        }
+//                    }
 
-                        StringBuilder slatBuilder = new StringBuilder();
-                        slatBuilder.append(executeParam.getPageNo());
-                        slatBuilder.append(MINUS);
-                        slatBuilder.append(executeParam.getLimit());
-                        slatBuilder.append(MINUS);
-                        slatBuilder.append(executeParam.getPageSize());
-                        excludeColumns.forEach(slatBuilder::append);
-
-                        cacheKey = MD5Util.getMD5(slatBuilder.toString() + querySqlList.get(querySqlList.size() - 1), true, 32);
-
-                        if (!executeParam.getFlush()) {
-                            try {
-                                Object object = redisUtils.get(cacheKey);
-                                if (null != object && executeParam.getCache()) {
-                                    paginate = (PaginateWithQueryColumns) object;
-                                    return paginate;
-                                }
-                            } catch (Exception e) {
-                                log.warn("get data by cache: {}", e.getMessage());
-                            }
-                        }
-                    }
-
-                    if(VisualisUtils.isHiveDataSource(source)){
+                    if (VisualisUtils.isLinkisDataSource(source)) {
                         Project project = projectService.getProjectDetail(source.getProjectId(), user, false);
-                        if(VisualisUtils.isFirstTime(viewWithSource)){
-                            buildScala(querySqlList,sqlEntity,executeParam,source,viewWithSource, user);
+                        String viewSql = querySqlList.get(0);
+                        CacheTaskResult cacheTaskResult = null;
+                        if (executeParam.getCache()) {
+                            cacheTaskResult = findOrSubmitCache(sqlUtils, viewSql, user, source, viewWithSource, project, executeParam.getExpired());
+                        }
+                        if (cacheTaskResult != null) {
+                            buildScala(querySqlList, executeParam, source, cacheTaskResult);
                             for (String sql : querySqlList) {
-                                paginate = sqlUtils.syncQuery4Paginate(
-                                        getRunningScript(user, source, viewWithSource, project, true, sql),
-                                        executeParam.getPageNo(),
-                                        executeParam.getPageSize(),
-                                        executeParam.getTotalCount(),
-                                        executeParam.getLimit(),
-                                        excludeColumns);
+                                if (executeParam.getFlush()) {
+                                    VisualisUtils.deleteCache(sql, user.username);
+                                    VisualisUtils.deleteCache(viewSql, user.username);
+                                    break;
+                                }
+                                paginate = async ?
+                                        sqlUtils.asyncQuery4Exec(
+                                                getRunningScript(user, source, viewWithSource, project, true, sql, executeParam.getCache(), executeParam.getExpired()),
+                                                executeParam.getPageNo(),
+                                                executeParam.getPageSize(),
+                                                executeParam.getTotalCount(),
+                                                executeParam.getLimit(),
+                                                excludeColumns)
+                                        :
+                                        sqlUtils.syncQuery4Paginate(
+                                                getRunningScript(user, source, viewWithSource, project, true, sql, executeParam.getCache(), executeParam.getExpired()),
+                                                executeParam.getPageNo(),
+                                                executeParam.getPageSize(),
+                                                executeParam.getTotalCount(),
+                                                executeParam.getLimit(),
+                                                excludeColumns);
                             }
                         } else {
                             buildQuerySql(querySqlList, source, executeParam);
-                            paginate = sqlUtils.syncQuery4Paginate(
-                                    getRunningScript(user, source, viewWithSource, project,false, String.join(Consts.SEMICOLON, executeSqlList) + Consts.SEMICOLON + String.join(Consts.SEMICOLON, querySqlList)),
-                                    executeParam.getPageNo(),
-                                    executeParam.getPageSize(),
-                                    executeParam.getTotalCount(),
-                                    executeParam.getLimit(),
-                                    excludeColumns);
+                            String script = String.join(Consts.SEMICOLON, executeSqlList);
+                            if (org.apache.commons.lang.StringUtils.isNotBlank(script)) {
+                                script = script + Consts.SEMICOLON;
+                            }
+                            script = script + String.join(Consts.SEMICOLON, querySqlList);
+                            if (executeParam.getFlush()) {
+                                VisualisUtils.deleteCache(script, user.username);
+                                VisualisUtils.deleteCache(viewSql, user.username);
+                                return paginate;
+                            }
+                            paginate = async ?
+                                    sqlUtils.asyncQuery4Exec(
+                                            getRunningScript(user, source, viewWithSource, project, false, script, executeParam.getCache(), executeParam.getExpired()),
+                                            executeParam.getPageNo(),
+                                            executeParam.getPageSize(),
+                                            executeParam.getTotalCount(),
+                                            executeParam.getLimit(),
+                                            excludeColumns)
+                                    :
+                                    sqlUtils.query4Paginate(
+                                            getRunningScript(user, source, viewWithSource, project, false, script, executeParam.getCache(), executeParam.getExpired()),
+                                            executeParam.getPageNo(),
+                                            executeParam.getPageSize(),
+                                            executeParam.getTotalCount(),
+                                            executeParam.getLimit(),
+                                            excludeColumns);
                         }
                     } else {
                         buildQuerySql(querySqlList, source, executeParam);
@@ -730,71 +1008,68 @@ public class ViewServiceImpl implements ViewService {
                                     executeParam.getLimit(),
                                     excludeColumns);
                         }
+                        // fake async for jdbc
+                        String execId = JdbcAsyncUtils.generateExecId();
+                        JdbcAsyncUtils.putResult(execId, paginate);
+                        paginate = JdbcAsyncUtils.getJdbcProgress(execId);
                     }
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("failed to get resultSet ", e);
             throw new ServerException(e.getMessage());
         }
 
-        if (null != executeParam
-                && null != executeParam.getCache()
-                && executeParam.getCache()
-                && executeParam.getExpired() > 0L
-                && null != paginate && !CollectionUtils.isEmpty(paginate.getResultList())) {
-            redisUtils.set(cacheKey, paginate, executeParam.getExpired(), TimeUnit.SECONDS);
-        }
+//        if (null != executeParam
+//                && null != executeParam.getCache()
+//                && executeParam.getCache()
+//                && executeParam.getExpired() > 0L
+//                && null != paginate && !CollectionUtils.isEmpty(paginate.getResultList())) {
+//            redisUtils.set(cacheKey, paginate, executeParam.getExpired(), TimeUnit.SECONDS);
+//        }
 
         return paginate;
     }
 
-    private String getRunningScript(User user,Source source, View view, Project project, Boolean isFirst,String script){
-        if(! VisualisUtils.isHiveDataSource(source)){
-           return script;
+    private CacheTaskResult findOrSubmitCache(SqlUtils sqlUtils, String querySql, User user, Source source, View view, Project project, Long expired) throws Exception {
+        CacheTaskResult cacheTaskResult = JobHistoryHelper.getCache(querySql, user.username, Lists.newArrayList(VisualisUtils.SPARK().getValue() + "-*"), expired);
+        if (cacheTaskResult == null) {
+            sqlUtils.syncQuery4Paginate(getRunningScript(user, source, view, project, false, "--set ide.engine.no.limit.allow=true\n" + querySql, true, expired), 0, 0, 0, -1, null);
+        }
+        cacheTaskResult = JobHistoryHelper.getCache(querySql, user.username, Lists.newArrayList(VisualisUtils.SPARK().getValue() + "-*"), expired);
+        return cacheTaskResult;
+    }
+
+    private String getRunningScript(User user, Source source, View view, Project project, Boolean isScala, String script, Boolean cache, Long expired) {
+        if (!VisualisUtils.isLinkisDataSource(source)) {
+            return script;
         } else {
             UJESJob ujesJob = null;
             String querySource = project.getName();
-            if(view != null){
+            if (view != null) {
                 querySource = querySource + "/" + view.getName();
             }
-            HashMap<String ,String> sourceMap = Maps.newHashMap();
+            HashMap<String, String> sourceMap = Maps.newHashMap();
             sourceMap.put("fileName", querySource);
-            if (isFirst){
-                 ujesJob = new UJESJob(script,user.getName(),UJESJob.SCALA_TYPE(), sourceMap );
+            if (isScala) {
+                ujesJob = UJESJob.apply(script, user.getName(), UJESJob.SCALA_TYPE(), sourceMap, cache, expired, cache, expired);
             } else {
-               ujesJob = new UJESJob(script,user.getName(),UJESJob.SQL_TYPE(), sourceMap);
+                ujesJob = UJESJob.apply(script, user.getName(), UJESJob.SQL_TYPE(), sourceMap, cache, expired, cache, expired);
+                if (VisualisUtils.isPrestoDataSource(source)) {
+                    ujesJob.engine_$eq(UJESJob.PRESTO_ENGINE());
+                    ujesJob.jobType_$eq(UJESJob.PSQL_TYPE());
+                }
             }
-            return  BDPJettyServerHelper.gson().toJson(ujesJob);
+            return LinkisUtils.gsonNoContert().toJson(ujesJob);
         }
     }
-    /**
-     * update by johnnwang
-     * @param querySqlList
-     * @param sqlEntity
-     * @param executeParam
-     * @param source
-     * @param view
-     */
-    private void buildScala(List<String> querySqlList, SqlEntity sqlEntity, ViewExecuteParam executeParam, Source source,View view, User user){
-        querySqlList.set((querySqlList.size()-1),view.getName());
+
+    private void buildScala(List<String> querySqlList, ViewExecuteParam executeParam, Source source, CacheTaskResult cacheTaskResult) {
+        String tempViewName = "view_res_" + FilenameUtils.getBaseName(cacheTaskResult.getResultLocation());
+        String resultLocation = cacheTaskResult.getResultLocation() + VisualisUtils.RESULT_FILE_NAME().getValue();
+        querySqlList.set(0, tempViewName);
         buildQuerySql(querySqlList, source, executeParam);
-
-        JSONObject jsonObject = JSONObject.parseObject(view.getConfig());
-        String dwcResultInfoKey = VisualisUtils.DWC_RESULT_INFO().getValue();
-        if (null != jsonObject && jsonObject.containsKey(dwcResultInfoKey)) {
-            DWCResultInfo dwcResultInfo = BDPJettyServerHelper.gson().fromJson(jsonObject.getString(dwcResultInfoKey), DWCResultInfo.class);
-            //update tmp view result info
-            Project project = projectService.getProjectDetail(source.getProjectId(), user, false);
-            String resultPath = String.join(",", sqlUtils.querySQLWithResultSetLocation(getRunningScript(user, source, view, project, false, dwcResultInfo.getExecutionCode()), executeParam.getLimit()));
-            log.info("got new tmp view result path: " + resultPath);
-            dwcResultInfo.setResultPath(resultPath);
-            jsonObject.put(dwcResultInfoKey, dwcResultInfo);
-            view.setConfig(JSONObject.toJSONString(jsonObject));
-            viewMapper.update(view);
-
-            querySqlList.set(0, VisualisUtils.buildScala(querySqlList.get(0),dwcResultInfo,view.getName()));
-        }
+        querySqlList.set(0, VisualisUtils.buildScala(querySqlList.get(0), resultLocation, tempViewName));
     }
 
     @Override
@@ -849,24 +1124,24 @@ public class ViewServiceImpl implements ViewService {
                         String sql = st.render();
                         querySqlList.set(querySqlList.size() - 1, sql);
 
-                        if (null != param.getCache() && param.getCache() && param.getExpired().longValue() > 0L) {
-                            cacheKey = MD5Util.getMD5("DISTINCI" + sql, true, 32);
-
-                            try {
-                                Object object = redisUtils.get(cacheKey);
-                                if (null != object) {
-                                    return (List) object;
-                                }
-                            } catch (Exception e) {
-                                log.warn("get distinct value by cache: {}", e.getMessage());
-                            }
-                        }
+//                        if (null != param.getCache() && param.getCache() && param.getExpired().longValue() > 0L) {
+//                            cacheKey = MD5Util.getMD5("DISTINCI" + sql, true, 32);
+//
+//                            try {
+//                                Object object = redisUtils.get(cacheKey);
+//                                if (null != object) {
+//                                    return (List) object;
+//                                }
+//                            } catch (Exception e) {
+//                                log.warn("get distinct value by cache: {}", e.getMessage());
+//                            }
+//                        }
                     }
 
                     List<Map<String, Object>> list = null;
-                    if(VisualisUtils.isHiveDataSource(source)){
+                    if (VisualisUtils.isLinkisDataSource(source)) {
                         Project project = projectService.getProjectDetail(source.getProjectId(), user, false);
-                        list = sqlUtils.query4List(getRunningScript(user, source, viewWithSource, project, false, String.join(Consts.SEMICOLON, executeSqlList) + Consts.SEMICOLON + String.join(Consts.SEMICOLON, querySqlList)), -1);
+                        list = sqlUtils.query4List(getRunningScript(user, source, viewWithSource, project, false, String.join(Consts.SEMICOLON, executeSqlList) + Consts.SEMICOLON + String.join(Consts.SEMICOLON, querySqlList), param.getCache(), param.getExpired()), -1);
                     } else {
                         if (!CollectionUtils.isEmpty(executeSqlList)) {
                             executeSqlList.forEach(sql -> sqlUtils.execute(sql));
@@ -876,9 +1151,9 @@ public class ViewServiceImpl implements ViewService {
                         }
                     }
 
-                    if (null != param.getCache() && param.getCache() && param.getExpired().longValue() > 0L) {
-                        redisUtils.set(cacheKey, list, param.getExpired(), TimeUnit.SECONDS);
-                    }
+//                    if (null != param.getCache() && param.getCache() && param.getExpired().longValue() > 0L) {
+//                        redisUtils.set(cacheKey, list, param.getExpired(), TimeUnit.SECONDS);
+//                    }
 
                     if (null != list) {
                         return list;
@@ -886,7 +1161,7 @@ public class ViewServiceImpl implements ViewService {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("failed to get distinct value data, ", e);
             throw new ServerException(e.getMessage());
         }
 
@@ -915,6 +1190,7 @@ public class ViewServiceImpl implements ViewService {
         return null;
     }
 
+    @SuppressWarnings("unchecked")
     private List<SqlVariable> getAuthVariables(List<RelRoleView> roleViewList, List<SqlVariable> variables) {
         if (!CollectionUtils.isEmpty(variables)) {
 
@@ -965,6 +1241,7 @@ public class ViewServiceImpl implements ViewService {
         return null;
     }
 
+    @SuppressWarnings("unchecked")
     private void packageParams(boolean isProjectMaintainer, Long viewId, SqlEntity sqlEntity, List<SqlVariable> variables, List<Param> paramList, Set<String> excludeColumns, User user) {
 
         List<SqlVariable> queryVariables = getQueryVariables(variables);
@@ -1054,7 +1331,7 @@ public class ViewServiceImpl implements ViewService {
                     throw (ServerException) e.getCause();
                 }
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                log.error("thread package params get interrupted", e);
             } finally {
                 executorService.shutdown();
             }
@@ -1071,6 +1348,7 @@ public class ViewServiceImpl implements ViewService {
     }
 
 
+    @SuppressWarnings("unchecked")
     private void checkAndInsertRoleParam(String sqlVarible, List<RelRoleViewDto> roles, User user, View view) {
         List<SqlVariable> variables = JSONObject.parseArray(sqlVarible, SqlVariable.class);
 

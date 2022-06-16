@@ -21,6 +21,7 @@
 import { call, all, put, takeLatest, takeEvery, throttle } from 'redux-saga/effects'
 import {
   LOAD_PROJECTS,
+  GET_BASE_INFO,
   ADD_PROJECT,
   EDIT_PROJECT,
   DELETE_PROJECT,
@@ -52,6 +53,8 @@ import {
 import {
   projectsLoaded,
   loadProjectsFail,
+  getBaseInfoLoaded,
+  loadGetBaseInfoFail,
   projectAdded,
   addProjectFail,
   projectEdited,
@@ -93,6 +96,29 @@ export function* getProjects (action) {
     yield put(projectsLoaded(projects))
   } catch (err) {
     yield put(loadProjectsFail())
+    errorHandler(err)
+  }
+}
+
+// 请求dss的接口 获取用户名等基本信息
+export function* getBaseInfo (action) {
+  const { resolve } = action.payload
+  // 这里比较特殊 是请求dss的接口 地址要换下
+  let url = api.projects
+  console.log('url: ', url);
+  url = url.replace('rest_s', 'rest_j')
+  url = url.replace('visualis', 'dss/framework/workspace')
+  url = url.replace('projects', 'getBaseInfo')
+  try {
+    const asyncData = yield call(request, url)
+    yield put(getBaseInfoLoaded())
+    if (asyncData.data) {
+      resolve(asyncData.data)
+    } else {
+      resolve({})
+    }
+  } catch (err) {
+    yield put(loadGetBaseInfoFail())
     errorHandler(err)
   }
 }
@@ -399,6 +425,7 @@ export function* excludeRole ({payload}) {
 export default function* rootProjectSaga (): IterableIterator<any> {
   yield all([
     takeLatest(LOAD_PROJECTS, getProjects as any),
+    takeEvery(GET_BASE_INFO, getBaseInfo as any),
     takeLatest(ADD_PROJECT_ROLE, addProjectRole as any),
     takeEvery(ADD_PROJECT, addProject as any),
     takeEvery(EDIT_PROJECT, editProject as any),

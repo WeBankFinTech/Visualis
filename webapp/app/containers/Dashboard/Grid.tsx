@@ -92,7 +92,7 @@ import {
   makeSelectCurrentLinkages
 } from './selectors'
 import { ViewActions, ViewActionType } from 'containers/View/actions'
-const { loadViewDataFromVizItem, loadViewsDetail, loadSelectOptions } = ViewActions
+const { loadViewDataFromVizItem, loadViewExecuteQuery, loadViewGetProgress, loadViewGetResult, loadViewKillExecute, loadViewsDetail, loadSelectOptions } = ViewActions
 import { makeSelectWidgets } from 'containers/Widget/selectors'
 import { makeSelectViews, makeSelectFormedViews } from 'containers/View/selectors'
 import { makeSelectCurrentProject } from 'containers/Projects/selectors'
@@ -224,6 +224,35 @@ interface IGridProps {
     requestParams: IDataRequestParams,
     statistic: any
   ) => void
+  onViewExecuteQuery: (
+    renderType: RenderType,
+    dashboardItemId: number,
+    viewId: number,
+    requestParams: IDataRequestParams,
+    statistic: any,
+    resolve: (data) => void,
+    reject: (data) => void
+  ) => void
+  onViewGetProgress: (
+    execId: string,
+    resolve: (data) => void,
+    reject: (data) => void
+    ) => void
+  onViewGetResult: (
+    execId: string,
+    renderType: RenderType,
+    dashboardItemId: number,
+    viewId: number,
+    requestParams: IDataRequestParams,
+    statistic: any,
+    resolve: (data) => void,
+    reject: (data) => void
+    ) => void
+  onViewKillExecute: (
+    execId: string,
+    resolve: (data) => void,
+    reject: (data) => void
+    ) => void
   onLoadViewsDetail: (viewIds: number[], resolve: () => void) => void
   onInitiateDownloadTask: (id: number, type: DownloadTypes, downloadParams?: IDataDownloadParams[], itemId?: number) => void
   onClearCurrentDashboard: () => any
@@ -262,6 +291,7 @@ interface IGridStates {
   dashboardSharePanelAuthorized: boolean
   nextMenuTitle: string
   drillPathSettingVisible: boolean
+  executeQueryFailed: boolean
 }
 
 interface IDashboardItemForm extends AntdFormType {
@@ -306,7 +336,8 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
 
       dashboardSharePanelAuthorized: false,
 
-      nextMenuTitle: ''
+      nextMenuTitle: '',
+      executeQueryFailed: false
     }
 
   }
@@ -447,7 +478,18 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
     }
   }
 
+  private execIds = []
+
+  private deleteExecId = (execId) => {
+    const index = this.execIds.indexOf(execId);
+    if (index > -1) this.execIds.splice(index, 1)
+  }
+
   public componentWillUnmount () {
+    this.timeout.forEach(item => clearTimeout(item))
+    this.execIds.forEach((execId) => {
+      this.props.onViewKillExecute(execId, () => {}, () => {})
+    })
     statistic.setDurations({
       end_time: statistic.getCurrentDateTime()
     }, (data) => {
@@ -492,15 +534,180 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
   private calcItemTop = (y: number) => Math.round((GRID_ROW_HEIGHT + GRID_ITEM_MARGIN) * y)
 
   private getChartData = (renderType: RenderType, itemId: number, widgetId: number, queryConditions?: Partial<IQueryConditions>) => {
-    this.getData(
-      (renderType, itemId, widget, requestParams) => {
-        this.props.onLoadDataFromItem(renderType, itemId, widget.viewId, requestParams, {...requestParams, widget})
-      },
-      renderType,
-      itemId,
-      widgetId,
-      queryConditions
-    )
+    const {
+      currentItemsInfo,
+      widgets,
+      onViewExecuteQuery
+    } = this.props
+    const widget = widgets.find((w) => w.id === widgetId)
+    const widgetConfig: IWidgetConfig = JSON.parse(widget.config)
+    const { cols, rows, metrics, secondaryMetrics, filters, color, label, size, xAxis, tip, orders, cache, expired, view, engine } = widgetConfig
+    const updatedCols = cols.map((col) => widgetDimensionMigrationRecorder(col))
+    const updatedRows = rows.map((row) => widgetDimensionMigrationRecorder(row))
+    const customOrders = updatedCols.concat(updatedRows)
+      .filter(({ sort }) => sort && sort.sortType === FieldSortTypes.Custom)
+      .map(({ name, sort }) => ({ name, list: sort[FieldSortTypes.Custom].sortList }))
+
+    const cachedQueryConditions = currentItemsInfo[itemId].queryConditions
+
+    let tempFilters
+    let linkageFilters
+    let globalFilters
+    let tempOrders
+    let variables
+    let linkageVariables
+    let globalVariables
+    let drillStatus
+    let pagination
+    let nativeQuery
+
+    if (queryConditions) {
+      tempFilters = queryConditions.tempFilters !== void 0 ? queryConditions.tempFilters : cachedQueryConditions.tempFilters
+      linkageFilters = queryConditions.linkageFilters !== void 0 ? queryConditions.linkageFilters : cachedQueryConditions.linkageFilters
+      globalFilters = queryConditions.globalFilters !== void 0 ? queryConditions.globalFilters : cachedQueryConditions.globalFilters
+      tempOrders = queryConditions.orders !== void 0 ? queryConditions.orders : cachedQueryConditions.orders
+      variables = queryConditions.variables || cachedQueryConditions.variables
+      linkageVariables = queryConditions.linkageVariables || cachedQueryConditions.linkageVariables
+      globalVariables = queryConditions.globalVariables || cachedQueryConditions.globalVariables
+      drillStatus = queryConditions.drillStatus || void 0
+      pagination = queryConditions.pagination || cachedQueryConditions.pagination
+      nativeQuery = queryConditions.nativeQuery !== void 0 ? queryConditions.nativeQuery : cachedQueryConditions.nativeQuery
+    } else {
+      tempFilters = cachedQueryConditions.tempFilters
+      linkageFilters = cachedQueryConditions.linkageFilters
+      globalFilters = cachedQueryConditions.globalFilters
+      tempOrders = cachedQueryConditions.orders
+      variables = cachedQueryConditions.variables
+      linkageVariables = cachedQueryConditions.linkageVariables
+      globalVariables = cachedQueryConditions.globalVariables
+      pagination = cachedQueryConditions.pagination
+      nativeQuery = cachedQueryConditions.nativeQuery
+    }
+
+    let groups = cols.concat(rows).filter((g) => g.name !== '指标名称').map((g) => g.name)
+    let aggregators =  metrics.map((m) => ({
+      column: decodeMetricName(m.name),
+      func: m.agg
+    }))
+
+    if (secondaryMetrics && secondaryMetrics.length) {
+      aggregators = aggregators.concat(secondaryMetrics.map((second) => ({
+        column: decodeMetricName(second.name),
+        func: second.agg
+      })))
+    }
+
+    if (color) {
+      groups = groups.concat(color.items.map((c) => c.name))
+    }
+    if (label) {
+      groups = groups.concat(label.items
+        .filter((l) => l.type === 'category')
+        .map((l) => l.name))
+      aggregators = aggregators.concat(label.items
+        .filter((l) => l.type === 'value')
+        .map((l) => ({
+          column: decodeMetricName(l.name),
+          func: l.agg
+        })))
+    }
+    if (size) {
+      aggregators = aggregators.concat(size.items
+        .map((s) => ({
+          column: decodeMetricName(s.name),
+          func: s.agg
+        })))
+    }
+    if (xAxis) {
+      aggregators = aggregators.concat(xAxis.items
+        .map((x) => ({
+          column: decodeMetricName(x.name),
+          func: x.agg
+        })))
+    }
+    if (tip) {
+      aggregators = aggregators.concat(tip.items
+        .map((t) => ({
+          column: decodeMetricName(t.name),
+          func: t.agg
+        })))
+    }
+
+    const requestParamsFilters = filters.reduce((a, b) => {
+      return a.concat(b.config.sqlModel)
+    }, [])
+    const requestParams = {
+      groups: drillStatus && drillStatus.groups ? drillStatus.groups : groups,
+      aggregators,
+      filters: drillStatus && drillStatus.filter ? drillStatus.filter.sqls : requestParamsFilters,
+      tempFilters,
+      linkageFilters,
+      globalFilters,
+      variables,
+      linkageVariables,
+      globalVariables,
+      orders,
+      cache,
+      expired,
+      flush: renderType === 'flush',
+      pagination,
+      nativeQuery,
+      customOrders
+    }
+
+    if (typeof view === 'object' && Object.keys(view).length > 0) requestParams.view = view
+
+    if (engine) requestParams.engineType = engine
+
+    if (tempOrders) {
+      requestParams.orders = requestParams.orders.concat(tempOrders)
+    }
+    this.setState({executeQueryFailed: false})
+
+    onViewExecuteQuery(renderType, itemId, widget.viewId, requestParams, {...requestParams, widget}, (result) => {
+      const { execId } = result
+      this.execIds.push(execId)
+      this.executeQuery(execId, renderType, itemId, widget.viewId, requestParams, {...requestParams, widget}, this)
+    }, () => {
+      this.setState({executeQueryFailed: true})
+      return message.error('查询失败！')
+    })
+  }
+
+  private timeout = []
+
+  private executeQuery(execId, renderType, itemId, viewId, requestParams, statistic, that) {
+    const { onViewGetProgress, onViewGetResult } = that.props
+    // 空数据的话，会不请求数据，execId为undefined，这时候不需要getProgress
+    if (execId) {
+      onViewGetProgress(execId, (result) => {
+        const { progress, status } = result
+        if (status === 'Failed') {
+          // 提示 查询失败（显示表格头，就和现在的暂无数据保持一致的交互，只是提示换成“查询失败”）
+          that.setState({executeQueryFailed: true})
+          that.deleteExecId(execId)
+          return message.error('查询失败！')
+        } else if (status === 'Succeed' && progress === 1) {
+          // 查询成功，调用 结果集接口，status为success时，progress一定为1
+          onViewGetResult(execId, renderType, itemId, viewId, requestParams, statistic, (result) => {
+            that.deleteExecId(execId)
+          }, () => {
+            that.setState({executeQueryFailed: true})
+            that.deleteExecId(execId)
+            return message.error('查询失败！')
+          })
+        } else {
+          // 说明还在运行中
+          // 三秒后再请求一次进度查询接口
+          const t = setTimeout(that.executeQuery, 3000, execId, renderType, itemId, viewId, requestParams, statistic, that)
+          that.timeout.push(t)
+        }
+      }, (err) => {
+        that.setState({executeQueryFailed: true})
+        that.deleteExecId(execId)
+        return message.error('查询失败！')
+      })
+    }
   }
 
   // private downloadCsv = (itemId: number, widgetId: number) => {
@@ -899,6 +1106,7 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
       })
       const selectedWidgetsViewIds = widgets.filter((w) => selectedWidgets.includes(w.id)).map((w) => w.viewId)
       const viewIds = selectedWidgetsViewIds
+        .filter((viewId) => typeof viewId === 'number' && viewId > 0)
         .filter((viewId, idx) => selectedWidgetsViewIds.indexOf(viewId) === idx)
         .filter((viewId) => !formedViews[viewId])
 
@@ -1518,7 +1726,8 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
       globalFilterConfigVisible,
       allowFullScreen,
       dashboardSharePanelAuthorized,
-      drillPathSettingVisible
+      drillPathSettingVisible,
+      executeQueryFailed
     } = this.state
     let dashboardType: number
     if (currentDashboard) {
@@ -1589,7 +1798,8 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
         const drillHistory = queryConditions.drillHistory
         const drillpathSetting = queryConditions.drillpathSetting
         const drillpathInstance = queryConditions.drillpathInstance
-        const view = formedViews[widget.viewId]
+        const config = widget ? JSON.parse(widget.config) : {}
+        const view = config.view ? config.view : formedViews[widget.viewId]
         const isTrigger = currentLinkages && currentLinkages.length ? currentLinkages.map((linkage) => linkage.trigger[0]
         ).some((tr) => tr === String(id)) : false
 
@@ -1639,6 +1849,7 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
               monitoredSyncDataAction={this.props.onMonitoredSyncDataAction}
               monitoredSearchDataAction={this.props.onMonitoredSearchDataAction}
               ref={(f) => this[`dashboardItem${id}`] = f}
+              executeQueryFailed={executeQueryFailed}
             />
           </div>
         ))
@@ -1869,8 +2080,12 @@ export function mapDispatchToProps (dispatch) {
     onEditDashboardItem: (portalId, item, resolve) => dispatch(editDashboardItem(portalId, item, resolve)),
     onEditDashboardItems: (portalId, items) => dispatch(editDashboardItems(portalId, items)),
     onDeleteDashboardItem: (id, resolve) => dispatch(deleteDashboardItem(id, resolve)),
-    onLoadDataFromItem: (renderType, itemId, viewId, requestParams, statistic) =>
-                        dispatch(loadViewDataFromVizItem(renderType, itemId, viewId, requestParams, 'dashboard', statistic)),
+    onLoadDataFromItem: (renderType, itemId, viewId, requestParams, statistic) => dispatch(loadViewDataFromVizItem(renderType, itemId, viewId, requestParams, 'dashboard', statistic)),
+    onViewExecuteQuery: (renderType, itemId, viewId, requestParams, statistic, resolve, reject) => dispatch(loadViewExecuteQuery(renderType, itemId, viewId, requestParams, 'dashboard', statistic, resolve, reject)),
+    onViewGetProgress: (execId, resolve, reject) => dispatch(loadViewGetProgress(execId, resolve, reject)),
+    onViewGetResult: (execId, renderType, itemId, viewId, requestParams, statistic, resolve, reject) => dispatch(loadViewGetResult(execId, renderType, itemId, viewId, requestParams, 'dashboard', statistic, resolve, reject)),
+    onViewKillExecute: (execId, resolve, reject) => dispatch(loadViewKillExecute(execId, resolve, reject)),
+
     onLoadViewsDetail: (viewIds, resolve) => dispatch(loadViewsDetail(viewIds, resolve)),
     onClearCurrentDashboard: () => dispatch(clearCurrentDashboard()),
     onInitiateDownloadTask: (id, type, downloadParams?, itemId?) => dispatch(initiateDownloadTask(id, type, downloadParams, itemId)),

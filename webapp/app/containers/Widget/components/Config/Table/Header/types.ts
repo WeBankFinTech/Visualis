@@ -7,6 +7,8 @@ export interface ITableHeaderConfig {
   alias: string
   visualType: ViewModelVisualTypes
   isGroup: boolean
+  // 是否隐藏列
+  hide: boolean
   style: ITableCellStyle
   children: ITableHeaderConfig[]
 }

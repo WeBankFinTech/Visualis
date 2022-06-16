@@ -20,8 +20,10 @@
 package edp.davinci.controller;
 
 import com.alibaba.druid.util.StringUtils;
+import com.webank.wedatasphere.dss.visualis.auth.ProjectAuth;
 import com.webank.wedatasphere.dss.visualis.utils.HttpUtils;
 import edp.core.annotation.CurrentUser;
+import edp.core.annotation.MethodLog;
 import edp.core.model.DBTables;
 import edp.core.model.TableInfo;
 import edp.davinci.common.controller.BaseController;
@@ -31,34 +33,30 @@ import edp.davinci.dto.sourceDto.*;
 import edp.davinci.model.Source;
 import edp.davinci.model.User;
 import edp.davinci.service.SourceService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import springfox.documentation.annotations.ApiIgnore;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.List;
 
-@Api(value = "/sources", tags = "sources", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-@ApiResponses(@ApiResponse(code = 404, message = "sources not found"))
 @Slf4j
 @RestController
-@RequestMapping(value = Constants.BASE_API_PATH + "/sources", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+@RequestMapping(value = Constants.BASE_API_PATH + "/sources", produces = MediaType.APPLICATION_JSON_VALUE)
 public class SourceController extends BaseController {
 
     @Autowired
     private SourceService sourceService;
 
+    @Autowired
+    private ProjectAuth projectAuth;
 
     /**
      * 获取source列表
@@ -68,10 +66,10 @@ public class SourceController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get sources")
+    @MethodLog
     @GetMapping
     public ResponseEntity getSources(@RequestParam Long projectId,
-                                     @ApiIgnore @CurrentUser User user,
+                                     @CurrentUser User user,
                                      HttpServletRequest request) {
         if (invalidId(projectId)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid project id");
@@ -90,10 +88,10 @@ public class SourceController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get source detail")
+    @MethodLog
     @GetMapping("/{id}")
     public ResponseEntity getSourceDetail(@PathVariable Long id,
-                                          @ApiIgnore @CurrentUser User user,
+                                          @CurrentUser User user,
                                           HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid project id");
@@ -113,16 +111,20 @@ public class SourceController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "create source", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity createSource(@Valid @RequestBody SourceCreate source,
-                                       @ApiIgnore BindingResult bindingResult,
-                                       @ApiIgnore @CurrentUser User user,
+                                       BindingResult bindingResult,
+                                       @CurrentUser User user,
                                        HttpServletRequest request) {
 
         if (bindingResult.hasErrors()) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message(bindingResult.getFieldErrors().get(0).getDefaultMessage());
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
+        }
+
+        if(!projectAuth.isPorjectOwner(source.getProjectId(), user.getId())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         Source record = sourceService.createSource(source, user);
@@ -140,12 +142,12 @@ public class SourceController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "update a source", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateSource(@PathVariable Long id,
                                        @Valid @RequestBody SourceInfo source,
-                                       @ApiIgnore BindingResult bindingResult,
-                                       @ApiIgnore @CurrentUser User user,
+                                       BindingResult bindingResult,
+                                       @CurrentUser User user,
                                        HttpServletRequest request) {
 
 
@@ -171,10 +173,10 @@ public class SourceController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "delete a source")
+    @MethodLog
     @DeleteMapping("/{id}")
     public ResponseEntity deleteSource(@PathVariable Long id,
-                                       @ApiIgnore @CurrentUser User user,
+                                       @CurrentUser User user,
                                        HttpServletRequest request) {
 
         if (invalidId(id)) {
@@ -196,11 +198,11 @@ public class SourceController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "test source", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PostMapping(value = "/test", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity testSource(@Valid @RequestBody SourceTest sourceTest,
-                                     @ApiIgnore BindingResult bindingResult,
-                                     @ApiIgnore @CurrentUser User user,
+                                     BindingResult bindingResult,
+                                     @CurrentUser User user,
                                      HttpServletRequest request) {
 
         if (bindingResult.hasErrors()) {
@@ -220,10 +222,10 @@ public class SourceController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "release and reconnect", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PostMapping(value = "/reconnect/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity reconnect(@PathVariable Long id,
-                                    @ApiIgnore @CurrentUser User user,
+                                    @CurrentUser User user,
                                     HttpServletRequest request) {
         sourceService.reconnect(id, user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
@@ -240,12 +242,12 @@ public class SourceController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "create csv meta", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @MethodLog
     @PostMapping(value = "{id}/csvmeta", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity createCsvmeta(@PathVariable Long id,
                                         @Valid @RequestBody UploadMeta uploadMeta,
-                                        @ApiIgnore BindingResult bindingResult,
-                                        @ApiIgnore @CurrentUser User user,
+                                        BindingResult bindingResult,
+                                        @CurrentUser User user,
                                         HttpServletRequest request) {
 
         if (invalidId(id)) {
@@ -273,14 +275,14 @@ public class SourceController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "upload csv/excel file")
+    @MethodLog
     @PostMapping("{id}/upload{type}")
     public ResponseEntity uploadData(@PathVariable Long id,
                                      @PathVariable String type,
                                      @Valid @ModelAttribute(value = "sourceDataUpload") SourceDataUpload sourceDataUpload,
-                                     @ApiIgnore BindingResult bindingResult,
+                                     BindingResult bindingResult,
                                      @RequestParam("file") MultipartFile file,
-                                     @ApiIgnore @CurrentUser User user,
+                                     @CurrentUser User user,
                                      HttpServletRequest request) {
 
         if (invalidId(id)) {
@@ -311,10 +313,10 @@ public class SourceController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get dbs")
+    @MethodLog
     @GetMapping("/{id}/databases")
     public ResponseEntity getSourceDbs(@PathVariable Long id,
-                                       @ApiIgnore @CurrentUser User user,
+                                       @CurrentUser User user,
                                        HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Inavlid source id");
@@ -334,11 +336,11 @@ public class SourceController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get tables")
+    @MethodLog
     @GetMapping("/{id}/tables")
     public ResponseEntity getSourceTables(@PathVariable Long id,
                                           @RequestParam(name = "dbName") String dbName,
-                                          @ApiIgnore @CurrentUser User user,
+                                          @CurrentUser User user,
                                           HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Inavlid source id");
@@ -361,12 +363,12 @@ public class SourceController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get columns")
+    @MethodLog
     @GetMapping("/{id}/table/columns")
     public ResponseEntity getTableColumns(@PathVariable Long id,
                                           @RequestParam(name = "dbName") String dbName,
                                           @RequestParam(name = "tableName") String tableName,
-                                          @ApiIgnore @CurrentUser User user,
+                                          @CurrentUser User user,
                                           HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Inavlid source id");
@@ -396,9 +398,9 @@ public class SourceController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get jdbc datasources")
+    @MethodLog
     @GetMapping("/jdbc/datasources")
-    public ResponseEntity getJdbcDataSources(@ApiIgnore @CurrentUser User user, HttpServletRequest request) {
+    public ResponseEntity getJdbcDataSources(@CurrentUser User user, HttpServletRequest request) {
         List<DatasourceType> list = sourceService.getDatasources();
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(list));
     }
