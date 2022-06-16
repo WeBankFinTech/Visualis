@@ -20,6 +20,7 @@
 package edp.davinci.service.impl;
 
 import com.alibaba.druid.util.StringUtils;
+import com.webank.wedatasphere.dss.visualis.auth.ProjectAuth;
 import edp.core.exception.NotFoundException;
 import edp.core.exception.ServerException;
 import edp.core.exception.UnAuthorizedExecption;
@@ -28,6 +29,7 @@ import edp.core.model.QueryColumn;
 import edp.core.utils.CollectionUtils;
 import edp.core.utils.FileUtils;
 import edp.core.utils.ServerUtils;
+import edp.davinci.common.utils.ComponentFilterUtils;
 import edp.davinci.core.enums.FileTypeEnum;
 import edp.davinci.core.enums.LogNameEnum;
 import edp.davinci.core.enums.UserPermissionEnum;
@@ -52,6 +54,7 @@ import edp.davinci.service.ShareService;
 import edp.davinci.service.ViewService;
 import edp.davinci.service.WidgetService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.linkis.server.BDPJettyServerHelper;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.slf4j.Logger;
@@ -72,8 +75,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static edp.core.consts.Consts.EMPTY;
-import static edp.davinci.common.utils.ScriptUtiils.getExecuptParamScriptEngine;
-import static edp.davinci.common.utils.ScriptUtiils.getViewExecuteParam;
+import static edp.davinci.common.utils.ScriptUtils.getExecuptParamScriptEngine;
+import static edp.davinci.common.utils.ScriptUtils.getViewExecuteParam;
 
 
 @Service("widgetService")
@@ -107,6 +110,9 @@ public class WidgetServiceImpl implements WidgetService {
 
     @Autowired
     private ProjectService projectService;
+
+    @Autowired
+    private ProjectAuth projectAuth;
 
     @Override
     public synchronized boolean isExist(String name, Long id, Long projectId) {
@@ -145,6 +151,9 @@ public class WidgetServiceImpl implements WidgetService {
                 return null;
             }
         }
+
+        ComponentFilterUtils filter = new ComponentFilterUtils();
+        widgets = filter.doFilterWidgets(widgets);
 
         return widgets;
     }
@@ -203,14 +212,14 @@ public class WidgetServiceImpl implements WidgetService {
         View view = viewMapper.getById(widgetCreate.getViewId());
         if (null == view) {
             log.info("view (:{}) is not found", widgetCreate.getViewId());
-            throw new NotFoundException("view not found");
+            //throw new NotFoundException("view not found");
         }
 
         Widget widget = new Widget().createdBy(user.getId());
         BeanUtils.copyProperties(widgetCreate, widget);
         int insert = widgetMapper.insert(widget);
         if (insert > 0) {
-            optLogger.info("widget ({}) create by user(:{})", widget.toString());
+            optLogger.info("widget ({}) create by user(:{})", widget, user.getUsername());
             return widget;
         } else {
             throw new ServerException("create widget fail");
@@ -233,6 +242,19 @@ public class WidgetServiceImpl implements WidgetService {
             throw new NotFoundException("widget is not found");
         }
 
+        if(!projectAuth.isPorjectOwner(widget.getProjectId(), user.getId())) {
+            throw new UnAuthorizedExecption("current user has no permission.");
+        }
+
+        // 如果前端带的widget config中的view为空，设置为viewId的值
+        Long viewId = widgetUpdate.getViewId();
+        Map widgetUpdateConfig = BDPJettyServerHelper.gson().fromJson(widgetUpdate.getConfig(), Map.class);
+        if(widgetUpdateConfig.get("view").toString().equals("{}")) {
+            widgetUpdateConfig.put("view", viewId);
+            widgetUpdate.setConfig(BDPJettyServerHelper.gson().toJson(widgetUpdateConfig));
+        }
+
+
         ProjectDetail projectDetail = projectService.getProjectDetail(widget.getProjectId(), user, false);
         ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
 
@@ -247,19 +269,26 @@ public class WidgetServiceImpl implements WidgetService {
             throw new ServerException("the widget name is already taken");
         }
 
-        View view = viewMapper.getById(widgetUpdate.getViewId());
-        if (null == view) {
-            log.info("view (:{}) not found", widgetUpdate.getViewId());
-            throw new NotFoundException("view not found");
+        if(widgetUpdate.getViewId() != null && widgetUpdate.getViewId() > 0){
+            View view = viewMapper.getById(widgetUpdate.getViewId());
+            if (null == view) {
+                log.info("view (:{}) not found", widgetUpdate.getViewId());
+                throw new NotFoundException("view not found");
+            }
         }
 
         String originStr = widget.toString();
 
         BeanUtils.copyProperties(widgetUpdate, widget);
-        widget.updatedBy(user.getId());
+        // 判断是否更新过config
+        if(widgetUpdate.getConfig().equals(widget.getConfig())) {
+            widget.updateByWithoutUpdateTime(user.getId());
+        } else {
+            widget.updatedBy(user.getId());
+        }
         int update = widgetMapper.update(widget);
         if (update > 0) {
-            optLogger.info("widget ({}) is updated by user(:{}), origin: ({})", widget.toString(), user.getId(), originStr);
+            optLogger.info("widget ({}) is updated by user(:{}), origin: ({})", widget, user.getId(), originStr);
             return true;
         } else {
             throw new ServerException("update widget fail");
@@ -279,17 +308,21 @@ public class WidgetServiceImpl implements WidgetService {
 
         Widget widget = widgetMapper.getById(id);
         if (null == widget) {
-            log.info("widget (:{}) is not found", id);
-            throw new NotFoundException("widget is not found");
+            log.warn("widget (:{}) is not found", id);
+            return true;
+        } else {
+            ProjectDetail projectDetail = projectService.getProjectDetail(widget.getProjectId(), user, false);
+            ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
+
+            //校验权限
+            if (projectPermission.getWidgetPermission() < UserPermissionEnum.DELETE.getPermission()) {
+                log.info("user {} have not permisson to delete widget", user.getUsername());
+                throw new UnAuthorizedExecption("you have not permission to delete widget");
+            }
         }
 
-        ProjectDetail projectDetail = projectService.getProjectDetail(widget.getProjectId(), user, false);
-        ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
-
-        //校验权限
-        if (projectPermission.getWidgetPermission() < UserPermissionEnum.DELETE.getPermission()) {
-            log.info("user {} have not permisson to delete widget", user.getUsername());
-            throw new UnAuthorizedExecption("you have not permission to delete widget");
+        if(!projectAuth.isPorjectOwner(widget.getProjectId(), user.getId())) {
+            throw new UnAuthorizedExecption("current user has no permission.");
         }
 
         //删除引用widget的dashboard
@@ -373,7 +406,7 @@ public class WidgetServiceImpl implements WidgetService {
 
                 boolean maintainer = projectService.isMaintainer(projectDetail, user);
 
-                PaginateWithQueryColumns paginate = viewService.getResultDataList(maintainer, viewWithSource, executeParam, user);
+                PaginateWithQueryColumns paginate = viewService.getResultDataList(maintainer, viewWithSource, executeParam, user, false);
                 List<QueryColumn> columns = paginate.getColumns();
                 if (!CollectionUtils.isEmpty(columns)) {
                     File file = new File(rootPath);
@@ -463,14 +496,14 @@ public class WidgetServiceImpl implements WidgetService {
                         executeParam = getViewExecuteParam((engine), null, widget.getConfig(), null);
                     }
 
-                    PaginateWithQueryColumns paginate = viewService.getResultDataList(maintainer, viewWithProjectAndSource, executeParam, user);
+                    PaginateWithQueryColumns paginate = viewService.getResultDataList(maintainer, viewWithProjectAndSource, executeParam, user, false);
 
                     sheet = wb.createSheet(sheetName);
                     ExcelUtils.writeSheet(sheet, paginate.getColumns(), paginate.getResultList(), wb, containType, widget.getConfig(), executeParam.getParams());
                 } catch (ServerException e) {
-                    e.printStackTrace();
+                    log.error("Error writing widget data to excel: ", e);
                 } catch (SQLException e) {
-                    e.printStackTrace();
+                    log.error("Error writing widget data to excel: ", e);
                 } finally {
                     sheet = null;
                     countDownLatch.countDown();

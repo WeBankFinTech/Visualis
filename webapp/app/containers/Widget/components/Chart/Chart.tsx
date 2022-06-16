@@ -7,7 +7,6 @@ import chartOptionGenerator from '../../render/chart'
 import { getTriggeringRecord } from '../util'
 const styles = require('./Chart.less')
 
-
 export class Chart extends React.PureComponent<IChartProps> {
   private container: HTMLDivElement = null
   private instance: ECharts
@@ -25,9 +24,11 @@ export class Chart extends React.PureComponent<IChartProps> {
   private renderChart = (props: IChartProps) => {
     const { selectedChart, renderType, getDataDrillDetail, isDrilling, onSelectChartsItems, onDoInteract, onCheckTableInteract } = props
 
-    if (renderType === 'loading') {
-      return
-    }
+    if (renderType === 'loading') return
+
+    // excel类型，不需要加载echarts相关内容
+    if (selectedChart === 19) return
+
     if (!this.instance) {
       this.instance = echarts.init(this.container, 'default')
     } else {
@@ -66,10 +67,47 @@ export class Chart extends React.PureComponent<IChartProps> {
     // }
 
     this.instance.off('click')
+    // echarts图的点击事件
     this.instance.on('click', (params) => {
-      this.collectSelectedItems(params)
+      if (params.componentSubType === 'graph') {
+        // 关系图，执行其他的逻辑
+        this.handleGraphClick(params)
+      } else {
+        this.collectSelectedItems(params)
+      }
     })
     this.instance.resize()
+  }
+
+  // 关系图的点击事件
+  // 点击某个节点后，不请求数据（因为都是用全量数据来生成图），只切换顶层节点
+  // 点击某个节点后，顶层节点只有一个，即点击的这个节点
+  public handleGraphClick = (params) => {
+    const { dataType, name } = params
+    const { selectedChart, getDataDrillDetail, isDrilling, onSetWidgetProps } = this.props
+    if (dataType === 'node') {
+      // 说明点击的是关系图中的节点，要更新数据，rootNodeCount为1并且rootNodeName有值
+      this.props.chartStyles.spec.rootNodeCount = 1
+      this.props.chartStyles.spec.rootNodeName = name
+      this.props.tempWidgetProps.chartStyles.spec.rootNodeCount = 1
+      this.props.tempWidgetProps.chartStyles.spec.rootNodeName = name
+
+      this.instance.setOption(
+        chartOptionGenerator(
+          chartlibs.find((cl) => cl.id === selectedChart).name,
+          this.props,
+          {
+            instance: this.instance,
+            isDrilling,
+            getDataDrillDetail,
+            selectedItems: this.props.selectedItems
+          }
+        )
+      )
+
+      // 保存某个节点的点击操作，再次打开页面时依然是操作后的结果
+      onSetWidgetProps(this.props.tempWidgetProps)
+    }
   }
 
   public collectSelectedItems = (params) => {
@@ -118,7 +156,6 @@ export class Chart extends React.PureComponent<IChartProps> {
       onSelectChartsItems(selectedItems)
     }
   }
-
   public render () {
     return (
       <div

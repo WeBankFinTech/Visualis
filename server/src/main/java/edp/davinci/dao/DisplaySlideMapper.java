@@ -85,7 +85,7 @@ public interface DisplaySlideMapper {
             "	p.visibility 'p.visibility'",
             "FROM display_slide s ",
             "   LEFT JOIN display d on d.id = s.display_id",
-            "   LEFT JOIN dss_project p on p.id = d.project_id",
+            "   LEFT JOIN visualis_project p on p.id = d.project_id",
             "where s.id = #{slideId}",
     })
     SlideWithDisplayAndProject getSlideWithDipalyAndProjectById(@Param("slideId") Long slideId);

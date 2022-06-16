@@ -18,3 +18,4 @@ export const SankeySection = loadable(() => import('./Sankey'), { fallback })
 
 export const DoubleYAxisSection = loadable(() => import('./DoubleYAxis'), { fallback })
 
+export const RelationGraphSection = loadable(() => import('./RelationGraph'), { fallback })

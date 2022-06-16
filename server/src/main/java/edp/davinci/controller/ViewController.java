@@ -19,8 +19,15 @@
 
 package edp.davinci.controller;
 
-import com.webank.wedatasphere.dss.visualis.service.hive.HiveDBHelper;
+import com.google.common.collect.Lists;
+import com.webank.wedatasphere.dss.visualis.auth.ProjectAuth;
+import com.webank.wedatasphere.dss.visualis.query.service.VirtualViewQueryService;
+import com.webank.wedatasphere.dss.visualis.query.utils.EnvLimitUtils;
+import com.webank.wedatasphere.dss.visualis.query.utils.QueryUtils;
+import com.webank.wedatasphere.dss.visualis.utils.HiveDBHelper;
+import com.webank.wedatasphere.dss.visualis.utils.HttpUtils;
 import edp.core.annotation.CurrentUser;
+import edp.core.annotation.MethodLog;
 import edp.core.model.Paginate;
 import edp.core.model.PaginateWithQueryColumns;
 import edp.davinci.common.controller.BaseController;
@@ -31,40 +38,42 @@ import edp.davinci.dto.viewDto.*;
 import edp.davinci.model.DacChannel;
 import edp.davinci.model.User;
 import edp.davinci.service.ViewService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
-@Api(value = "/views", tags = "views", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-@ApiResponses(@ApiResponse(code = 404, message = "view not found"))
 @Slf4j
 @RestController
-@RequestMapping(value = Constants.BASE_API_PATH + "/views", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+@RequestMapping(value = Constants.BASE_API_PATH + "/views", produces = MediaType.APPLICATION_JSON_VALUE)
 public class ViewController extends BaseController {
 
     @Autowired
     private ViewService viewService;
 
     @Autowired
+    private VirtualViewQueryService virtualViewQueryService;
+
+    @Autowired
     private DacChannelUtil dacChannelUtil;
 
+    @Autowired
     private HiveDBHelper hiveDBHelper;
 
+    @Autowired
+    private ProjectAuth projectAuth;
+
+    // 工作流创建widget时调用Step 3
     /**
      * 获取view
      *
@@ -73,11 +82,13 @@ public class ViewController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get views")
+    @MethodLog
     @GetMapping
     public ResponseEntity getViews(@RequestParam Long projectId,
-                                   @ApiIgnore @CurrentUser User user,
-                                   HttpServletRequest request) {
+                                   @RequestParam(required = false) String contextId,
+                                   @RequestParam(required = false) String nodeName,
+                                   @CurrentUser User user,
+                                   HttpServletRequest request) throws Exception {
 
         if (invalidId(projectId)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid project id");
@@ -85,6 +96,12 @@ public class ViewController extends BaseController {
         }
 
         List<ViewBaseInfo> views = viewService.getViews(projectId, user);
+        if (StringUtils.isNotBlank(contextId) && StringUtils.isNotBlank(nodeName)) {
+            List<Object> virtualviews = Lists.newArrayList();
+            virtualviews.addAll(QueryUtils.getFromContext(contextId, nodeName));
+            virtualviews.addAll(views);
+            return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(virtualviews));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(views));
     }
 
@@ -97,10 +114,10 @@ public class ViewController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get view info")
+    @MethodLog
     @GetMapping("/{id}")
     public ResponseEntity getView(@PathVariable Long id,
-                                  @ApiIgnore @CurrentUser User user,
+                                  @CurrentUser User user,
                                   HttpServletRequest request) {
 
         if (invalidId(id)) {
@@ -122,11 +139,11 @@ public class ViewController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "create view")
+    @MethodLog
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity createView(@Valid @RequestBody ViewCreate view,
-                                     @ApiIgnore BindingResult bindingResult,
-                                     @ApiIgnore @CurrentUser User user,
+                                     BindingResult bindingResult,
+                                     @CurrentUser User user,
                                      HttpServletRequest request) {
 
         if (bindingResult.hasErrors()) {
@@ -134,7 +151,16 @@ public class ViewController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        ViewWithSourceBaseInfo viewWithSourceBaseInfo = viewService.createView(view, user);
+        if (EnvLimitUtils.notPermitted()) {
+            ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message(EnvLimitUtils.ERROR_MESSAGE);
+            return ResponseEntity.status(resultMap.getCode()).body(resultMap);
+        }
+
+        if(!projectAuth.isPorjectOwner(view.getProjectId(), user.getId())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        ViewWithSourceBaseInfo viewWithSourceBaseInfo = viewService.createView(view, user, HttpUtils.getUserTicketId(request));
 
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(viewWithSourceBaseInfo));
     }
@@ -150,12 +176,12 @@ public class ViewController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "update view")
+    @MethodLog
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateView(@PathVariable Long id,
                                      @Valid @RequestBody ViewUpdate viewUpdate,
-                                     @ApiIgnore BindingResult bindingResult,
-                                     @ApiIgnore @CurrentUser User user,
+                                     BindingResult bindingResult,
+                                     @CurrentUser User user,
                                      HttpServletRequest request) {
 
 
@@ -166,6 +192,11 @@ public class ViewController extends BaseController {
 
         if (bindingResult.hasErrors()) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message(bindingResult.getFieldErrors().get(0).getDefaultMessage());
+            return ResponseEntity.status(resultMap.getCode()).body(resultMap);
+        }
+
+        if (EnvLimitUtils.notPermitted()) {
+            ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message(EnvLimitUtils.ERROR_MESSAGE);
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
@@ -182,84 +213,24 @@ public class ViewController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "delete view")
+    @MethodLog
     @DeleteMapping("/{id}")
     public ResponseEntity deleteView(@PathVariable Long id,
-                                     @ApiIgnore @CurrentUser User user,
+                                     @CurrentUser User user,
                                      HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid view id");
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
+        if (EnvLimitUtils.notPermitted()) {
+            ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message(EnvLimitUtils.ERROR_MESSAGE);
+            return ResponseEntity.status(resultMap.getCode()).body(resultMap);
+        }
+
         viewService.deleteView(id, user);
 
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
-
-
-        //TODO Hive related logic, need to be reconsidered
-//=======
-//        try {
-//            ResultMap resultMap = viewService.deleteView(id, user, request);
-//            return ResponseEntity.status(resultMap.getCode()).body(resultMap);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            log.error(e.getMessage());
-//            return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
-//        }
-//    }
-//
-//    /**
-//     * 获取数据库schema信息
-//     *
-//     * @param sourceId
-//     * @param user
-//     * @param request
-//     * @return
-//     */
-//    @ApiOperation(value = "get view data schema")
-//    @GetMapping("/database")
-//    public ResponseEntity getSourceSchema(@RequestParam String sourceId,
-//                                          @ApiIgnore @CurrentUser User user,
-//                                          HttpServletRequest request) {
-//        /*
-//         *如果sourceID是hive_ 开头的话，那么就是hive的数据库，否则就是jdbc的数据库
-//         * */
-//        if (StringUtils.isEmpty(sourceId)) {
-//            log.warn("sourceId is empty, can not get right source for user: {}", user);
-//            ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Empty source id");
-//            return ResponseEntity.status(resultMap.getCode()).body(resultMap);
-//        }
-//
-//        //update by johnnwang
-//        if (sourceId.startsWith(HiveDBHelper.HIVE_PREFIX)) {
-//            //deal hive source
-//            try {
-//                ResultMap resultMap = hiveDBHelper.getHiveSourceSchema(sourceId, user, request);
-//                return ResponseEntity.status(resultMap.getCode()).body(resultMap);
-//            } catch (final Exception e) {
-//                log.error("获取sourceId {} 的hive数据库表信息失败", sourceId, e);
-//                return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
-//            }
-//        } else if (VGUtils.getHiveDataSourceId() == Long.parseLong(sourceId)) {
-//            ResultMap resultMap = new ResultMap(tokenUtils).success();
-//            return ResponseEntity.status(resultMap.getCode()).body(resultMap);
-//        } else {
-//            Long longSourceId = Long.parseLong(sourceId);
-//            if (invalidId(longSourceId)) {
-//                ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Inavlid source id");
-//                return ResponseEntity.status(resultMap.getCode()).body(resultMap);
-//            }
-//            try {
-//                ResultMap resultMap = viewService.getSourceSchema(longSourceId, user, request);
-//                return ResponseEntity.status(resultMap.getCode()).body(resultMap);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//                log.error(e.getMessage());
-//                return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
-//            }
-//        }
-//>>>>>>> drawis
     }
 
 
@@ -272,15 +243,20 @@ public class ViewController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "executesql")
+    @MethodLog
     @PostMapping(value = "/executesql", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity executeSql(@Valid @RequestBody ViewExecuteSql executeSql,
-                                     @ApiIgnore BindingResult bindingResult,
-                                     @ApiIgnore @CurrentUser User user,
+                                     BindingResult bindingResult,
+                                     @CurrentUser User user,
                                      HttpServletRequest request) {
 
         if (bindingResult.hasErrors()) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message(bindingResult.getFieldErrors().get(0).getDefaultMessage());
+            return ResponseEntity.status(resultMap.getCode()).body(resultMap);
+        }
+
+        if (EnvLimitUtils.notPermitted()) {
+            ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message(EnvLimitUtils.ERROR_MESSAGE);
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
@@ -298,30 +274,95 @@ public class ViewController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get data")
+    @MethodLog
     @PostMapping(value = "/{id}/getdata", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getData(@PathVariable Long id,
                                   @RequestBody(required = false) ViewExecuteParam executeParam,
-                                  @ApiIgnore @CurrentUser User user,
-                                  HttpServletRequest request) throws SQLException {
-        if (invalidId(id)) {
+                                  @CurrentUser User user,
+                                  HttpServletRequest request) throws Exception {
+        if (invalidId(id) && executeParam.getView() == null) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid view id");
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        Paginate<Map<String, Object>> paginate = viewService.getData(id, executeParam, user);
+        Paginate<Map<String, Object>> paginate;
+        if (executeParam.getView() == null) {
+            paginate = viewService.getData(id, executeParam, user, true);
+        } else {
+            paginate = virtualViewQueryService.getData(executeParam, user, true);
+        }
         return ResponseEntity.ok().cacheControl(CacheControl.noCache()).body(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(paginate));
     }
 
+    @MethodLog
+    @PostMapping(value = "/{id}/getprogress", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity getProgress(@PathVariable String id,
+                                      @RequestBody(required = false) ViewExecuteParam executeParam,
+                                      @CurrentUser User user,
+                                      HttpServletRequest request) throws Exception {
+        if (invalidId(id)) {
+            ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid exec id");
+            return ResponseEntity.status(resultMap.getCode()).body(resultMap);
+        }
 
-    @ApiOperation(value = "get distinct value")
+        Paginate<Map<String, Object>> paginate = viewService.getAsyncProgress(id, user);
+        return ResponseEntity.ok().cacheControl(CacheControl.noCache()).body(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(paginate));
+    }
+
+    @MethodLog
+    @PostMapping(value = "/{id}/kill", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity kill(@PathVariable String id,
+                               @RequestBody(required = false) ViewExecuteParam executeParam,
+                               @CurrentUser User user,
+                               HttpServletRequest request) throws Exception {
+        if (invalidId(id)) {
+            ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid exec id");
+            return ResponseEntity.status(resultMap.getCode()).body(resultMap);
+        }
+
+        Paginate<Map<String, Object>> paginate = viewService.killAsyncJob(id, user);
+        return ResponseEntity.ok().cacheControl(CacheControl.noCache()).body(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(paginate));
+    }
+
+    @MethodLog
+    @PostMapping(value = "/{id}/getresult", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity getResult(@PathVariable String id,
+                                    @RequestBody(required = false) ViewExecuteParam executeParam,
+                                    @CurrentUser User user,
+                                    HttpServletRequest request) throws Exception {
+        if (invalidId(id)) {
+            ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid exec id");
+            return ResponseEntity.status(resultMap.getCode()).body(resultMap);
+        }
+
+        Paginate<Map<String, Object>> paginate = viewService.getAsyncResult(id, user);
+        if (executeParam == null || executeParam.getPageNo() == -1) {
+            paginate.setPageNo(1);
+            paginate.setPageSize(new Long(paginate.getTotalCount()).intValue());
+        } else {
+            paginate.setPageNo(executeParam.getPageNo());
+            paginate.setPageSize(executeParam.getPageSize());
+        }
+        return ResponseEntity.ok().cacheControl(CacheControl.noCache()).body(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(paginate));
+    }
+
+    @MethodLog
+    @PostMapping(value = "/getdistinctvalue", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity getDistinctValueNoView(@Valid @RequestBody DistinctParam param,
+                                                 BindingResult bindingResult,
+                                                 @CurrentUser User user,
+                                                 HttpServletRequest request) throws Exception {
+        return getDistinctValue(null, param, bindingResult, user, request);
+    }
+
+    @MethodLog
     @PostMapping(value = "/{id}/getdistinctvalue", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getDistinctValue(@PathVariable Long id,
                                            @Valid @RequestBody DistinctParam param,
-                                           @ApiIgnore BindingResult bindingResult,
-                                           @ApiIgnore @CurrentUser User user,
-                                           HttpServletRequest request) {
-        if (invalidId(id)) {
+                                           BindingResult bindingResult,
+                                           @CurrentUser User user,
+                                           HttpServletRequest request) throws Exception {
+        if (invalidId(id) && param.getView() == null) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid view id");
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
@@ -331,31 +372,34 @@ public class ViewController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        List<Map<String, Object>> distinctValue = viewService.getDistinctValue(id, param, user);
+        List<Map<String, Object>> distinctValue = Lists.newArrayList();
+        if (param.getView() == null) {
+            distinctValue = viewService.getDistinctValue(id, param, user);
+        } else {
+            distinctValue = virtualViewQueryService.getDistinctValue(param, user);
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(distinctValue));
     }
 
-
-    @ApiOperation(value = "get dac channels")
+    @MethodLog
     @GetMapping("/dac/channels")
-    public ResponseEntity getDacChannels(@ApiIgnore @CurrentUser User user, HttpServletRequest request) {
+    public ResponseEntity getDacChannels(@CurrentUser User user, HttpServletRequest request) {
         Map<String, DacChannel> dacMap = DacChannelUtil.dacMap;
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(dacMap.keySet()));
     }
 
-    @ApiOperation(value = "get dac tenants")
+    @MethodLog
     @GetMapping("/dac/{dacName}/tenants")
-    public ResponseEntity getDacTannets(@PathVariable String dacName, @ApiIgnore @CurrentUser User user, HttpServletRequest request) {
+    public ResponseEntity getDacTannets(@PathVariable String dacName, @CurrentUser User user, HttpServletRequest request) {
 
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(dacChannelUtil.getTenants(dacName)));
     }
 
-
-    @ApiOperation(value = "get dac bizs")
+    @MethodLog
     @GetMapping("/dac/{dacName}/tenants/{tenantId}/bizs")
     public ResponseEntity getDacBizs(@PathVariable String dacName,
                                      @PathVariable String tenantId,
-                                     @ApiIgnore @CurrentUser User user,
+                                     @CurrentUser User user,
                                      HttpServletRequest request) {
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(dacChannelUtil.getBizs(dacName, tenantId)));
     }

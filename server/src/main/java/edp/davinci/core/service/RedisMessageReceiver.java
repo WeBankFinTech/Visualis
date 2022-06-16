@@ -37,6 +37,7 @@ public class RedisMessageReceiver {
     @Autowired
     private BeanFactory beanFactory;
 
+    @SuppressWarnings("unchecked")
     public void receive(RedisMessageEntity messageEntity) {
         if (messageEntity != null && messageEntity.getMessage() != null) {
             log.info("[ Redis ({}) received message, start handle......]", DAVINCI_TOPIC_CHANNEL);

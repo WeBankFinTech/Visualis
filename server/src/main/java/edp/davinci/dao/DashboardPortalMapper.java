@@ -21,10 +21,7 @@ package edp.davinci.dao;
 
 import edp.davinci.dto.dashboardDto.PortalWithProject;
 import edp.davinci.model.DashboardPortal;
-import org.apache.ibatis.annotations.Delete;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
+import org.apache.ibatis.annotations.*;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -73,7 +70,7 @@ public interface DashboardPortalMapper {
             "	p.visibility 'p.visibility'",
             "FROM",
             "	dashboard_portal dp ",
-            "	LEFT JOIN dss_project p on p.id = dp.project_id",
+            "	LEFT JOIN visualis_project p on p.id = dp.project_id",
             "WHERE dp.id = #{id}",
     })
     PortalWithProject getPortalWithProjectById(@Param("id") Long id);

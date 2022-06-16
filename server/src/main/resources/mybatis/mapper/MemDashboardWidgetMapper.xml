@@ -78,7 +78,7 @@
     </insert>
 
     <update id="updateBatch" parameterType="java.util.List">
-        <foreach collection="list" item="item" index="index" open="" close="" separator=";">
+        <foreach collection="list" item="item" index="index" open="" close=";" separator=";">
             update mem_dashboard_widget
             <set>
                 `dashboard_id` = #{item.dashboardId,jdbcType=BIGINT},

@@ -101,6 +101,7 @@ public class UserServiceImpl implements UserService {
      * @param userRegist
      * @return
      */
+    @SuppressWarnings("unchecked")
     @Override
     @Transactional
     public synchronized User regist(UserRegist userRegist) throws ServerException {
@@ -123,7 +124,7 @@ public class UserServiceImpl implements UserService {
         int insert = userMapper.insert(user);
         if (insert > 0) {
             //添加成功，发送激活邮件
-            Map content = new HashMap<String, Object>();
+            Map<String, Object> content = new HashMap<>();
             content.put("username", user.getUsername());
             content.put("host", serverUtils.getHost());
             content.put("token", AESUtils.encrypt(tokenUtils.generateContinuousToken(user), null));
@@ -338,7 +339,7 @@ public class UserServiceImpl implements UserService {
             throw new ServerException("The current email address is not match user email address");
         }
 
-        Map content = new HashMap<String, Object>();
+        Map<String, Object> content = new HashMap<>();
         content.put("username", user.getUsername());
         content.put("host", serverUtils.getHost());
         content.put("token", AESUtils.encrypt(tokenUtils.generateContinuousToken(user), null));
@@ -407,7 +408,6 @@ public class UserServiceImpl implements UserService {
             }
         } catch (Exception e) {
             log.error("user avatar upload error, username: {}, error: {}", user.getUsername(), e.getMessage());
-            e.printStackTrace();
             return resultMap.failAndRefreshToken(request).message("user avatar upload error");
         }
 

@@ -21,7 +21,8 @@ package edp.davinci.service.impl;
 
 import com.alibaba.druid.util.StringUtils;
 import com.alibaba.fastjson.JSONObject;
-import com.webank.wedatasphere.linkis.server.security.SecurityFilter;
+import com.webank.wedatasphere.dss.visualis.query.utils.EnvLimitUtils;
+import com.webank.wedatasphere.dss.visualis.utils.VisualisUtils;
 import edp.core.enums.HttpCodeEnum;
 import edp.core.exception.ForbiddenExecption;
 import edp.core.exception.NotFoundException;
@@ -48,6 +49,7 @@ import edp.davinci.dto.viewDto.ViewWithSource;
 import edp.davinci.model.*;
 import edp.davinci.service.ProjectService;
 import edp.davinci.service.ShareService;
+import edp.davinci.service.SourceService;
 import edp.davinci.service.ViewService;
 import lombok.extern.slf4j.Slf4j;
 import org.mindrot.jbcrypt.BCrypt;
@@ -90,10 +92,16 @@ public class ShareServiceImpl implements ShareService {
     private ViewMapper viewMapper;
 
     @Autowired
+    private SourceMapper sourceMapper;
+
+    @Autowired
     private ParamsMapper paramsMapper;
 
     @Autowired
     private ViewService viewService;
+
+    @Autowired
+    private SourceService sourceService;
 
     @Autowired
     private MemDisplaySlideWidgetMapper memDisplaySlideWidgetMapper;
@@ -194,6 +202,7 @@ public class ShareServiceImpl implements ShareService {
 
         String dateToken = generateShareToken(shareWidget.getId(), shareInfo.getSharedUserName(), shareInfo.getShareUser().getId());
         shareWidget.setDataToken(dateToken);
+        dateToken = dateToken + "@@" + "widget" + "@@" + shareWidget.getId();
         return shareWidget;
     }
 
@@ -270,6 +279,7 @@ public class ShareServiceImpl implements ShareService {
             while (widgetIterator.hasNext()) {
                 ShareWidget shareWidget = widgetIterator.next();
                 String dateToken = generateShareToken(shareWidget.getId(), shareInfo.getSharedUserName(), shareInfo.getShareUser().getId());
+                dateToken = dateToken + "@@" + "display" + "@@" + display.getId();
                 shareWidget.setDataToken(dateToken);
             }
             shareDisplay.setWidgets(shareWidgets);
@@ -317,6 +327,7 @@ public class ShareServiceImpl implements ShareService {
             while (iterator.hasNext()) {
                 ShareWidget shareWidget = iterator.next();
                 String dateToken = generateShareToken(shareWidget.getId(), shareInfo.getSharedUserName(), shareInfo.getShareUser().getId());
+                dateToken = dateToken + "@@" + "dashboard" + "@@" + dashboard.getId();
                 shareWidget.setDataToken(dateToken);
             }
         }
@@ -332,9 +343,13 @@ public class ShareServiceImpl implements ShareService {
      * @param user
      * @return
      */
+    @SuppressWarnings("unchecked")
     @Override
-    public Paginate<Map<String, Object>> getShareData(String token, ViewExecuteParam executeParam, User user)
+    public Paginate<Map<String, Object>> getShareData(String token, ViewExecuteParam executeParam, User user, HttpServletRequest request)
             throws NotFoundException, ServerException, ForbiddenExecption, UnAuthorizedExecption, SQLException {
+
+        String[] tokens = token.split("@@");
+        token = tokens[0];
         ShareInfo shareInfo = getShareInfo(token, user);
         if (null == shareInfo || shareInfo.getShareId().longValue() < 1L) {
             throw new ServerException("Invalid share token");
@@ -348,71 +363,51 @@ public class ShareServiceImpl implements ShareService {
 
         ViewWithProjectAndSource viewWithProjectAndSource = viewMapper.getViewWithProjectAndSourceByWidgetId(shareInfo.getShareId());
 
+        if(EnvLimitUtils.isProdEnv()){
+            executeParam.setEngineType(VisualisUtils.SPARK().getValue());
+        }
+        if(org.apache.commons.lang.StringUtils.isNotBlank(executeParam.getEngineType())){
+            String dataSourceName = VisualisUtils.getDataSourceName(executeParam.getEngineType()) + "DataSource";
+            if(!dataSourceName.equalsIgnoreCase(viewWithProjectAndSource.getSource().getName())){
+                Long realDataSourceId = sourceMapper.getByNameWithProjectId(dataSourceName, viewWithProjectAndSource.getProjectId());
+                Source realDataSource = sourceMapper.getById(realDataSourceId);
+                if(realDataSource == null){
+                    List<Source> sources = sourceService.getSources(viewWithProjectAndSource.getProjectId(), user, "");
+                    for (Source source : sources) {
+                        if(source.getName().contains(dataSourceName)){
+                            realDataSource = source;
+                        }
+                    }
+                }
+                viewWithProjectAndSource.setSource(realDataSource);
+            }
+        }
+
         ProjectDetail projectDetail = projectService.getProjectDetail(viewWithProjectAndSource.getProjectId(), shareInfo.getShareUser(), false);
         boolean maintainer = projectService.isMaintainer(projectDetail, shareInfo.getShareUser());
 
-        //TODO parameters replacement
-//=======
-//            Long viewId = shareInfo.getShareId();
-//            ViewWithProjectAndSource viewWithProjectAndSource = viewMapper.getViewWithProjectAndSourceById(viewId);
-//            viewWithProjectAndSource = updateViewWithProjectAndSource(viewWithProjectAndSource,request);
-//
-//            // replace user self-defined params
-//            String uuid = request.getParameter("parameters");
-//            if(!StringUtils.isEmpty(uuid) && tokens.length == 3){
-//                Params params = paramsMapper.getByUuid(uuid);
-//                params.setParamDetails(JSONObject.parseArray(params.getParams(), ParamsDetail.class));
-//                String type = tokens[1];
-//                Long contentId = Long.parseLong(tokens[2]);
-//                for(ParamsDetail detail : params.getParamDetails()){
-//                    if(detail.getViewId().equals(viewId)){
-//                        if("dashboard".equals(type) && contentId.equals(detail.getDashboardId())){
-//                            executeParam.setParams(detail.getVariables());
-//                        } else if("widget".equals(type) && contentId.equals(detail.getWidgetId())) {
-//                            executeParam.setParams(detail.getVariables());
-//                        }
-//
-//                    }
-//                }
-//            }
-//
-//            String sharedUser = SecurityFilter.getLoginUsername(request);
-//            list = viewService.getResultDataList(viewWithProjectAndSource, executeParam, shareInfo.getShareUser(),sharedUser);
-////            if(VGUtils.isHiveDataSource(viewWithProjectAndSource.getSource())){
-////                //if it slows down the query, change it to async scheduled job
-////                sessionQueryThrottle.syncParameter(user.username);
-////                final ViewWithProjectAndSource fViewWithProjectAndSource = viewWithProjectAndSource;
-////                list = sessionQueryThrottle.controlQuery(new Callable<List<Map<String, Object>>>() {
-////                    @Override
-////                    public List<Map<String, Object>> call() throws Exception {
-////                        return viewService.getResultDataList(fViewWithProjectAndSource, executeParam, shareInfo.getShareUser(),sharedUser);
-////                    }
-////                }, user.username);
-////            } else {
-////                list = viewService.getResultDataList(viewWithProjectAndSource, executeParam, shareInfo.getShareUser(),sharedUser);
-////            }
-//        } catch (ServerException e) {
-//            return resultFail(user, request, null).message(e.getMessage());
-//        } catch (UnAuthorizedExecption e) {
-//            return resultFail(user, request, HttpCodeEnum.FORBIDDEN).message(e.getMessage());
-//        }
-//>>>>>>> drawis
+        Long viewId = viewWithProjectAndSource.getId();
+        // replace user self-defined params
+        String uuid = request.getParameter("parameters");
+        if (!StringUtils.isEmpty(uuid) && tokens.length == 3) {
+            Params params = paramsMapper.getByUuid(uuid);
+            params.setParamDetails(JSONObject.parseArray(params.getParams(), ParamsDetail.class));
+            String type = tokens[1];
+            Long contentId = Long.parseLong(tokens[2]);
+            for (ParamsDetail detail : params.getParamDetails()) {
+                if (detail.getViewId().equals(viewId)) {
+                    if ("dashboard".equals(type) && contentId.equals(detail.getDashboardId())) {
+                        executeParam.setParams(detail.getVariables());
+                    } else if ("widget".equals(type) && contentId.equals(detail.getWidgetId())) {
+                        executeParam.setParams(detail.getVariables());
+                    }
 
-        Paginate paginate = viewService.getResultDataList(maintainer, viewWithProjectAndSource, executeParam, shareInfo.getShareUser());
+                }
+            }
+        }
+
+        Paginate paginate = viewService.getResultDataList(maintainer, viewWithProjectAndSource, executeParam, user, true);
         return paginate;
-    }
-
-    /**
-     * 在source的config中加入是否是调度任务参数，在sqlUtils init 时进行相应的赋值
-     * @param viewWithProjectAndSource
-     * @param request
-     * @return
-     */
-    private ViewWithProjectAndSource updateViewWithProjectAndSource(ViewWithProjectAndSource viewWithProjectAndSource,HttpServletRequest request){
-        JSONObject config = JSONObject.parseObject(viewWithProjectAndSource.getSource().getConfig());
-        config.put("isSchedulerTask",true);
-        viewWithProjectAndSource.getSource().setConfig(config.toJSONString());
-        return viewWithProjectAndSource;
     }
 
 
@@ -453,9 +448,9 @@ public class ShareServiceImpl implements ShareService {
         PaginateWithQueryColumns paginate = null;
         try {
             boolean maintainer = projectService.isMaintainer(projectDetail, shareInfo.getShareUser());
-            paginate = viewService.getResultDataList(maintainer, viewWithSource, executeParam, shareInfo.getShareUser());
+            paginate = viewService.getResultDataList(maintainer, viewWithSource, executeParam, shareInfo.getShareUser(), false);
         } catch (SQLException e) {
-            e.printStackTrace();
+            log.error("failed to get result data list ", e);
             throw new ServerException(HttpCodeEnum.SERVER_ERROR.getMessage());
         }
         List<QueryColumn> columns = paginate.getColumns();
@@ -485,6 +480,7 @@ public class ShareServiceImpl implements ShareService {
      * @param request
      * @return
      */
+    @SuppressWarnings("unchecked")
     @Override
     public ResultMap getDistinctValue(String token, Long viewId, DistinctParam param, User user, HttpServletRequest request) {
         List<Map<String, Object>> list = null;

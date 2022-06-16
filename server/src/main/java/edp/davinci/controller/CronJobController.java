@@ -21,6 +21,7 @@ package edp.davinci.controller;
 
 
 import edp.core.annotation.CurrentUser;
+import edp.core.annotation.MethodLog;
 import edp.davinci.common.controller.BaseController;
 import edp.davinci.core.common.Constants;
 import edp.davinci.core.common.ResultMap;
@@ -30,27 +31,20 @@ import edp.davinci.dto.cronJobDto.CronJobUpdate;
 import edp.davinci.model.CronJob;
 import edp.davinci.model.User;
 import edp.davinci.service.CronJobService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.annotations.ApiIgnore;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.List;
 
-@Api(value = "/cronjobs", tags = "cronjobs", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-@ApiResponses(@ApiResponse(code = 404, message = "cronjob not found"))
 @Slf4j
 @RestController
-@RequestMapping(value = Constants.BASE_API_PATH + "/cronjobs", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+@RequestMapping(value = Constants.BASE_API_PATH + "/cronjobs", produces = MediaType.APPLICATION_JSON_VALUE)
 public class CronJobController extends BaseController {
 
     @Autowired
@@ -64,10 +58,10 @@ public class CronJobController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "get jobs")
+    @MethodLog
     @GetMapping
     public ResponseEntity getCronJobs(@RequestParam Long projectId,
-                                      @ApiIgnore @CurrentUser User user,
+                                      @CurrentUser User user,
                                       HttpServletRequest request) {
         if (invalidId(projectId)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid project id");
@@ -87,11 +81,11 @@ public class CronJobController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "create job")
+    @MethodLog
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity createCronJob(@Valid @RequestBody CronJobBaseInfo cronJob,
-                                        @ApiIgnore BindingResult bindingResult,
-                                        @ApiIgnore @CurrentUser User user,
+                                        BindingResult bindingResult,
+                                        @CurrentUser User user,
                                         HttpServletRequest request) {
 
         if (bindingResult.hasErrors()) {
@@ -114,12 +108,12 @@ public class CronJobController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "update job")
+    @MethodLog
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateCronJob(@PathVariable Long id,
                                         @Valid @RequestBody CronJobUpdate cronJob,
-                                        @ApiIgnore BindingResult bindingResult,
-                                        @ApiIgnore @CurrentUser User user,
+                                        BindingResult bindingResult,
+                                        @CurrentUser User user,
                                         HttpServletRequest request) {
 
         if (bindingResult.hasErrors()) {
@@ -144,10 +138,10 @@ public class CronJobController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "delete job")
+    @MethodLog
     @DeleteMapping("/{id}")
     public ResponseEntity deleteCronJob(@PathVariable Long id,
-                                        @ApiIgnore @CurrentUser User user,
+                                        @CurrentUser User user,
                                         HttpServletRequest request) {
 
         if (invalidId(id)) {
@@ -168,10 +162,10 @@ public class CronJobController extends BaseController {
      * @param request
      * @return
      */
-    @ApiOperation(value = "start job")
+    @MethodLog
     @PostMapping("/start/{id}")
     public ResponseEntity startCronJob(@PathVariable Long id,
-                                       @ApiIgnore @CurrentUser User user,
+                                       @CurrentUser User user,
                                        HttpServletRequest request) {
 
         if (invalidId(id)) {
@@ -183,11 +177,10 @@ public class CronJobController extends BaseController {
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(cronJob));
     }
 
-
-    @ApiOperation(value = "stop job")
+    @MethodLog
     @PostMapping("/stop/{id}")
     public ResponseEntity stopCronJob(@PathVariable Long id,
-                                      @ApiIgnore @CurrentUser User user,
+                                      @CurrentUser User user,
                                       HttpServletRequest request) {
 
         if (invalidId(id)) {
