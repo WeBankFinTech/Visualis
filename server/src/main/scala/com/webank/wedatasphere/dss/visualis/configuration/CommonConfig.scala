@@ -2,9 +2,6 @@ package com.webank.wedatasphere.dss.visualis.configuration
 
 import org.apache.linkis.common.conf.CommonVars
 
-/**
- * Created by allenlliu on 2019/1/26.
- */
 object CommonConfig {
   /**
    * 接口越权检测

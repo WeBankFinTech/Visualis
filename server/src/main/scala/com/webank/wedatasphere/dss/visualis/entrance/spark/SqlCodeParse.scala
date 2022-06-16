@@ -5,9 +5,7 @@ import org.apache.commons.lang.StringUtils
 
 import scala.collection.mutable.ArrayBuffer
 
-/**
-  * Created by allenlliu on 2019/1/26.
-  */
+
 object SqlCodeParse {
   val separator = ";"
   val select = "Select"

@@ -13,9 +13,7 @@ import org.apache.linkis.server.BDPJettyServerHelper
 import org.apache.linkis.storage.FSFactory
 import org.json4s.DefaultFormats
 
-/**
-  * Created by johnnwang on 2019/1/22.
-  */
+
 object ResultHelper {
   implicit val formats = DefaultFormats
   def getResultByPath(path:String,limit:Long)={

@@ -7,10 +7,7 @@ import org.apache.linkis.server.security.SSOUtils
 import java.lang
 import java.lang.reflect.Type
 
-/**
- * @author: jinyangrao on 2022/3/16
- * @description:
- */
+
 object LinkisUtils {
 
   val gson = BDPJettyServerHelper.gson
