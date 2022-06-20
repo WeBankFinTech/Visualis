@@ -86,6 +86,8 @@ import '../app/assets/js/china.js'
 import { DEFAULT_ECHARTS_THEME } from 'app/globalConstants'
 echarts.registerTheme('default', DEFAULT_ECHARTS_THEME)
 
+import webankUtil from '@webank/we-utils';
+
 const initialState = {}
 const store = configureStore(initialState, hashHistory)
 const MOUNT_NODE = document.getElementById('app')
@@ -103,6 +105,14 @@ const rootRoute = {
       replace('/share')
     }
   }
+}
+
+const { username } = JSON.parse(localStorage.getItem('baseInfo') || '{}');
+if(window.top === window.self && username) {
+  webankUtil.createWatermark({ 
+    content: username,
+    fillStyle: 'rgba(184, 184, 184, 0.4)',
+  })
 }
 
 const render = (messages) => {
