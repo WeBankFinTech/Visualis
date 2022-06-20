@@ -534,6 +534,7 @@ export class Projects extends React.PureComponent<IProjectsProps, IProjectsState
     const joinProjects = projectArr
       ? projectArr.map((d: IProject) => {
         let CreateButton = void 0
+        let CreateDelButton = void 0
         let belongWhichOrganization = void 0
         if (d.type && d.type === 'add') {
           return []
@@ -546,6 +547,8 @@ export class Projects extends React.PureComponent<IProjectsProps, IProjectsState
           belongWhichOrganization = organizations.find((org) => org.id === d.orgId)
           CreateButton = ComponentPermission(belongWhichOrganization, '')(Icon)
         }
+        // 默认显示删除按钮
+        CreateDelButton = ComponentPermission({ role: 1 }, '')(Icon)
         let StarPanel = void 0
         if (d && d.id) {
           StarPanel = <Star d={d} starUser={starUserList} unStar={this.starProject} userList={this.getStarProjectUserList}/>
@@ -617,7 +620,7 @@ export class Projects extends React.PureComponent<IProjectsProps, IProjectsState
             onConfirm={this.confirmDeleteProject('onCollect', d.id)}
           >
             <Tooltip title="删除">
-              <CreateButton
+              <CreateDelButton
                 className={styles.delete}
                 type="delete"
                 onClick={this.stopPPG}

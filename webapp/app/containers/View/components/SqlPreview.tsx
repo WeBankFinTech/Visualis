@@ -10,7 +10,7 @@ import pivotStyles from '../../Widget/components/Pivot/Pivot.less'
 import { IExecuteSqlResponse, ISqlColumn } from '../types'
 import { DEFAULT_SQL_PREVIEW_PAGE_SIZE, SQL_PREVIEW_PAGE_SIZE_OPTIONS } from '../constants'
 import { getTextWidth } from 'utils/util'
-import WaterMask from '../../Widget/components/WaterMask/index'
+//import WaterMask from '../../Widget/components/WaterMask/index'
 
 export interface ISqlPreviewProps {
   loading: boolean
@@ -117,7 +117,7 @@ export class SqlPreview extends React.PureComponent<ISqlPreviewProps, ISqlPrevie
 
     return (
       <div className={pivotStyles.wrapper} style={{overflowY: 'auto', maxHeight: '100%'}}>
-        <WaterMask {...waterMaskProps} />
+        {/* <WaterMask {...waterMaskProps} /> */}
         <Table
           ref={this.table}
           className={Styles.sqlPreview}

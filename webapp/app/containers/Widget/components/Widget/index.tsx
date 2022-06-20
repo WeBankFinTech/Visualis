@@ -30,7 +30,7 @@ import { IRichTextConfig, IBarConfig, IRadarConfig } from '../Workbench/ConfigSe
 import { IDoubleYAxisConfig } from '../Workbench/ConfigSections/DoubleYAxisSection'
 import { IGapConfig } from '../Workbench/ConfigSections/GapSection'
 import { IModel } from '../Workbench/index'
-import WaterMask from '../WaterMask/index'
+//import WaterMask from '../WaterMask/index'
 import { IQueryVariableMap } from 'containers/Dashboard/Grid'
 import { getStyleConfig } from '../util'
 import ChartTypes from '../../config/chart/ChartTypes'
@@ -263,7 +263,7 @@ export class Widget extends React.Component<
     const dataWranglerUrl = `http://10.107.116.246:8315/#/sheet/add?simpleMode=true&showBottomBar=false&readOnly=true&showChangeModeButton=false&visualisData=${JSON.stringify(visualisData)}`
     return (
       <div className={styles.wrapper + ' widget-class'} ref={this.container} id="widget" style={{overflowX: 'auto', overflowY: 'hidden'}}>
-        <WaterMask {...waterMaskProps} />
+        {/* <WaterMask {...waterMaskProps} /> */}
         { selectedChart === 19 && mode === 'chart' ? 
           <iframe src={dataWranglerUrl} width="100%" height="100%" frameBorder="0" id="dataWrangler"></iframe>
           :
