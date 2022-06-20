@@ -142,7 +142,7 @@
         from visualis_project p
         left join `linkis_user` u on u.`id` = p.`user_id`
         left join star s on (s.target_id = p.id and s.`target` = 'project' and s.user_id = #{userId})
-        where p.id in (
+        where p.isArchive != 1 and p.id in (
         <!-- 当前用户是project的创建者或管理员 -->
         select DISTINCT p.id
         from visualis_project p

@@ -214,7 +214,7 @@ public class ViewController extends BaseController {
      * @return
      */
     @MethodLog
-    @DeleteMapping("/{id}")
+    @PostMapping("/{id}")
     public ResponseEntity deleteView(@PathVariable Long id,
                                      @CurrentUser User user,
                                      HttpServletRequest request) {
