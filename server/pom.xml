@@ -4,7 +4,7 @@
     <parent>
         <artifactId>visualis</artifactId>
         <groupId>com.webank.wedatasphere.dss</groupId>
-        <version>1.0.0-rc1</version>
+        <version>1.2.4</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -22,8 +22,8 @@
         <jdk.compile.version>1.8</jdk.compile.version>
         <skipTests>true</skipTests>
 
-        <apache.linkis.version>1.1.1</apache.linkis.version>
-        <opensource.dss.version>1.0.1</opensource.dss.version>
+        <apache.linkis.version>1.1.0</apache.linkis.version>
+        <opensource.dss.version>1.1.0</opensource.dss.version>
 
         <elasticsearch.version>5.1.2</elasticsearch.version>
         <spring.boot.version>2.3.7.RELEASE</spring.boot.version>
@@ -37,6 +37,14 @@
     </properties>
 
     <dependencies>
+
+        <!--行内差异化变量改造-->
+        <dependency>
+            <groupId>cn.webank.bsp</groupId>
+            <artifactId>encrypt</artifactId>
+            <version>1.0.2</version>
+        </dependency>
+
         <dependency>
             <groupId>com.thoughtworks.xstream</groupId>
             <artifactId>xstream</artifactId>
@@ -431,7 +439,7 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
-            <version>1.2.83</version>
+            <version>1.2.70</version>
         </dependency>
 
         <dependency>

@@ -55,14 +55,6 @@ public class WidgetController extends BaseController {
     @Autowired
     private ProjectAuth projectAuth;
 
-    /**
-     * 获取widget列表
-     *
-     * @param projectId
-     * @param user
-     * @param request
-     * @return
-     */
     @MethodLog
     @GetMapping
     public ResponseEntity getWidgets(@RequestParam Long projectId,
@@ -78,14 +70,6 @@ public class WidgetController extends BaseController {
     }
 
 
-    /**
-     * 获取widget列表
-     *
-     * @param id
-     * @param user
-     * @param request
-     * @return
-     */
     @MethodLog
     @GetMapping("/{id}")
     public ResponseEntity getWidgetInfo(@PathVariable Long id,
@@ -99,16 +83,6 @@ public class WidgetController extends BaseController {
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(widget));
     }
 
-
-    /**
-     * 新建widget
-     *
-     * @param widget
-     * @param bindingResult
-     * @param user
-     * @param request
-     * @return
-     */
     @MethodLog
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity createWidgets(@Valid @RequestBody WidgetCreate widget,
@@ -129,17 +103,6 @@ public class WidgetController extends BaseController {
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(newWidget));
     }
 
-
-    /**
-     * 修改widget
-     *
-     * @param id
-     * @param widget
-     * @param bindingResult
-     * @param user
-     * @param request
-     * @return
-     */
     @MethodLog
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateWidget(@PathVariable Long id,
@@ -163,16 +126,8 @@ public class WidgetController extends BaseController {
     }
 
 
-    /**
-     * 删除widget
-     *
-     * @param id
-     * @param user
-     * @param request
-     * @return
-     */
     @MethodLog
-    @DeleteMapping("/{id}")
+    @PostMapping("/{id}")
     public ResponseEntity deleteWidget(@PathVariable Long id,
                                        @CurrentUser User user,
                                        HttpServletRequest request) {
@@ -187,14 +142,6 @@ public class WidgetController extends BaseController {
     }
 
 
-    /**
-     * 下载widget
-     *
-     * @param id
-     * @param user
-     * @param request
-     * @return
-     */
     @MethodLog
     @PostMapping("/{id}/{type}")
     public ResponseEntity downloadWidget(@PathVariable("id") Long id,
@@ -218,15 +165,6 @@ public class WidgetController extends BaseController {
     }
 
 
-    /**
-     * 分享widget
-     *
-     * @param id
-     * @param username
-     * @param user
-     * @param request
-     * @return
-     */
     @MethodLog
     @GetMapping("/{id}/share")
     public ResponseEntity shareWidget(@PathVariable Long id,

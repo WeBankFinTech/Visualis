@@ -24,7 +24,13 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
-
+/**
+ * Created by IntelliJ IDEA.
+ *
+ * @Author daemon
+ * @Date 19/5/29 19:40
+ * To change this template use File | Settings | File Templates.
+ */
 @Component
 public class SpringContextHolder implements ApplicationContextAware {
 
