@@ -9,5 +9,5 @@
  \:\__|:|__|  \/_/:/  /    \:\/:/  /      \::/  /
   \::::/__/     /:/  /      \::/  /       /:/  /
    ~~~~         \/__/        \/__/        \/__/
- Visualis (VSBI) version: 1.2.2
+ Visualis (VSBI) version: 1.0.0
  Spring Boot version: 2.3.7.RELEASE
