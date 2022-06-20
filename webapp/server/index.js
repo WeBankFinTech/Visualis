@@ -27,7 +27,7 @@ var options = {
       '^/restj' : '/api/rest_j/v1/visualis',     // 重写请求，比如我们源访问的是api/old-path，那么请求会被解析为/api/new-path
   },
   onProxyReq(proxyReq, req, res) {
-    proxyReq.setHeader('cookie', 'bdp-user-ticket-id=y4h8zre1zbG7a5OlwX8oUNdqC/7/PMWHvWa5euePers=;workspaceId=104');
+    proxyReq.setHeader('cookie', 'bdp-user-ticket-id=rHO3MAlaaq4D5hUA68BCaizVjRJlSlmE9AyiXWG56Fo=;workspaceId=224');
   }
 }
 // 创建代理

@@ -85,7 +85,6 @@ interface IWidgetStates {
   screenWidth: number
   tableWidget: any[]
   nameFilterValue: string
-  nameFilterDropdownVisible: boolean
   tableSortedInfo: {
     columnKey?: string,
     order?: SortOrder
@@ -109,7 +108,6 @@ export class WidgetList extends React.Component<IWidgetProps, IWidgetStates> {
       screenWidth: 0,
       tableWidget: [],
       nameFilterValue: '',
-      nameFilterDropdownVisible: false,
       tableSortedInfo: {}
     }
   }
@@ -235,7 +233,6 @@ export class WidgetList extends React.Component<IWidgetProps, IWidgetStates> {
     const reg = new RegExp(val, 'gi')
 
     this.setState({
-      nameFilterDropdownVisible: false,
       tableWidget: (this.props.widgets as any[]).map((record) => {
         const match = record.name.match(reg)
         if (!match) {
@@ -283,7 +280,6 @@ export class WidgetList extends React.Component<IWidgetProps, IWidgetStates> {
       screenWidth,
       tableWidget,
       nameFilterValue,
-      nameFilterDropdownVisible,
       tableSortedInfo
     } = this.state
 
@@ -294,18 +290,6 @@ export class WidgetList extends React.Component<IWidgetProps, IWidgetStates> {
       title: '名称',
       dataIndex: 'name',
       key: 'name',
-      filterDropdown: (
-        <SearchFilterDropdown
-          placeholder="name"
-          value={nameFilterValue}
-          onChange={this.onSearchInputChange}
-          onSearch={this.onSearch}
-        />
-      ),
-      filterDropdownVisible: nameFilterDropdownVisible,
-      onFilterDropdownVisibleChange: (visible) => this.setState({
-        nameFilterDropdownVisible: visible
-      }),
       sorter: (a, b) => a.name > b.name ? -1 : 1,
       sortOrder: tableSortedInfo.columnKey === 'name' ? tableSortedInfo.order : void 0
     }, {
@@ -361,18 +345,32 @@ export class WidgetList extends React.Component<IWidgetProps, IWidgetStates> {
         <Container.Body>
         <Box>
             <Box.Header>
-              <Box.Title>
-                <Icon type="bars" />Widget List
-              </Box.Title>
-              <Box.Tools>
-                <Tooltip placement="bottom" title="新增">
-                  <AdminButton
-                    type="primary"
-                    icon="plus"
-                    onClick={this.toWorkbench('add')}
+            <Row>
+                <Col span={16}>
+                  <Box.Title>
+                    <Icon type="bars" />Widget List
+                  </Box.Title>
+                </Col>
+                <Col span={6}>
+                  <SearchFilterDropdown
+                    placeholder="name"
+                    value={nameFilterValue}
+                    onChange={this.onSearchInputChange}
+                    onSearch={this.onSearch}
                   />
-                </Tooltip>
-              </Box.Tools>
+                </Col>
+                <Col span={2}>
+                  <Box.Tools>
+                    <Tooltip placement="bottom" title="新增">
+                      <AdminButton
+                        type="primary"
+                        icon="plus"
+                        onClick={this.toWorkbench('add')}
+                      />
+                    </Tooltip>
+                  </Box.Tools>
+                </Col>
+              </Row>
             </Box.Header>
             <Box.Body>
               <Row>
