@@ -248,7 +248,7 @@ public class DashboardController extends BaseController {
      * @return
      */
     @MethodLog
-    @DeleteMapping("/{id}")
+    @PostMapping("/{id}")
     public ResponseEntity deleteDashboardPortal(@PathVariable Long id,
                                                 @CurrentUser User user,
                                                 HttpServletRequest request) {
