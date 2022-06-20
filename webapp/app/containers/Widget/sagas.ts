@@ -76,8 +76,9 @@ export function* addWidget ({ payload }) {
 export function* deleteWidget ({ payload }) {
   try {
     yield call(request, {
-      method: 'delete',
-      url: `${api.widget}/${payload.id}`
+      method: 'post',
+      url: `${api.widget}/${payload.id}`,
+      data: {}
     })
     yield put(widgetDeleted(payload.id))
   } catch (err) {

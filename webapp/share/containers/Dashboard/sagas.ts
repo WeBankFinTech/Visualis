@@ -102,8 +102,8 @@ export function* getBaseInfo (action) {
   // 这里比较特殊 是请求dss的接口 地址要换下
   let url = api.projects
   url = url.replace('rest_s', 'rest_j')
-  url = url.replace('visualis', 'dss/framework/workspace')
-  url = url.replace('projects', 'getBaseInfo')
+  url = url.replace('visualis', 'dss/framework/admin/user')
+  url = url.replace('projects', 'userInfo')
   try {
     const asyncData = yield call(request, url)
     yield put(getBaseInfoLoaded())

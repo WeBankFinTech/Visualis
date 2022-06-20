@@ -105,10 +105,9 @@ export function* getBaseInfo (action) {
   const { resolve } = action.payload
   // 这里比较特殊 是请求dss的接口 地址要换下
   let url = api.projects
-  console.log('url: ', url);
   url = url.replace('rest_s', 'rest_j')
-  url = url.replace('visualis', 'dss/framework/workspace')
-  url = url.replace('projects', 'getBaseInfo')
+  url = url.replace('visualis', 'dss/framework/admin/user')
+  url = url.replace('projects', 'userInfo')
   try {
     const asyncData = yield call(request, url)
     yield put(getBaseInfoLoaded())
@@ -161,8 +160,9 @@ export function* deleteProject (action) {
   const { id, resolve } = action.payload
   try {
     yield call(request, {
-      method: 'delete',
-      url: `${api.projects}/${id}`
+      method: 'post',
+      url: `${api.projects}/${id}`,
+      data: {}
     })
     yield put(projectDeleted(id))
     if (resolve) {
