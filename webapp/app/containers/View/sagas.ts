@@ -116,8 +116,9 @@ export function* deleteView (action: ViewActionType) {
   const { viewDeleted, deleteViewFail } = ViewActions
   try {
     yield call<AxiosRequestConfig>(request, {
-      method: 'delete',
-      url: `${api.view}/${payload.id}`
+      method: 'post',
+      url: `${api.view}/${payload.id}`,
+      data: {}
     })
     yield put(viewDeleted(payload.id))
     payload.resolve(payload.id)
