@@ -153,7 +153,7 @@ public class DisplayController extends BaseController {
      * @return
      */
     @MethodLog
-    @DeleteMapping("/{id}")
+    @PostMapping("/{id}")
     public ResponseEntity deleteDisplay(@PathVariable Long id,
                                         @CurrentUser User user,
                                         HttpServletRequest request) {

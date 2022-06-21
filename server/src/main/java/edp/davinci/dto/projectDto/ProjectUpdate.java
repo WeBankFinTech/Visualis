@@ -28,8 +28,9 @@ import javax.validation.constraints.NotNull;
 @NotNull(message = "project cannot be null")
 public class ProjectUpdate {
 
-    @NotBlank(message = "project name cannot be EMPTY")
-    private String name;
+    // 项目不允许更新时间
+//    @NotBlank(message = "project name cannot be EMPTY")
+//    private String name;
 
     private String description;
 
