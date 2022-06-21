@@ -75,8 +75,9 @@ export function* deletePortal (action) {
   const { payload } = action
   try {
     yield call(request, {
-      method: 'delete',
-      url: `${api.portal}/${payload.id}`
+      method: 'post',
+      url: `${api.portal}/${payload.id}`,
+      data: {}
     })
     yield put(portalDeleted(payload.id))
   } catch (err) {

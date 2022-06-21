@@ -60,7 +60,7 @@ public interface ProjectMapper {
     @Select({"select * from visualis_project where id = #{id} and user_id = #{userId}"})
     Project getByProject(Project project);
 
-    @Update({"update visualis_project set `name` = #{name}, description = #{description}, visibility = #{visibility}, update_time = #{updateTime}, update_by = #{updateBy}  where id = #{id}"})
+    @Update({"update visualis_project set description = #{description}, visibility = #{visibility}, update_time = #{updateTime} where id = #{id}"})
     int updateBaseInfo(Project project);
 
     @Update({"update visualis_project set `org_id` = #{orgId} where id = #{id}"})
@@ -72,6 +72,9 @@ public interface ProjectMapper {
 
     @Delete({"delete from visualis_project where id = #{id}"})
     int deleteById(@Param("id") Long id);
+
+    @Update({"update visualis_project set isArchive = 1 where id = #{id}"})
+    int setProjectToArchive(@Param("id") Long id);
 
     @Select({"select * from visualis_project where org_id = #{orgId}"})
     List<Project> getByOrgId(@Param("orgId") Long orgId);
