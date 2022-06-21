@@ -89,6 +89,8 @@ import createRoutes from './routes'
 
 import 'default-passive-events'
 
+import webankUtil from '@webank/we-utils';
+
 const initialState = {}
 const store = configureStore(initialState, hashHistory)
 const MOUNT_NODE = document.getElementById('app')
@@ -106,6 +108,13 @@ const rootRoute = {
       replace('/projects')
     }
   }
+}
+const { username } = JSON.parse(localStorage.getItem('baseInfo') || '{}');
+if(window.top === window.self && username) {
+  webankUtil.createWatermark({ 
+    content: username,
+    fillStyle: 'rgba(184, 184, 184, 0.4)',
+  })
 }
 
 const render = (messages) => {

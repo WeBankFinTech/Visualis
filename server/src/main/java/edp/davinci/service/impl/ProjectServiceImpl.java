@@ -309,6 +309,22 @@ public class ProjectServiceImpl implements ProjectService {
         }
     }
 
+    @Override
+    public boolean setProjectToArchive(Long id, User user) throws ServerException, UnAuthorizedExecption, NotFoundException {
+
+        ProjectDetail project = getProjectDetail(id, user, true);
+
+        // 对项目进行归档处理
+        int i = projectMapper.setProjectToArchive(id);
+        if(i > 0) {
+            log.warn("The project: {} has been set to archive status", id);
+            return true;
+        } else {
+            log.error("delete project: {} fail", id);
+            throw new ServerException("delete project fail: unspecified error");
+        }
+    }
+
     /**
      * 删除project
      *
@@ -381,11 +397,12 @@ public class ProjectServiceImpl implements ProjectService {
 
         String originInfo = project.baseInfoToString();
 
-        project.setName(projectUpdate.getName());
+//        project.setName(projectUpdate.getName());
+//        project.setVisibility(projectUpdate.getVisibility());
+//        project.setUpdateBy(user.getId());
+        // 兼容DSS更新项目，只支持修改备注和记录更新时间
         project.setDescription(projectUpdate.getDescription());
-        project.setVisibility(projectUpdate.getVisibility());
         project.setUpdateTime(new Date());
-        project.setUpdateBy(user.getId());
 
         int i = projectMapper.updateBaseInfo(project);
         if (i > 0) {
