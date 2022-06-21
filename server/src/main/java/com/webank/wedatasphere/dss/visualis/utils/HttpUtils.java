@@ -10,6 +10,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.cookie.BasicClientCookie;
 import org.apache.http.util.EntityUtils;
+import org.apache.linkis.errorcode.client.ClientConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,8 +21,7 @@ import java.net.URISyntaxException;
 import java.util.Date;
 
 public class HttpUtils {
-    private static final String GATEWAY_URL = CommonConfig.GATEWAY_PROTOCOL().getValue() +
-            CommonConfig.GATEWAY_IP().getValue() + ":" + CommonConfig.GATEWAY_PORT().getValue();
+    private static final String GATEWAY_URL = ClientConfiguration.getGatewayUrl();
     private static final String DATABASE_URL = GATEWAY_URL + CommonConfig.DB_URL_SUFFIX().getValue();
     private static final String TABLE_URL = GATEWAY_URL + CommonConfig.TABLE_URL_SUFFIX().getValue();
     private static final String COLUMN_URL = GATEWAY_URL + CommonConfig.COLUMN_URL_SUFFIX().getValue();
