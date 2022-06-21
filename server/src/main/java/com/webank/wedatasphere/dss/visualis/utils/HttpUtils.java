@@ -18,10 +18,10 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Date;
-import org.apache.linkis.errorcode.client.ClientConfiguration;
 
 public class HttpUtils {
-    private static final String GATEWAY_URL = ClientConfiguration.getGatewayUrl();
+    private static final String GATEWAY_URL = CommonConfig.GATEWAY_PROTOCOL().getValue() +
+            CommonConfig.GATEWAY_IP().getValue() + ":" + CommonConfig.GATEWAY_PORT().getValue();
     private static final String DATABASE_URL = GATEWAY_URL + CommonConfig.DB_URL_SUFFIX().getValue();
     private static final String TABLE_URL = GATEWAY_URL + CommonConfig.TABLE_URL_SUFFIX().getValue();
     private static final String COLUMN_URL = GATEWAY_URL + CommonConfig.COLUMN_URL_SUFFIX().getValue();

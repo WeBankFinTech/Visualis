@@ -43,6 +43,8 @@ public interface ProjectService extends CheckEntityService {
 
     Project updateProject(Long id, ProjectUpdate projectUpdate, User user) throws ServerException, UnAuthorizedExecption, NotFoundException;
 
+    boolean setProjectToArchive(Long id, User user) throws ServerException, UnAuthorizedExecption, NotFoundException;
+
     boolean deleteProject(Long id, User user) throws ServerException, UnAuthorizedExecption, NotFoundException;
 
     Project transferPeoject(Long id, Long orgId, User user) throws ServerException, UnAuthorizedExecption, NotFoundException;

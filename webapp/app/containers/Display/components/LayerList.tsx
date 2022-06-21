@@ -233,12 +233,14 @@ export class LayerList extends React.Component <ILayerListProps, ILayerListState
               onClick={this.changeLayerStatus(layer.id)}
               className={`iconfont ${layersStatus[layer.id].selected ? 'icon-selected' : 'icon-unselected'}`}
             />
-            {
-              layer.subType === 21 ? 
-              // 说明是标签，需要可以编辑
-              <Input placeholder="标签名,不能有空格" defaultValue={name} maxLength={50} onBlur={this.saveTagName(layer)} onPressEnter={this.saveTagName(layer)} style={{marginLeft: '4px', paddingLeft: '4px'}} /> :
-              <span title={name}>{name}</span>
-            }
+            <Tooltip title={name} placement="right">
+              {
+                layer.subType === 21 ? 
+                // 说明是标签，需要可以编辑
+                <Input placeholder="标签名,不能有空格" defaultValue={name} maxLength={50} onBlur={this.saveTagName(layer)} onPressEnter={this.saveTagName(layer)} style={{marginLeft: '4px', paddingLeft: '4px'}} /> :
+                <span>{name}</span>
+              }
+            </Tooltip>
           </li>
         )
       })
