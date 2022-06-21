@@ -189,8 +189,10 @@ export function* deleteDisplay (action: DisplayActionType) {
   const { id } = action.payload
   const { displayDeleted, deleteDisplayFail } = DisplayActions
   try {
-    yield call(request, `${api.display}/${id}`, {
-      method: 'delete'
+    yield call(request, {
+      method: 'post',
+      url: `${api.display}/${id}`, 
+      data: {}
     })
     yield put(displayDeleted(id))
   } catch (err) {
