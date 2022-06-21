@@ -199,16 +199,6 @@ public class SqlParseUtils {
             }
         }
 
-//        ST st = new ST(sql, delimiter, delimiter);
-//        if (!CollectionUtils.isEmpty(authParamMap) && !CollectionUtils.isEmpty(expSet)) {
-//            authParamMap.forEach((k, v) -> st.add(k, true));
-//        }
-//        //替换query@var
-//        if (!CollectionUtils.isEmpty(queryParamMap)) {
-//            queryParamMap.forEach(st::add);
-//        }
-//        sql = st.render();
-
         //Linkis compatible
         Pattern queryP = Pattern.compile(REG_QUERYVAR);
         Matcher matcherQuery = queryP.matcher(sql);
@@ -226,7 +216,7 @@ public class SqlParseUtils {
         return sql;
     }
 
-    // 1.0.6 linkis
+    // Apache Linkis variable CustomVariableUtils
     private static String linkisVariabelReplace(String sql, String username) {
         JobRequest jobRequest = new JobRequest();
 

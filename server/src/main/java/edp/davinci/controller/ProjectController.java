@@ -215,7 +215,7 @@ public class ProjectController extends BaseController {
      * @return
      */
     @MethodLog
-    @DeleteMapping("/{id}")
+    @PostMapping("/{id}")
     public ResponseEntity deleteProject(@PathVariable Long id,
                                         @CurrentUser User user,
                                         HttpServletRequest request) {
@@ -223,8 +223,8 @@ public class ProjectController extends BaseController {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid project id");
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
-
-        projectService.deleteProject(id, user);
+        // 把任务进行归档，不进行真实删除
+        projectService.setProjectToArchive(id, user);
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
     }
 
