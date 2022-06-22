@@ -10,18 +10,19 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.cookie.BasicClientCookie;
 import org.apache.http.util.EntityUtils;
+import org.apache.linkis.errorcode.client.ClientConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Date;
 
 public class HttpUtils {
-    private static final String GATEWAY_URL = CommonConfig.GATEWAY_PROTOCOL().getValue() +
-            CommonConfig.GATEWAY_IP().getValue() + ":" + CommonConfig.GATEWAY_PORT().getValue();
+    private static final String GATEWAY_URL = ClientConfiguration.getGatewayUrl();
     private static final String DATABASE_URL = GATEWAY_URL + CommonConfig.DB_URL_SUFFIX().getValue();
     private static final String TABLE_URL = GATEWAY_URL + CommonConfig.TABLE_URL_SUFFIX().getValue();
     private static final String COLUMN_URL = GATEWAY_URL + CommonConfig.COLUMN_URL_SUFFIX().getValue();
@@ -34,7 +35,7 @@ public class HttpUtils {
         HttpGet httpGet = new HttpGet(DATABASE_URL);
         BasicClientCookie cookie = new BasicClientCookie(CommonConfig.TICKET_ID_STRING().getValue(), ticketId);
         cookie.setVersion(0);
-        cookie.setDomain(CommonConfig.GATEWAY_IP().getValue());
+        cookie.setDomain(getIpFromUrl(GATEWAY_URL));
         cookie.setPath("/");
         cookie.setExpiryDate(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 30L));
         cookieStore.addCookie(cookie);
@@ -59,7 +60,7 @@ public class HttpUtils {
             HttpGet httpGet = new HttpGet(uriBuilder.build());
             BasicClientCookie cookie = new BasicClientCookie(CommonConfig.TICKET_ID_STRING().getValue(), ticketId);
             cookie.setVersion(0);
-            cookie.setDomain(CommonConfig.GATEWAY_IP().getValue());
+            cookie.setDomain(getIpFromUrl(GATEWAY_URL));
             cookie.setPath("/");
             cookieStore.addCookie(cookie);
             CloseableHttpResponse response = httpClient.execute(httpGet);
@@ -84,7 +85,7 @@ public class HttpUtils {
             HttpGet httpGet = new HttpGet(uriBuilder.build());
             BasicClientCookie cookie = new BasicClientCookie(CommonConfig.TICKET_ID_STRING().getValue(), ticketId);
             cookie.setVersion(0);
-            cookie.setDomain(CommonConfig.GATEWAY_IP().getValue());
+            cookie.setDomain(getIpFromUrl(GATEWAY_URL));
             cookie.setPath("/");
             cookieStore.addCookie(cookie);
             CloseableHttpResponse response = httpClient.execute(httpGet);
@@ -107,6 +108,18 @@ public class HttpUtils {
             }
         }
         return ticketId;
+    }
+
+    // http://127.0.0.1:9001
+    private static String getIpFromUrl(String url) {
+        URI uri = URI.create(url);
+        String ip = "";
+        int port = 0;
+        if (uri != null) {
+            ip = uri.getHost();
+            port = uri.getPort();
+        }
+        return ip;
     }
 
 }
