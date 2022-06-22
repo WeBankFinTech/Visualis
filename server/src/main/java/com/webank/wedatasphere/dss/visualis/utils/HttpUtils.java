@@ -115,7 +115,7 @@ public class HttpUtils {
         URI uri = URI.create(url);
         String ip = "";
         int port = 0;
-        if (null != null) {
+        if (uri != null) {
             ip = uri.getHost();
             port = uri.getPort();
         }
