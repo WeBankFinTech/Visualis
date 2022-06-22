@@ -16,9 +16,6 @@ import edp.core.model.{BaseSource, PaginateWithQueryColumns}
 import edp.davinci.model.View
 import org.apache.linkis.adapt.LinkisUtils
 
-/**
-  * Created by johnnwang on 2019/1/23.
-  */
 object VisualisUtils {
 
   val sender = Sender.getSender(EntranceConfiguration.QUERY_PERSISTENCE_SPRING_APPLICATION_NAME.getValue)
