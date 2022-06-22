@@ -2,9 +2,7 @@ package com.webank.wedatasphere.dss.visualis.configuration
 
 import org.apache.linkis.common.conf.CommonVars
 
-/**
- * Created by allenlliu on 2019/1/26.
- */
+
 object CommonConfig {
   /**
    * 接口越权检测
@@ -12,14 +10,6 @@ object CommonConfig {
   val CHECK_PROJECT_USER = CommonVars("wds.dss.visualis.check.project.user", false)
 
   val ENGINE_DEFAULT_LIMIT = CommonVars("wds.dss.engine.default.limit", 5000)
-  /**
-   * this is the configuration to get the hive database source
-   */
-  val GATEWAY_IP = CommonVars("wds.dss.visualis.gateway.ip", "")
-
-  val GATEWAY_PORT = CommonVars("wds.dss.visualis.gateway.port", "")
-
-  val GATEWAY_PROTOCOL = CommonVars("wds.dss.visualis.gateway.protocol", "http://")
 
   val DB_URL_SUFFIX = CommonVars("wds.dss.visualis.database.url", "/api/rest_j/v1/datasource/dbs")
 
