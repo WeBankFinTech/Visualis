@@ -10,8 +10,8 @@ Visualis编译部署文档
 | JDK (1.8.0_141) | 必装 | [如何安装JDK](https://www.runoob.com/java/java-environment-setup.html) |
 | Hadoop(2.7.2，Hadoop 其他版本需自行编译 Linkis) | 必装 | [Hadoop单机部署](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) ；[Hadoop分布式部署](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
 | Spark(2.4.3，Spark 其他版本需自行编译 Linkis) | 必装 | [Spark快速安装](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
-| DSS1.0.1 | 必装 | [如何安装DSS](https://github.com/WeBankFinTech/DataSphereStudio-Doc/blob/main/zh_CN/%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/DSS%E5%8D%95%E6%9C%BA%E9%83%A8%E7%BD%B2%E6%96%87%E6%A1%A3.md) |
-| Linkis1.1.1（大于等于该版本） | 必装(在linkis.properties中需要加入配置wds.linkis.session.ticket.key=bdp-user-ticket-id) | [如何安装Linkis](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
+| DSS1.1.0 | 必装 | [如何安装DSS](https://github.com/WeBankFinTech/DataSphereStudio-Doc/blob/main/zh_CN/%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/DSS%E5%8D%95%E6%9C%BA%E9%83%A8%E7%BD%B2%E6%96%87%E6%A1%A3.md) |
+| Linkis1.1.1（大于等于该版本） | 必装 | [如何安装Linkis](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
 | Nginx | 必装 | [如何安装 Nginx](http://nginx.org/en/linux_packages.html) |
 
 ## 1.2. 创建 Linux 用户
@@ -19,8 +19,7 @@ Visualis编译部署文档
 &nbsp;&nbsp;&nbsp;&nbsp;请保持Visualis的部署用户与Linkis的部署用户一致，采用hadoop用户部署。
 
 ## 1.3. 底层依赖组件检查
-&nbsp;&nbsp;&nbsp;&nbsp;<font color="red">如果想使用Visualis1.0.0-rc1版本，需要拉取最新的[DSS源码](https://github.com/WeBankFinTech/DataSphereStudio)master分支编译打包，或者下载6月15号后最新的DSS一键全家桶包。</font>  
-&nbsp;&nbsp;&nbsp;&nbsp;**在安装linkis后，需要在linkis.properties中加入配置wds.linkis.session.ticket.key=bdp-user-ticket-id，并重启服务，请确保DSS1.0.1与Linkis1.1.1 基本可用，可在 DSS 前端界面执行 SparkQL 脚本，可正常创建并执行 DSS 工作流。**
+&nbsp;&nbsp;&nbsp;&nbsp;**在安装linkis后，请确保DSS1.1.0与Linkis1.1.1 基本可用，可在 DSS 前端界面执行 SparkQL 脚本，可正常创建并执行 DSS 工作流。**
 
 ## 1.4. 下载源码包及编译后端
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis源码安装时，需要下载对应的源码包进行编译，目前Visualis在依赖的DSS 1.0.1版本和Linkis1.1.1版本已经上传到Maven中央仓库，只需Maven配置正常即可拉取相关依赖。
@@ -28,8 +27,8 @@ Visualis编译部署文档
 # 1. 下载源码
 git clone https://github.com/WeDataSphere/Visualis.git
 
-# 2. 切换到1.0.0-rc1分支
-git checkout 1.0.0-rc1
+# 2. 切换到1.0.0分支
+git checkout 1.0.0
 
 # 3. 执行编译打包
 cd Visualis
@@ -210,15 +209,16 @@ spring:
 # 1. need configuration
 #    需要配置
 # ##################################
-wds.linkis.gateway.url=http://127.0.0.1:9001/
+wds.linkis.gateway.url=http://127.0.0.1:9001
 
 # 其它可以使用默认参数
 # 省略配置
 ```
+&nbsp;&nbsp;&nbsp;&nbsp;**如果Visualis部署的hadoop集群配置了Kerberos，需要在Visualis的配置文件linkis.properties文件中开启Kerberos，加入配置项：wds.linkis.keytab.enable=true**
 
 ## 3. 启动应用
 
-&nbsp;&nbsp;&nbsp;&nbsp;在配置和前端包编译完成后，可以尝试启动服务。Visualis目前和DSS集成，使用了DSS的登录及权限体系，使用前需部署完成DSS1.0.1版本，可以参考DSS1.0.1一键安装部署。（**由于此次visualis-1.0.0-rc1版本属于内测版，如需正常使用，请编译最新的DSS master分支代码**）
+&nbsp;&nbsp;&nbsp;&nbsp;在配置和前端包编译完成后，可以尝试启动服务。Visualis目前和DSS集成，使用了DSS的登录及权限体系，使用前需部署完成DSS1.1.0版本，可以参考DSS1.1.0一键安装部署。
 
 ### 3.1. 执行启动脚本
 
