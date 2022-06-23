@@ -24,7 +24,7 @@ cd {DSS_INSTALL_HOME}/dss/bin
 >> 127.0.0.1
 
 # 输入Visualis服务的前端端口后
->> 8989
+>> 8088
 
 # 在执行AppConn安装脚本工具后，会插入相关第三方AppConn的配置信息
 ```
