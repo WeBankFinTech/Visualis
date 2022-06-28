@@ -67,16 +67,19 @@ public class CurrentUserMethodArgumentResolver implements CurrentUserMethodArgum
             }
             String accessUsername = SecurityFilter.getLoginUsername(webRequest.getNativeRequest(HttpServletRequest.class));
             log.info("Get request access user name: {}", accessUsername);
-            User visualisUser = (User) userMapper.selectByUsername(accessUsername);
-            log.info("Get visualis user from table: {}", visualisUser);
-            User user = new User();
-            if(null == visualisUser) {
-                user.setUsername(accessUsername);
-                user.setName(accessUsername);
-                user.setPassword(null);
-                log.info("Insert into visualis user: {}", user);
-                userMapper.insert(user);
-                return user;
+            User visualisUser = null;
+            synchronized (this) {
+                visualisUser = (User) userMapper.selectByUsername(accessUsername);
+                log.info("Get visualis user from table: {}", visualisUser);
+                User user = new User();
+                if (null == visualisUser) {
+                    user.setUsername(accessUsername);
+                    user.setName(accessUsername);
+                    user.setPassword(null);
+                    log.info("Insert into visualis user: {}", user);
+                    userMapper.insert(user);
+                    return user;
+                }
             }
             return visualisUser;
         } catch (Throwable e) {
