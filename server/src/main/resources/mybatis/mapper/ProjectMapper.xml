@@ -140,7 +140,7 @@
         IF(u.`name` is NULL, u.`username`, u.`name`) as 'createBy.username',
         u.`avatar` as 'createBy.avatar'
         from visualis_project p
-        left join `linkis_user` u on u.`id` = p.`user_id`
+        left join `visualis_user` u on u.`id` = p.`user_id`
         left join star s on (s.target_id = p.id and s.`target` = 'project' and s.user_id = #{userId})
         where p.isArchive != 1 and p.id in (
         <!-- 当前用户是project的创建者或管理员 -->
@@ -259,7 +259,7 @@
                o.`update_by`                                AS 'organization.updateBy'
         FROM visualis_project p
                  LEFT JOIN organization o on o.`id` = p.`org_id`
-                 LEFT JOIN `linkis_user` u on u.`id` = p.`user_id`
+                 LEFT JOIN `visualis_user` u on u.`id` = p.`user_id`
         WHERE p.`id` = #{id}
     </select>
 

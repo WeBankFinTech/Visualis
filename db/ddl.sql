@@ -29,9 +29,9 @@ CREATE TABLE `visualis_project` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=313 DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPACT;
 
----- visualis使用这个表做权限管理
---DROP TABLE IF EXISTS `linkis_user`;
-CREATE TABLE `linkis_user` (
+-- visualis使用该表做权限管理
+DROP TABLE IF EXISTS `visualis_user`;
+CREATE TABLE `visualis_user` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `email` varchar(255) DEFAULT NULL,
   `username` varchar(255) NOT NULL,
