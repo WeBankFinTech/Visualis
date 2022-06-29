@@ -57,6 +57,8 @@ public class CurrentUserMethodArgumentResolver implements CurrentUserMethodArgum
      * 解决方式:
      * 新建一张visualis_user表，复用原来的权限逻辑，
      * 如果访问Visualis时，使用该注解，没有该用户，即插入用户，录入用户信息。
+     *
+     * 多个请求同时访问时，需要两步，查数据库和
      */
     @Override
     public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer, NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {
@@ -68,17 +70,20 @@ public class CurrentUserMethodArgumentResolver implements CurrentUserMethodArgum
             String accessUsername = SecurityFilter.getLoginUsername(webRequest.getNativeRequest(HttpServletRequest.class));
             log.info("Get request access user name: {}", accessUsername);
             User visualisUser = null;
-            synchronized (this) {
-                visualisUser = (User) userMapper.selectByUsername(accessUsername);
-                log.info("Get visualis user from table: {}", visualisUser);
-                User user = new User();
-                if (null == visualisUser) {
-                    user.setUsername(accessUsername);
-                    user.setName(accessUsername);
-                    user.setPassword(null);
-                    log.info("Insert into visualis user: {}", user);
-                    userMapper.insert(user);
-                    return user;
+            visualisUser = (User) userMapper.selectByUsername(accessUsername);
+            if(null == visualisUser) {
+                synchronized (this) {
+                    visualisUser = (User) userMapper.selectByUsername(accessUsername);
+                    log.info("Get visualis user from table: {}", visualisUser);
+                    User user = new User();
+                    if (null == visualisUser) {
+                        user.setUsername(accessUsername);
+                        user.setName(accessUsername);
+                        user.setPassword(null);
+                        log.info("Insert into visualis user: {}", user);
+                        userMapper.insert(user);
+                        return user;
+                    }
                 }
             }
             return visualisUser;
