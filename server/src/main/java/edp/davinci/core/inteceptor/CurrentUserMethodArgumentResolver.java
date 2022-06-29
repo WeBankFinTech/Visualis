@@ -50,17 +50,46 @@ public class CurrentUserMethodArgumentResolver implements CurrentUserMethodArgum
                 && parameter.hasParameterAnnotation(CurrentUser.class);
     }
 
+    /**
+     * 动机:
+     * 由于之前Visualis依赖于linkis_user表，存在极大的耦合，
+     *
+     * 解决方式:
+     * 新建一张visualis_user表，复用原来的权限逻辑，
+     * 如果访问Visualis时，使用该注解，没有该用户，即插入用户，录入用户信息。
+     *
+     * 多个请求同时访问时，需要两步，查数据库和插数据库，这里需要性能优化。
+     */
     @Override
     public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer, NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {
-        try
-        {
+        try {
             String dssUser = (String) ((ServletWebRequest) webRequest).getRequest().getAttribute("dss-user");
-            if(StringUtils.isNotBlank(dssUser)){
+            if (StringUtils.isNotBlank(dssUser)) {
                 return userMapper.selectByUsername(dssUser);
             }
-            return (User)userMapper.selectByUsername(SecurityFilter.getLoginUsername(webRequest.getNativeRequest(HttpServletRequest.class)));
-        }catch (Throwable e){
-            log.error("Failed to get user:",e);
+            String accessUsername = SecurityFilter.getLoginUsername(webRequest.getNativeRequest(HttpServletRequest.class));
+            log.info("Get request access user name: {}", accessUsername);
+            User visualisUser = null;
+            //to do!
+            visualisUser = (User) userMapper.selectByUsername(accessUsername);
+            if(null == visualisUser) {
+                synchronized (this) {
+                    visualisUser = (User) userMapper.selectByUsername(accessUsername);
+                    log.info("Get visualis user from table: {}", visualisUser);
+                    User user = new User();
+                    if (null == visualisUser) {
+                        user.setUsername(accessUsername);
+                        user.setName(accessUsername);
+                        user.setPassword(null);
+                        log.info("Insert into visualis user: {}", user);
+                        userMapper.insert(user);
+                        return user;
+                    }
+                }
+            }
+            return visualisUser;
+        } catch (Throwable e) {
+            log.error("Failed to get user: ", e);
             throw e;
         }
     }
