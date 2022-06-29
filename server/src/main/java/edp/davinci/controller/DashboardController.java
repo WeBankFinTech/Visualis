@@ -135,7 +135,6 @@ public class DashboardController extends BaseController {
     @MethodLog
     @GetMapping("/{id}/exclude/roles")
     public ResponseEntity getPortalExcludeRoles(@PathVariable Long id,
-                                                @CurrentUser User user,
                                                 HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid id");
