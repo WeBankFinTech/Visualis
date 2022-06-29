@@ -25,7 +25,7 @@
         <selectKey resultType="java.lang.Long" order="AFTER" keyProperty="id">
             SELECT LAST_INSERT_ID() AS id
         </selectKey>
-        insert `linkis_user`
+        insert `visualis_user`
         <trim prefix="(" suffix=")" suffixOverrides=",">
             `email`,
             `username`,
@@ -74,7 +74,7 @@
 
     <select id="getUsersByKeyword" resultType="edp.davinci.dto.userDto.UserBaseInfo">
         select DISTINCT u.id, IF(u.`name` is NULL,u.`username`,u.`name`) as username, u.`email`, u.`avatar`
-        from `linkis_user` u
+        from `visualis_user` u
         LEFT JOIN rel_user_organization r on r.user_id = u.id
         where
         <if test='orgId != null and orgId > 0 '>
@@ -86,7 +86,7 @@
     </select>
 
     <select id="getByIds" resultType="edp.davinci.model.User">
-        select * from `linkis_user` where
+        select * from `visualis_user` where
         <if test="userIds != null and userIds.size > 0">
             id in
             <foreach collection="userIds" index="index" item="item" open="(" close=")" separator=",">

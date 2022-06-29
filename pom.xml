@@ -19,14 +19,33 @@
     <modules>
         <module>assembly</module>
         <module>server</module>
+        <module>visualis-appconn</module>
     </modules>
 
     <properties>
         <main.basedir>${project.basedir}</main.basedir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <scala.version>2.11.8</scala.version>
         <java.version>1.8</java.version>
         <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
+        <scala.binary.version>2.12</scala.binary.version>
+        <plugin.scala.version>2.15.2</plugin.scala.version>
+        <jdk.compile.version>1.8</jdk.compile.version>
+        <skipTests>true</skipTests>
+
+        <apache.linkis.version>1.1.1</apache.linkis.version>
+        <opensource.dss.version>1.1.0</opensource.dss.version>
+
+        <elasticsearch.version>5.1.2</elasticsearch.version>
+        <spring.boot.version>2.3.7.RELEASE</spring.boot.version>
+        <spring.cloud.version>2.2.1.RELEASE</spring.cloud.version>
+        <spring.version>5.2.12.RELEASE</spring.version>
+        <xstream.core.version>1.4.19</xstream.core.version>
+        <snakeyaml.version>1.26</snakeyaml.version>
+        <caffeine.version>2.6.2</caffeine.version>
+        <log4j2.version>2.17.1</log4j2.version>
+        <poi.version>3.13</poi.version>
     </properties>
 
     <repositories>
@@ -79,7 +98,9 @@
                     <maxmem>1024m</maxmem>
                     <fork>true</fork>
                     <compilerArguments>
-                        <bootclasspath>${java.home}/lib/rt.jar${path.separator}${java.home}/lib/jce.jar${path.separator}${java.home}/../lib/tools.jar</bootclasspath>
+                        <bootclasspath>
+                            ${java.home}/lib/rt.jar${path.separator}${java.home}/lib/jce.jar${path.separator}${java.home}/../lib/tools.jar
+                        </bootclasspath>
                     </compilerArguments>
                     <compilerArgs>
                         <arg>-Xlint:all,-serial,-path</arg>
