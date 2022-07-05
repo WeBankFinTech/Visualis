@@ -10,7 +10,7 @@ Visualis编译部署文档
 | JDK (1.8.0_141) | 必装 | [如何安装JDK](https://www.runoob.com/java/java-environment-setup.html) |
 | Hadoop(2.7.2，Hadoop 其他版本需自行编译 Linkis) | 必装 | [Hadoop单机部署](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) ；[Hadoop分布式部署](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
 | Spark(2.4.3，Spark 其他版本需自行编译 Linkis) | 必装 | [Spark快速安装](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
-| DSS1.1.0 | 必装 | [如何安装DSS](https://github.com/WeBankFinTech/DataSphereStudio-Doc/blob/main/zh_CN/%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/DSS%E5%8D%95%E6%9C%BA%E9%83%A8%E7%BD%B2%E6%96%87%E6%A1%A3.md) |
+| DSS1.1.0 | 必装 | [如何安装DSS](https://github.com/WeBankFinTech/DataSphereStudio-Doc/blob/1.1.0/zh_CN/%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/DSS%26Linkis%E4%B8%80%E9%94%AE%E9%83%A8%E7%BD%B2%E6%96%87%E6%A1%A3%E5%8D%95%E6%9C%BA%E7%89%88.md) |
 | Linkis1.1.1（大于等于该版本） | 必装 | [如何安装Linkis](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
 | Nginx | 必装 | [如何安装 Nginx](http://nginx.org/en/linux_packages.html) |
 
@@ -164,7 +164,7 @@ mv * ./../ # 把静态资源文件移动到c小项dss/visualis路径下
 ## 2.5. 修改配置
 
 ### 2.5.1. 修改application.yml
-&nbsp;&nbsp;&nbsp;&nbsp;在配置application.yml文件中，必须要配置的有1、2、3配置项，其它配置可采用默认值，其中第1项中，需要配置一些部署IP和端口信息，第2项需要配置eureka的信息，第3项中只需要配置数据库的链接信息。（visualis的库可以和dss同库，也可以不同，需部署用户自行抉择）。
+&nbsp;&nbsp;&nbsp;&nbsp;在配置application.yml文件中，必须要配置的有1、2、3配置项，其它配置可采用默认值，其中第1项中，需要配置一些部署IP和端口信息，第2项需要配置eureka的信息，第3项中只需要配置数据库的链接信息。**（visualis的库可以和dss同库，也可以不同，需部署用户自行抉择）**。
 ```yaml
 # ##################################
 # 1. Visualis Service configuration
