@@ -8,7 +8,8 @@
 
 ## 3. Workflow usage
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis is connected to the DSS workflow. When creating a project on the DSS side, the Visualis project will be created synchronously. In the workflow, drag and drop the Visualis node, and the corresponding components will also be created in the project. When using a Widget in a workflow, the Widget needs to bind an upstream table as a data source to develop visual graphics. For the related implementation principle, please refer to [Widget Node Binding DSS Result Set Node](./Visualis_sql_databind_cn.md), by dragging and dropping Widget, Display, and Dashboard three components, connected into a line, can realize a visual report.
-![](./../images/visualis_workflow.gif)
+![](./../images/visualis_workflow.gif)  
+&nbsp;&nbsp;&nbsp;&nbsp;Currently, Visualis1.0.0 has added a View node to DSS1.1.0, which is similar to the Sql node, but when used in conjunction with the Widget node, select non-binding, double-click to enter the Widget, in the View Select Save in the selection bar.
 
 ## 4. Mail usage
 &nbsp;&nbsp;&nbsp;&nbsp;DSS provides data output nodes. When deploying and installing DSS, you need to configure the relevant mail server configuration. Before using mail, you need to ensure the availability of the mail server. Line and rely on the visualization node, configure the relevant mail options, you can send mail, the final effect of mail sending can be viewed through the preview interface of Display and Dashboard.
