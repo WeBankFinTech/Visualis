@@ -92,4 +92,3 @@ b) Synchronous query: direct query. The result set is returned directly after th
 c) Asynchronous query: submit the query, return the query ID, provide progress and status tracking, and finally obtain the result set through the ID.
 4.	Resultparser: converts the original result set returned by the engine into a result set format that can be returned to the front-end rendering.  
 a) Dolphin visualissresultparser, which converts the result set in dolphin format to the visualiss front-end format.  
-b) Dolphin to datawranglerresultparser, which converts the result set in dolphin format to datawrangler.
