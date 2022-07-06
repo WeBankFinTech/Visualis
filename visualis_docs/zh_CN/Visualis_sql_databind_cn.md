@@ -36,7 +36,8 @@ show(df)
 
 ## 3.1. 与DSS对接实现细节
 &nbsp;&nbsp;&nbsp;&nbsp;DSS支持Widget、Display和Dashboard节点，它们的CRUD与执行是与Visualis对接的，与DSS对接的实现细节逻辑为如下。
-&nbsp;&nbsp;&nbsp;&nbsp;DSS侧需要实现Visualis的AppConn的相关逻辑为：
+
+DSS侧需要实现Visualis的AppConn的相关逻辑为：
 1. 实现规范中的ProjectCreationOperation，在DSS项目创建时调用。通过HTTP的方式调用Visualis的Controller中的Project创建接口。（根据DSS权限在Visualis原生首页展示Project列表的功能暂未实现）
 2. 实现规范中Ref的CRUD相关的Operation接口，在DSS节点创建时调用，通过参数先判断具体需要创建的节点类型，再通过HTTP的方式调用具体的Visualis的Controller中的Widget、Display或Widget创建接口。
   * 其中Widget的创建，并非调用Controller的默认接口，而是专门定义了/widget/smartcreate接口在WidgetResultfulApi中，处理因接入CS和虚拟view改造后需要处理的一些额外的逻辑。另外，Widget本身会保存当前工作流的CSID作为查询上下文信息的依据，所以当CSID本身发生变化的场景，需要调用widget/setcontext接口，更新对应的Widget中记录的CSID，否则会发生找不到上游表的情况。
@@ -48,6 +49,7 @@ show(df)
   * 实现规范中的Ref的导入导出的Operation接口，在DSS节点进行导入导出操作时，通过HTTP的方式调用Visualis中的相应接口。
   * ProjectRestfulApi中的import/export接口即为Visualis对导入导出功能的实现。导出接口接收Project ID和对应的widget、display或dashboard的ID作为参数，将所有的信息导出为json结构，上传到BML后，返回resourceId和version。导入接口接收Project ID和BML的resourceId和version作为参数，从BML上下载json结构后，复原成具体的实体，并返回新老ID的对应关系。
  *	需要注意，在AppConn侧，导入成功之后，需要更新原本的JobContent中的id信息，并返回给工作流进行更新。
-&nbsp;&nbsp;&nbsp;&nbsp;Visualis侧需要进行以下相关改造：
+
+Visualis侧需要进行以下相关改造：
 1. 接入SSO规范。由于Visualis前端与DSS共享用户态，因此只要实现后端接口互相调用时的SSO即可。需要实现VisualisUserInterceptor，用来操作HTTP session中的用户信息。实现VisualisSSOFilterInitializer，用来将DSS提供的SSO Filter加入Visualis的HTTP请求处理的链路中。实现ModifyHttpRequestWrapper，用来将DSS请求提供的cookie信息复制到visualis侧的cookie中。
 2. 前端改造。为了支持多环境统一的前端访问，前端页面通过URL捕捉参数env={env}，将参数转换为route label，放入以该页面为起点的后续所有接口请求中，使得gateway能够根据label将请求转发到对应的dev等环境对应的Visualis后台实例中。

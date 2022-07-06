@@ -29,6 +29,8 @@ mvn clean package -DskipTests=ture
 # 把visualis appconn放置到dss-appconns目录下
 rz -ybe ${DSS_INSTALL_HOME}/dss/dss-appconns
 
+# 解压Visualis AppConn包
+unzip visualis.zip
 
 cd {DSS_INSTALL_HOME}/dss/bin
 
