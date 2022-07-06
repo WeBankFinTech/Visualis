@@ -8,7 +8,8 @@
 
 ## 3. 工作流使用
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis对接了DSS工作流，在DSS侧创建工程时，会同步创建Visualis工程，在工作流中，拖拽Visualis节点，同步也会在该工程中创建对应的组件，在工作流中使用Widget时，Widget需要绑定一个上游表作为数据源，来开发可视化图形，相关实现原理可以参考[Widget节点绑定DSS结果集节点](./Visualis_sql_databind_cn.md)，通过拖拽Widget和Display，Dashboard三个组件，连接成线，即可实现一个可视化报表。
-![visualis workflow](./../images/visualis_workflow.gif)
+![visualis workflow](./../images/visualis_workflow.gif)  
+&nbsp;&nbsp;&nbsp;&nbsp;目前Visualis1.0.0对接DSS1.1.0中新增了View节点，和Sql节点类似，但在和Widget节点联合使用时，选用非绑定，双击进入Widget中后，在View选择栏中进行选择保存。
 
 ## 4. 邮件使用
 &nbsp;&nbsp;&nbsp;&nbsp;DSS提供数据输出节点，在部署安装DSS时，需要配置相关的邮件服务器配置，使用邮件前，需确保邮件服务器的可用性，在工作流中通过拖拽邮件节点，连线并依赖可视化节点，配置相关邮件选项，即可发送邮件，邮件发送的最终效果，可以通过Display和Dashboard的预览接口进行查看。

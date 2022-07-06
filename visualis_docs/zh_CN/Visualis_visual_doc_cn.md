@@ -90,6 +90,5 @@ b)	其它语言的后续按需求实现。
 a)	从外部系统跳转的source中，如果带有creator信息，则提交该creator的引擎；如果没有，默认提交给visualis引擎。  
 b)	同步查询：直接查询，阻塞到结果集生成后，直接返回结果集。  
 c)	异步查询：提交查询，返回查询id，提供进度、状态跟踪，最后通过id获取结果集。
-4.	ResultParser：将引擎返回的原始结果集，转换为可以返回给前端渲染的结果集格式。
-a)	DolphinToVisualisResultParser，转换dolphin格式的结果集到Visualis前端格式。  
-b)	DolphinToDataWranglerResultParser，转换dolphin格式的结果集到DataWrangler。
+4.	ResultParser：将引擎返回的原始结果集，转换为可以返回给前端渲染的结果集格式。  
+a)	DolphinToVisualisResultParser，转换dolphin格式的结果集到Visualis前端格式。
