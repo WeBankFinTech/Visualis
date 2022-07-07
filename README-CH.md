@@ -7,20 +7,20 @@
 
 ## 简介
 
-&nbsp;&nbsp;&nbsp;&nbsp;Visualis是一个基于宜信的开源项目[Davinci](https://github.com/edp963/davinci)开发的数据可视化BI工具。现已被集成到数据应用开发门户[DataSphere Studio](https://github.com/WeBankFinTech/DataSphereStudio)中，此次发布的版本Visualis1.0.0-rc1版本支持Linkis1.1.1和DSS1.0.1版本。
+&nbsp;&nbsp;&nbsp;&nbsp;Visualis是一个基于宜信的开源项目[Davinci](https://github.com/edp963/davinci)开发的数据可视化BI工具。现已被集成到数据应用开发门户[DataSphere Studio](https://github.com/WeBankFinTech/DataSphereStudio)中，此次发布的版本Visualis1.0.0版本支持Linkis1.1.1和DSS1.1.0版本。
 
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis支持拖拽式报表定义、图表联动、钻取、全局筛选、多维分析、实时查询等数据开发探索的分析模式，并做了水印、数据质量校验等金融级增强。
 
 ## 功能特性
 
-&nbsp;&nbsp;&nbsp;&nbsp;基于达芬奇项目, Visualis与DataSphere Studio 1.0.1集成，实现了以下特性：
+&nbsp;&nbsp;&nbsp;&nbsp;基于达芬奇项目, Visualis与DataSphere Studio 1.1.0集成，实现了以下特性：
 * 图表水印
 * 数据质量校验
 * 图表展示优化
 * 对接Linkis计算中间件
 * Scriptis结果集一键可视化
 * 外部应用参数支持
-* Widget/Dashboard/Display集成为DataSphere Studio的工作流节点
+* View/Widget/Dashboard/Display集成为DataSphere Studio的工作流节点
 
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis同时支持以下Davinci v0.3版本的原生功能：
 * **数据源**
@@ -90,6 +90,9 @@
 [绑定sql节点原理](visualis_docs/zh_CN/Visualis_sql_databind_cn.md)
 
 [虚拟视图设计文档](visualis_docs/zh_CN/Visualis_visual_doc_cn.md)
+
+## 升级文档
+[升级文档](visualis_docs/zh_CN/visualis_update_cn.md)
 
 ## 交流贡献
 
