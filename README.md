@@ -7,7 +7,7 @@ English | [中文](README-CH.md)
 
 ## Introduction
 
-&nbsp;&nbsp;&nbsp;&nbsp;Visualis is an open source project based on Yixin [davinci](https://github.com/edp963/davinci) Developed data visualization Bi tool. It has been integrated into the data application development portal [datasphere studio](https://github.com/WeBankFinTech/DataSphereStudio) In this release, visualis1.0.0-rc1 supports linkis1.1.1 and dss1.0.1.  
+&nbsp;&nbsp;&nbsp;&nbsp;Visualis is an open source project based on Yixin [davinci](https://github.com/edp963/davinci) Developed data visualization Bi tool. It has been integrated into the data application development portal [datasphere studio](https://github.com/WeBankFinTech/DataSphereStudio) In this release, visualis1.0.0 supports linkis1.1.1 and dss1.1.0.  
 &nbsp;&nbsp;&nbsp;&nbsp;Visualis provides data development/exploration functionalities including drag & drop style report definition, diagram correlation analysis, data drilling, global filtering, multi-dimensional analysis and real-time query, with the enhancement of report watermark and data quality management.
 
 ## Features
@@ -19,7 +19,7 @@ Based on Davinci project, Visualis achieves below features with DataSphere Studi
 * Linkis adaption for big-data queries
 * One-click visualization from Scriptis
 * External application parameters support
-* Dashboard/Display as an appjoint of DataSphere Studio workflow
+* View/Widget/Dashboard/Display as an appjoint of DataSphere Studio workflow
 
 Visualis also supports most of the original features of Davinci v0.3.
 * Data Source Support
@@ -85,6 +85,9 @@ For more details: [Visualis User Manul Doc](./visualis_docs/en_US/Visualis_user_
 [Principle of binding sql node](visualis_docs/en_US/Visualis_sql_databind_en.md)
 
 [Virtual View Design Documentation](visualis_docs/en_US/Visualis_visual_doc_en.md)
+
+## Upgrade documentation
+[Upgrade Documentation](visualis_docs/en_US/visualis_update_en.md)
 
 ## Communication
 
