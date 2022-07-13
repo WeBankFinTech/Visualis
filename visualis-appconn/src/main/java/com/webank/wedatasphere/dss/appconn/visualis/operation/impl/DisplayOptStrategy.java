@@ -3,11 +3,15 @@ package com.webank.wedatasphere.dss.appconn.visualis.operation.impl;
 
 import com.google.common.collect.Lists;
 import com.webank.wedatasphere.dss.appconn.visualis.constant.VisualisConstant;
+import com.webank.wedatasphere.dss.appconn.visualis.model.ViewAsyncResultData;
+import com.webank.wedatasphere.dss.appconn.visualis.operation.AsyncExecutionOperationStrategy;
 import com.webank.wedatasphere.dss.appconn.visualis.utils.NumberUtils;
 import com.webank.wedatasphere.dss.appconn.visualis.utils.URLUtils;
 import com.webank.wedatasphere.dss.appconn.visualis.utils.VisualisCommonUtil;
 import com.webank.wedatasphere.dss.common.label.EnvDSSLabel;
 import com.webank.wedatasphere.dss.common.label.LabelRouteVO;
+import com.webank.wedatasphere.dss.standard.app.development.listener.common.RefExecutionState;
+import com.webank.wedatasphere.dss.standard.app.development.listener.ref.ExecutionResponseRef;
 import com.webank.wedatasphere.dss.standard.app.development.listener.ref.RefExecutionRequestRef;
 import com.webank.wedatasphere.dss.standard.app.development.ref.ExportResponseRef;
 import com.webank.wedatasphere.dss.standard.app.development.ref.QueryJumpUrlResponseRef;
@@ -15,6 +19,7 @@ import com.webank.wedatasphere.dss.standard.app.development.ref.RefJobContentRes
 import com.webank.wedatasphere.dss.standard.app.development.ref.impl.ThirdlyRequestRef;
 import com.webank.wedatasphere.dss.standard.app.development.utils.DSSJobContentConstant;
 import com.webank.wedatasphere.dss.standard.app.sso.origin.request.action.DSSDownloadAction;
+import com.webank.wedatasphere.dss.standard.app.sso.origin.request.action.DSSGetAction;
 import com.webank.wedatasphere.dss.standard.app.sso.origin.request.action.DSSPostAction;
 import com.webank.wedatasphere.dss.standard.app.sso.origin.request.action.DSSPutAction;
 import com.webank.wedatasphere.dss.standard.common.entity.ref.ResponseRef;
@@ -22,16 +27,19 @@ import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalO
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.linkis.common.io.resultset.ResultSetWriter;
+import org.apache.linkis.server.BDPJettyServerHelper;
 import org.apache.linkis.server.conf.ServerConfiguration;
 import org.apache.linkis.storage.LineMetaData;
 import org.apache.linkis.storage.LineRecord;
+import org.apache.linkis.storage.domain.Column;
+import org.apache.linkis.storage.domain.DataType;
+import org.apache.linkis.storage.resultset.table.TableMetaData;
+import org.apache.linkis.storage.resultset.table.TableRecord;
 
 import java.io.ByteArrayOutputStream;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
-public class DisplayOptStrategy extends AbstractOperationStrategy {
+public class DisplayOptStrategy extends AbstractOperationStrategy implements AsyncExecutionOperationStrategy {
 
     @Override
     public String getStrategyName() {
@@ -158,7 +166,7 @@ public class DisplayOptStrategy extends AbstractOperationStrategy {
         Map<String, Object> jobContent = new HashMap<>(1);
         String id = getDisplayId(requestRef.getRefJobContent()).toString();
 
-        Map<String, Object> displayData =(Map<String, Object>) responseRef.toMap().get("display");
+        Map<String, Object> displayData = (Map<String, Object>) responseRef.toMap().get("display");
         jobContent.put("displayId", Double.parseDouble(displayData.get(id).toString()));
         return RefJobContentResponseRef.newBuilder().setRefJobContent(jobContent).success();
     }
@@ -203,4 +211,79 @@ public class DisplayOptStrategy extends AbstractOperationStrategy {
         return ResponseRef.newExternalBuilder().success();
     }
 
+    @Override
+    public String submit(RefExecutionRequestRef.RefExecutionProjectWithContextRequestRef ref) throws ExternalOperationFailedException {
+        String previewUrl = URLUtils.getUrl(baseUrl, URLUtils.DISPLAY_PREVIEW_URL_FORMAT, getDisplayId(ref.getRefJobContent()).toString());
+        logger.info("User {} try to submit Visualis display with refJobContent: {} in previewUrl {}.", ref.getExecutionRequestRefContext().getSubmitUser(),
+                ref.getRefJobContent(), previewUrl);
+        DSSGetAction dssGetAction = new DSSGetAction();
+        dssGetAction.setUser(ref.getExecutionRequestRefContext().getSubmitUser());
+        dssGetAction.setParameter("labels", ((EnvDSSLabel) (ref.getDSSLabels().get(0))).getEnv());
+        ResponseRef responseRef = VisualisCommonUtil.getExternalResponseRef(ref, ssoRequestOperation, previewUrl, dssGetAction);
+        Map<String, Object> execStatus = (Map<String, Object>) responseRef.toMap().get("execStatus");
+        return execStatus.get("execId").toString();
+    }
+
+    @Override
+    public RefExecutionState state(RefExecutionRequestRef.RefExecutionProjectWithContextRequestRef ref, String execId) throws ExternalOperationFailedException {
+        if (org.apache.commons.lang.StringUtils.isEmpty(execId)) {
+            ref.getExecutionRequestRefContext().appendLog("dss execute display error for execId is null when get state!");
+            throw new ExternalOperationFailedException(90176, "dss execute display error when get state");
+        }
+        String url = URLUtils.getUrl(baseUrl, URLUtils.DISPLAY_SUBMIT_STATE_URL_FORMAT, execId);
+        ref.getExecutionRequestRefContext().appendLog("dss execute display node, ready to get state from " + url);
+
+        DSSPostAction visualisPostAction = new DSSPostAction();
+        visualisPostAction.setUser(ref.getExecutionRequestRefContext().getSubmitUser());
+        LabelRouteVO routeVO = new LabelRouteVO();
+        routeVO.setRoute(ref.getDSSLabels().get(0).getValue().get("DSSEnv"));
+        visualisPostAction.addRequestPayload("labels", routeVO);
+
+        ResponseRef responseRef = VisualisCommonUtil.getExternalResponseRef(ref, ssoRequestOperation, url, visualisPostAction);
+        ref.getExecutionRequestRefContext().appendLog(responseRef.getResponseBody());
+
+        String status = responseRef.toMap().get("status").toString();
+        return toRefExecutionState(status);
+    }
+
+    @Override
+    public ExecutionResponseRef getAsyncResult(RefExecutionRequestRef.RefExecutionProjectWithContextRequestRef ref, String execId) throws ExternalOperationFailedException {
+        if (org.apache.commons.lang.StringUtils.isEmpty(execId)) {
+            ref.getExecutionRequestRefContext().appendLog("dss execute display error for execId is null when get result!");
+            throw new ExternalOperationFailedException(90176, "dss execute display error when get result");
+        }
+        String url = URLUtils.getUrl(baseUrl, URLUtils.VIEW_DATA_URL_ASYNC_RESULT, execId);
+        ref.getExecutionRequestRefContext().appendLog("dss execute display node,ready to get result set from " + url);
+        DSSDownloadAction previewDownloadAction = new DSSDownloadAction();
+        previewDownloadAction.setUser(ref.getExecutionRequestRefContext().getSubmitUser());
+        previewDownloadAction.setParameter("labels", ((EnvDSSLabel) (ref.getDSSLabels().get(0))).getEnv());
+
+        DSSDownloadAction metadataDownloadAction = new DSSDownloadAction();
+        metadataDownloadAction.setUser(ref.getExecutionRequestRefContext().getSubmitUser());
+        metadataDownloadAction.setParameter("labels", ((EnvDSSLabel) (ref.getDSSLabels().get(0))).getEnv());
+
+        try {
+            VisualisCommonUtil.getHttpResult(ref, ssoRequestOperation, url, previewDownloadAction);
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            IOUtils.copy(previewDownloadAction.getInputStream(), os);
+            String response = new String(Base64.getEncoder().encode(os.toByteArray()));
+
+            String metaUrl = URLUtils.getUrl(baseUrl, URLUtils.DISPLAY_METADATA_URL_FORMAT, getDisplayId(ref.getRefJobContent()).toString());
+            VisualisCommonUtil.getHttpResult(ref, ssoRequestOperation, metaUrl, metadataDownloadAction);
+            String metadata = StringUtils.chomp(IOUtils.toString(metadataDownloadAction.getInputStream(), ServerConfiguration.BDP_SERVER_ENCODING().getValue()));
+            ResultSetWriter resultSetWriter = ref.getExecutionRequestRefContext().createPictureResultSetWriter();
+            resultSetWriter.addMetaData(new LineMetaData(metadata));
+            resultSetWriter.addRecord(new LineRecord(response));
+            resultSetWriter.flush();
+            IOUtils.closeQuietly(resultSetWriter);
+            ref.getExecutionRequestRefContext().sendResultSet(resultSetWriter);
+        } catch (Throwable e) {
+            ref.getExecutionRequestRefContext().appendLog("Failed to debug Display url " + url);
+            throw new ExternalOperationFailedException(90176, "Failed to debug Display", e);
+        } finally {
+            IOUtils.closeQuietly(previewDownloadAction);
+            IOUtils.closeQuietly(metadataDownloadAction);
+        }
+        return ExecutionResponseRef.newBuilder().success();
+    }
 }
