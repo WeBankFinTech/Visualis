@@ -174,7 +174,7 @@ public class DisplayOptStrategy extends AbstractOperationStrategy implements Asy
 
     @Override
     public ResponseRef executeRef(RefExecutionRequestRef.RefExecutionProjectWithContextRequestRef ref) throws ExternalOperationFailedException {
-        String previewUrl = URLUtils.getUrl(baseUrl, URLUtils.DISPLAY_PREVIEW_URL_FORMAT, getDisplayId(ref.getRefJobContent()).toString());
+        String previewUrl = URLUtils.getUrl(baseUrl, URLUtils.DISPLAY_SUBMIT_PREVIEW_URL_FORMAT + "/old", getDisplayId(ref.getRefJobContent()).toString());
         logger.info("User {} try to execute Visualis display with refJobContent: {} in previewUrl {}.", ref.getExecutionRequestRefContext().getSubmitUser(),
                 ref.getRefJobContent(), previewUrl);
         ref.getExecutionRequestRefContext().appendLog(String.format("The %s of Visualis try to execute ref RefJobContent: %s in previewUrl %s.", ref.getType(), ref.getRefJobContent(), previewUrl));
@@ -213,7 +213,7 @@ public class DisplayOptStrategy extends AbstractOperationStrategy implements Asy
 
     @Override
     public String submit(RefExecutionRequestRef.RefExecutionProjectWithContextRequestRef ref) throws ExternalOperationFailedException {
-        String previewUrl = URLUtils.getUrl(baseUrl, URLUtils.DISPLAY_PREVIEW_URL_FORMAT, getDisplayId(ref.getRefJobContent()).toString());
+        String previewUrl = URLUtils.getUrl(baseUrl, URLUtils.DISPLAY_SUBMIT_PREVIEW_URL_FORMAT, getDisplayId(ref.getRefJobContent()).toString());
         logger.info("User {} try to submit Visualis display with refJobContent: {} in previewUrl {}.", ref.getExecutionRequestRefContext().getSubmitUser(),
                 ref.getRefJobContent(), previewUrl);
         DSSGetAction dssGetAction = new DSSGetAction();
@@ -252,7 +252,7 @@ public class DisplayOptStrategy extends AbstractOperationStrategy implements Asy
             ref.getExecutionRequestRefContext().appendLog("dss execute display error for execId is null when get result!");
             throw new ExternalOperationFailedException(90176, "dss execute display error when get result");
         }
-        String url = URLUtils.getUrl(baseUrl, URLUtils.VIEW_DATA_URL_ASYNC_RESULT, execId);
+        String url = URLUtils.getUrl(baseUrl, URLUtils.DISPLAY_SUBMIT_RESULT_URL_FORMAT, execId);
         ref.getExecutionRequestRefContext().appendLog("dss execute display node,ready to get result set from " + url);
         DSSDownloadAction previewDownloadAction = new DSSDownloadAction();
         previewDownloadAction.setUser(ref.getExecutionRequestRefContext().getSubmitUser());
