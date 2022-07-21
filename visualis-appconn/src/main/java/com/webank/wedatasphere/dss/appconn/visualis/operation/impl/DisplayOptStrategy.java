@@ -216,12 +216,14 @@ public class DisplayOptStrategy extends AbstractOperationStrategy implements Asy
         String previewUrl = URLUtils.getUrl(baseUrl, URLUtils.DISPLAY_SUBMIT_PREVIEW_URL_FORMAT, getDisplayId(ref.getRefJobContent()).toString());
         logger.info("User {} try to submit Visualis display with refJobContent: {} in previewUrl {}.", ref.getExecutionRequestRefContext().getSubmitUser(),
                 ref.getRefJobContent(), previewUrl);
+        ref.getExecutionRequestRefContext().appendLog("dss submit display node, ready to submit to " + previewUrl);
         DSSGetAction dssGetAction = new DSSGetAction();
         dssGetAction.setUser(ref.getExecutionRequestRefContext().getSubmitUser());
         dssGetAction.setParameter("labels", ((EnvDSSLabel) (ref.getDSSLabels().get(0))).getEnv());
         ResponseRef responseRef = VisualisCommonUtil.getExternalResponseRef(ref, ssoRequestOperation, previewUrl, dssGetAction);
-        Map<String, Object> execStatus = (Map<String, Object>) responseRef.toMap().get("execStatus");
-        return execStatus.get("execId").toString();
+        ref.getExecutionRequestRefContext().appendLog("dss submit display node, get result " + responseRef);
+        String execStatus = (String) responseRef.toMap().get("execId");
+        return execStatus;
     }
 
     @Override

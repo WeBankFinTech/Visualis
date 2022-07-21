@@ -18,6 +18,7 @@ package com.webank.wedatasphere.dss.appconn.visualis.operation;
 
 import com.webank.wedatasphere.dss.appconn.visualis.VisualisAppConn;
 import com.webank.wedatasphere.dss.appconn.visualis.constant.VisualisConstant;
+import com.webank.wedatasphere.dss.appconn.visualis.operation.impl.DisplayOptStrategy;
 import com.webank.wedatasphere.dss.appconn.visualis.operation.impl.ViewOptStrategy;
 import com.webank.wedatasphere.dss.appconn.visualis.operation.impl.VisualisRefExecutionAction;
 import com.webank.wedatasphere.dss.appconn.visualis.utils.URLUtils;
@@ -118,6 +119,10 @@ public class VisualisRefExecutionOperation
 
     private boolean isSupportAsyncExecution(RefExecutionRequestRef.RefExecutionProjectWithContextRequestRef ref,
                                      OperationStrategy strategy) throws ExternalOperationFailedException {
+
+        if(strategy instanceof DisplayOptStrategy) {
+            return true;
+        }
 
         if(!(strategy instanceof ViewOptStrategy)) {
             return false;
