@@ -174,7 +174,7 @@ public class DisplayOptStrategy extends AbstractOperationStrategy implements Asy
 
     @Override
     public ResponseRef executeRef(RefExecutionRequestRef.RefExecutionProjectWithContextRequestRef ref) throws ExternalOperationFailedException {
-        String previewUrl = URLUtils.getUrl(baseUrl, URLUtils.DISPLAY_SUBMIT_PREVIEW_URL_FORMAT + "/old", getDisplayId(ref.getRefJobContent()).toString());
+        String previewUrl = URLUtils.getUrl(baseUrl, URLUtils.DISPLAY_PREVIEW_URL_FORMAT, getDisplayId(ref.getRefJobContent()).toString());
         logger.info("User {} try to execute Visualis display with refJobContent: {} in previewUrl {}.", ref.getExecutionRequestRefContext().getSubmitUser(),
                 ref.getRefJobContent(), previewUrl);
         ref.getExecutionRequestRefContext().appendLog(String.format("The %s of Visualis try to execute ref RefJobContent: %s in previewUrl %s.", ref.getType(), ref.getRefJobContent(), previewUrl));
@@ -273,6 +273,9 @@ public class DisplayOptStrategy extends AbstractOperationStrategy implements Asy
             String metaUrl = URLUtils.getUrl(baseUrl, URLUtils.DISPLAY_METADATA_URL_FORMAT, getDisplayId(ref.getRefJobContent()).toString());
             VisualisCommonUtil.getHttpResult(ref, ssoRequestOperation, metaUrl, metadataDownloadAction);
             String metadata = StringUtils.chomp(IOUtils.toString(metadataDownloadAction.getInputStream(), ServerConfiguration.BDP_SERVER_ENCODING().getValue()));
+
+            ref.getExecutionRequestRefContext().appendLog("display metadata is: " + metadata);
+
             ResultSetWriter resultSetWriter = ref.getExecutionRequestRefContext().createPictureResultSetWriter();
             resultSetWriter.addMetaData(new LineMetaData(metadata));
             resultSetWriter.addRecord(new LineRecord(response));
