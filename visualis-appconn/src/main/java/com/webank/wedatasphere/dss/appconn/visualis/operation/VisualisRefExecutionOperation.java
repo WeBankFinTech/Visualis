@@ -18,6 +18,7 @@ package com.webank.wedatasphere.dss.appconn.visualis.operation;
 
 import com.webank.wedatasphere.dss.appconn.visualis.VisualisAppConn;
 import com.webank.wedatasphere.dss.appconn.visualis.constant.VisualisConstant;
+import com.webank.wedatasphere.dss.appconn.visualis.operation.impl.DashboardOptStrategy;
 import com.webank.wedatasphere.dss.appconn.visualis.operation.impl.DisplayOptStrategy;
 import com.webank.wedatasphere.dss.appconn.visualis.operation.impl.ViewOptStrategy;
 import com.webank.wedatasphere.dss.appconn.visualis.operation.impl.VisualisRefExecutionAction;
@@ -120,7 +121,8 @@ public class VisualisRefExecutionOperation
     private boolean isSupportAsyncExecution(RefExecutionRequestRef.RefExecutionProjectWithContextRequestRef ref,
                                      OperationStrategy strategy) throws ExternalOperationFailedException {
 
-        if(strategy instanceof DisplayOptStrategy) {
+        // 如果是display或者是dashboard的执行请求，就选择异步执行
+        if(strategy instanceof DisplayOptStrategy || strategy instanceof DashboardOptStrategy) {
             return true;
         }
 

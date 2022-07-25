@@ -237,15 +237,15 @@ public class DashboardOptStrategy extends AbstractOperationStrategy implements A
 
     @Override
     public String submit(RefExecutionRequestRef.RefExecutionProjectWithContextRequestRef ref) throws ExternalOperationFailedException {
-        String previewUrl = URLUtils.getUrl(baseUrl, URLUtils.DASHBOARD_PREVIEW_URL_FORMAT, getDashboardPortalId(ref.getRefJobContent()));
+        String previewUrl = URLUtils.getUrl(baseUrl, URLUtils.DASHBOARD_SUBMIT_PREVIEW_URL_FORMAT, getDashboardPortalId(ref.getRefJobContent()));
         logger.info("User {} try to submit Visualis dashboard with refJobContent: {} in previewUrl {}.", ref.getExecutionRequestRefContext().getSubmitUser(),
                 ref.getRefJobContent(), previewUrl);
         DSSGetAction dssGetAction = new DSSGetAction();
         dssGetAction.setUser(ref.getExecutionRequestRefContext().getSubmitUser());
         dssGetAction.setParameter("labels", ((EnvDSSLabel) (ref.getDSSLabels().get(0))).getEnv());
         ResponseRef responseRef = VisualisCommonUtil.getExternalResponseRef(ref, ssoRequestOperation, previewUrl, dssGetAction);
-        Map<String, Object> paginateWithExecStatusMap = (Map<String, Object>) responseRef.toMap().get("execStatus");
-        return paginateWithExecStatusMap.get("execId").toString();
+        String execStatus = (String) responseRef.toMap().get("execId");
+        return execStatus;
     }
 
     @Override
@@ -296,6 +296,9 @@ public class DashboardOptStrategy extends AbstractOperationStrategy implements A
             ref.getExecutionRequestRefContext().appendLog(String.format("The %s of Visualis try to execute ref RefJobContent: %s in metaUrl %s.", ref.getType(), ref.getRefJobContent(), url));
             VisualisCommonUtil.getHttpResult(ref, ssoRequestOperation, metaUrl, metadataDownloadAction);
             String metadata = org.apache.commons.lang3.StringUtils.chomp(IOUtils.toString(metadataDownloadAction.getInputStream(), ServerConfiguration.BDP_SERVER_ENCODING().getValue()));
+
+            ref.getExecutionRequestRefContext().appendLog("dashboard metadata is: " + metadata);
+
             ResultSetWriter resultSetWriter = ref.getExecutionRequestRefContext().createPictureResultSetWriter();
             resultSetWriter.addMetaData(new LineMetaData(metadata));
             resultSetWriter.addRecord(new LineRecord(response));
