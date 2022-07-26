@@ -240,6 +240,7 @@ public class DashboardOptStrategy extends AbstractOperationStrategy implements A
         String previewUrl = URLUtils.getUrl(baseUrl, URLUtils.DASHBOARD_SUBMIT_PREVIEW_URL_FORMAT, getDashboardPortalId(ref.getRefJobContent()));
         logger.info("User {} try to submit Visualis dashboard with refJobContent: {} in previewUrl {}.", ref.getExecutionRequestRefContext().getSubmitUser(),
                 ref.getRefJobContent(), previewUrl);
+        ref.getExecutionRequestRefContext().appendLog("dss execute dashboard node, submit dashboard from " + previewUrl);
         DSSGetAction dssGetAction = new DSSGetAction();
         dssGetAction.setUser(ref.getExecutionRequestRefContext().getSubmitUser());
         dssGetAction.setParameter("labels", ((EnvDSSLabel) (ref.getDSSLabels().get(0))).getEnv());
