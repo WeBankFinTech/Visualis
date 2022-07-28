@@ -24,7 +24,7 @@ import org.apache.linkis.common.conf.CommonVars;
 
 public class VisualisAppConn extends AbstractOnlySSOAppConn implements ThirdlyAppConn {
 
-    public static final String VISUALIS_APPCONN_NAME = CommonVars.apply("wds.dss.appconn.visualis.name", "Visualis").getValue();
+    public static final String VISUALIS_APPCONN_NAME = CommonVars.apply("wds.dss.appconn.visualis.name", "visualis").getValue();
 
     private VisualisDevelopmentIntegrationStandard developmentIntegrationStandard;
     private VisualisStructureIntegrationStandard structureIntegrationStandard;
