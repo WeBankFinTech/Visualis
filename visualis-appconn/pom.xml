@@ -55,6 +55,12 @@
             <groupId>com.webank.wedatasphere.dss</groupId>
             <artifactId>dss-structure-integration-standard</artifactId>
             <version>${opensource.dss.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.linkis</groupId>
+                    <artifactId>linkis-common</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
