@@ -385,7 +385,8 @@ public class WidgetServiceImpl implements DssWidgetService {
                         }
                     }
 
-                    if (configMap.get(StringConstant.VIEW) != null && !(configMap.get(StringConstant.VIEW) instanceof VirtualView)) {
+//                    if (configMap.get(StringConstant.VIEW) != null && !(configMap.get(StringConstant.VIEW) instanceof VirtualView)) {
+                    if (configMap.get(StringConstant.VIEW) != null && configMap.get(StringConstant.VIEW).toString().matches("^([-+])?\\d+(\\.\\d+)?$")) {
                         Object viewVal = configMap.get(StringConstant.VIEW);
                         // 判断拿到的结构是否是map结构，可能存在不是map的情况
                         if (viewVal != null && viewVal.toString().matches("^([-+])?\\d+(\\.\\d+)?$")) {

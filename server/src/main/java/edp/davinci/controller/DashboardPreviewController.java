@@ -2,6 +2,7 @@ package edp.davinci.controller;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.webank.wedatasphere.dss.visualis.service.impl.ImageFileGenerater;
 import edp.core.annotation.CurrentUser;
 import edp.core.annotation.MethodLog;
 import edp.core.common.job.ScheduleService;
@@ -38,6 +39,8 @@ public class DashboardPreviewController {
     @Autowired
     private DashboardMapper dashboardMapper;
 
+    @Autowired
+    ImageFileGenerater imageFileGenerater;
 
     @Value("${file.userfiles-path}")
     private String fileBasePath;
@@ -82,53 +85,8 @@ public class DashboardPreviewController {
                                HttpServletRequest request,
                                HttpServletResponse response) throws Exception {
 
-        List<Dashboard> dashboards = dashboardMapper.getByPortalId(id);
-        List<File> finalFiles = Lists.newArrayList();
-        for(Dashboard dashboard : dashboards){
-            List<ImageContent> imageFiles = scheduleService.getPreviewImage(user.getId(), "dashboard", dashboard.getId());
-            File imageFile = Iterables.getFirst(imageFiles, null).getImageFile();
-            finalFiles.add(imageFile);
-            if(null == imageFile) {
-                log.error("{} reports an error when executing the dashboard: {}, and the picture is null", username, dashboard.getId());
-                response.sendError(504, "Execute dashboard failed, because image file is null.");
-                return;
-            }
-        }
-        BufferedImage merged = mergeImage(finalFiles.toArray(new File[0]));
+        BufferedImage merged = imageFileGenerater.getDashboardPreviewFiles(user.getId(), id);
         response.setContentType(MediaType.IMAGE_PNG_VALUE);
         ImageIO.write(merged, "png", response.getOutputStream());
     }
-
-    public static BufferedImage mergeImage(File[] src) throws IOException {
-        int len = src.length;
-        if(len == 1){
-            return ImageIO.read(src[0]);
-        }
-        BufferedImage[] images = new BufferedImage[len];
-        int[][] ImageArrays = new int[len][];
-        for (int i = 0; i < len; i++) {
-            images[i] = ImageIO.read(src[i]);
-            int width = images[i].getWidth();
-            int height = images[i].getHeight();
-            ImageArrays[i] = new int[width * height];
-            ImageArrays[i] = images[i].getRGB(0, 0, width, height, ImageArrays[i], 0, width);
-        }
-        int newHeight = 0;
-        int newWidth = 0;
-        for (int i = 0; i < images.length; i++) {
-            newWidth = newWidth > images[i].getWidth() ? newWidth : images[i].getWidth();
-            newHeight += images[i].getHeight();
-        }
-
-
-        BufferedImage ImageNew = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_RGB);
-        int height_i = 0;
-        for (int i = 0; i < images.length; i++) {
-            ImageNew.setRGB(0, height_i, newWidth, images[i].getHeight(), ImageArrays[i], 0, newWidth);
-            height_i += images[i].getHeight();
-        }
-        return ImageNew;
-    }
-
-
 }
