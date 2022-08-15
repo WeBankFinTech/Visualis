@@ -19,6 +19,7 @@
 
 package edp.core.utils;
 
+import bsp.encrypt.EncryptUtil;
 import com.alibaba.druid.util.StringUtils;
 import com.webank.wedatasphere.dss.visualis.configuration.CommonConfig;
 import com.webank.wedatasphere.dss.visualis.model.PaginateWithExecStatus;
@@ -134,7 +135,7 @@ public class SqlUtils {
             String decryptedPassword = "";
             String[] passwordPrivateKey = org.apache.commons.lang.StringUtils.split(password, "@");
             try {
-//                decryptedPassword = EncryptUtil.decrypt(passwordPrivateKey[1], passwordPrivateKey[0]);
+                decryptedPassword = EncryptUtil.decrypt(passwordPrivateKey[1], passwordPrivateKey[0]);
             } catch (Exception e) {
                 log.error("failed to decrypt password for {" + password + "}", e);
                 throw new ServerException("failed to decrypt password", e);
