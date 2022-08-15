@@ -20,6 +20,9 @@
 package edp.davinci.service.impl;
 
 import com.alibaba.druid.util.StringUtils;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.webank.wedatasphere.dss.visualis.auth.ProjectAuth;
 import edp.core.exception.NotFoundException;
 import edp.core.exception.ServerException;
@@ -41,11 +44,13 @@ import edp.davinci.dao.ViewMapper;
 import edp.davinci.dao.WidgetMapper;
 import edp.davinci.dto.projectDto.ProjectDetail;
 import edp.davinci.dto.projectDto.ProjectPermission;
+import edp.davinci.dto.viewDto.Aggregator;
 import edp.davinci.dto.viewDto.ViewExecuteParam;
 import edp.davinci.dto.viewDto.ViewWithProjectAndSource;
 import edp.davinci.dto.viewDto.ViewWithSource;
 import edp.davinci.dto.widgetDto.WidgetCreate;
 import edp.davinci.dto.widgetDto.WidgetUpdate;
+import edp.davinci.dto.widgetDto.WidgetUpdateFilters;
 import edp.davinci.model.User;
 import edp.davinci.model.View;
 import edp.davinci.model.Widget;
@@ -136,16 +141,27 @@ public class WidgetServiceImpl implements WidgetService {
         ProjectDetail projectDetail = null;
         try {
             projectDetail = projectService.getProjectDetail(projectId, user, false);
-        } catch (NotFoundException e) {
-            throw e;
-        } catch (UnAuthorizedExecption e) {
-            return null;
+        } catch (Exception e) {
+            log.error("get project detail fail, because: ", e);
+            throw new RuntimeException("get project detail fail");
         }
 
-        List<Widget> widgets = widgetMapper.getByProject(projectId);
+        List<Widget> widgets = null;
+        try {
+            widgets = widgetMapper.getByProject(projectId);
+        } catch (Exception e) {
+            log.error("get widget list fail, because: ", e);
+            throw new RuntimeException("get widget list fail");
+        }
 
         if (null != widgets) {
-            ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
+            ProjectPermission projectPermission = null;
+            try {
+                projectPermission = projectService.getProjectPermission(projectDetail, user);
+            } catch (Exception e) {
+                log.error("get project permission fail, because: ", e);
+                throw new RuntimeException("get project permission fail");
+            }
             if (projectPermission.getVizPermission() == UserPermissionEnum.HIDDEN.getPermission() &&
                     projectPermission.getWidgetPermission() == UserPermissionEnum.HIDDEN.getPermission()) {
                 return null;
@@ -176,8 +192,20 @@ public class WidgetServiceImpl implements WidgetService {
             throw new NotFoundException("widget is not found");
         }
 
-        ProjectDetail projectDetail = projectService.getProjectDetail(widget.getProjectId(), user, false);
-        ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
+        ProjectDetail projectDetail = null;
+        try {
+            projectDetail = projectService.getProjectDetail(widget.getProjectId(), user, false);
+        } catch (Exception e) {
+            log.error("get project detail fail, because: ", e);
+            throw new RuntimeException("get project detail fail");
+        }
+        ProjectPermission projectPermission = null;
+        try {
+            projectPermission = projectService.getProjectPermission(projectDetail, user);
+        } catch (Exception e) {
+            log.error("get project permission fail, because: ", e);
+            throw new RuntimeException("get project permission fail");
+        }
         if (projectPermission.getWidgetPermission() < UserPermissionEnum.READ.getPermission()) {
             throw new UnAuthorizedExecption();
         }
@@ -196,8 +224,20 @@ public class WidgetServiceImpl implements WidgetService {
     @Transactional
     public Widget createWidget(WidgetCreate widgetCreate, User user) throws NotFoundException, UnAuthorizedExecption, ServerException {
 
-        ProjectDetail projectDetail = projectService.getProjectDetail(widgetCreate.getProjectId(), user, false);
-        ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
+        ProjectDetail projectDetail = null;
+        try {
+            projectDetail = projectService.getProjectDetail(widgetCreate.getProjectId(), user, false);
+        } catch (Exception e) {
+            log.error("get project detail fail, because: ", e);
+            throw new RuntimeException("get project detail fail");
+        }
+        ProjectPermission projectPermission = null;
+        try {
+            projectPermission = projectService.getProjectPermission(projectDetail, user);
+        } catch (Exception e) {
+            log.error("get project permission fail, because: ", e);
+            throw new RuntimeException("get project permission fail");
+        }
 
         if (projectPermission.getWidgetPermission() < UserPermissionEnum.WRITE.getPermission()) {
             log.info("user {} have not permisson to create widget", user.getUsername());
@@ -254,9 +294,20 @@ public class WidgetServiceImpl implements WidgetService {
             widgetUpdate.setConfig(BDPJettyServerHelper.gson().toJson(widgetUpdateConfig));
         }
 
-
-        ProjectDetail projectDetail = projectService.getProjectDetail(widget.getProjectId(), user, false);
-        ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
+        ProjectDetail projectDetail = null;
+        try {
+            projectDetail = projectService.getProjectDetail(widget.getProjectId(), user, false);
+        } catch (Exception e) {
+            log.error("get project detail fail, because: ", e);
+            throw new RuntimeException("get project detail fail");
+        }
+        ProjectPermission projectPermission = null;
+        try {
+            projectPermission = projectService.getProjectPermission(projectDetail, user);
+        } catch (Exception e) {
+            log.error("get project permission fail, because: ", e);
+            throw new RuntimeException("get project permission fail");
+        }
 
         //校验权限
         if (projectPermission.getWidgetPermission() < UserPermissionEnum.WRITE.getPermission()) {
@@ -279,13 +330,78 @@ public class WidgetServiceImpl implements WidgetService {
 
         String originStr = widget.toString();
 
-        BeanUtils.copyProperties(widgetUpdate, widget);
-        // 判断是否更新过config
-        if(widgetUpdate.getConfig().equals(widget.getConfig())) {
+
+        // 判断是否更新过config中的指标
+//        if(widgetUpdate.getConfig().equals(widget.getConfig())) {
+//            widget.updateByWithoutUpdateTime(user.getId());
+//        } else {
+//            widget.updatedBy(user.getId());
+//        }
+        JSONObject jsonObject = JSONObject.parseObject(widgetUpdate.getConfig());
+        JSONObject queryJsonObject = jsonObject.getJSONObject("query");
+        List<String> groupsList = new ArrayList<>();
+        List<String> column = new ArrayList<>();
+        List<String> func = new ArrayList<>();
+        List<WidgetUpdateFilters> widgetUpdateFilters = new ArrayList<>();
+        if (queryJsonObject == null){
+            widget.updateByWithoutUpdateTime(user.getId());
+        }else {
+            // 1. 指标
+            JSONArray groups = queryJsonObject.getJSONArray("groups");
+            String jsonString = JSONArray.toJSONString(groups);
+            //groupsList中存储分类型
+            // 2. 维度
+            groupsList = JSONArray.parseArray(jsonString, String.class);
+            JSONArray aggregators = queryJsonObject.getJSONArray("aggregators");
+            String jsonString1 = JSONArray.toJSONString(aggregators);
+            //aggregatorList中存储数值型
+            List<Aggregator> aggregatorsList = JSONArray.parseArray(jsonString1, Aggregator.class);
+            for (Aggregator aggregator : aggregatorsList) {
+                // 3. 指标和聚合函数
+                column.add(aggregator.getColumn());
+                func.add(aggregator.getFunc());
+            }
+            JSONArray filters = queryJsonObject.getJSONArray("filters");
+            String jsonStringFilters = JSONArray.toJSONString(filters);
+            widgetUpdateFilters = JSONArray.parseArray(jsonStringFilters, WidgetUpdateFilters.class);
+        }
+
+        //widget中config
+        JSONObject jsonObject1 = JSONObject.parseObject(widget.getConfig());
+        JSONObject queryJsonObject1 = jsonObject1.getJSONObject("query");
+        List<String> widgetGroupsList = new ArrayList<>();
+        List<String> widgetColumn = new ArrayList<>();
+        List<String> widgetFunc = new ArrayList<>();
+        List<WidgetUpdateFilters> widgetUpdateFiltersList = new ArrayList<>();
+        if (queryJsonObject1 == null){
+            widget.updatedBy(user.getId());
+        } else {
+            // 1. 维度
+            JSONArray widgetGroups = queryJsonObject1.getJSONArray("groups");
+            String widgetJsonString = JSONArray.toJSONString(widgetGroups);
+            //widgetGroupsList中存储数据库中widget表中config中分类型
+            widgetGroupsList = JSONArray.parseArray(widgetJsonString, String.class);
+            // 2. 指标
+            JSONArray widgetAggregators = queryJsonObject1.getJSONArray("aggregators");
+            String widgetJsonString1 = JSONArray.toJSONString(widgetAggregators);
+            //widgetAggregatorList中存储数据库中widget表中config中分类型
+            List<Aggregator> widgetAggregatorList = JSONArray.parseArray(widgetJsonString1, Aggregator.class);
+            for (Aggregator aggregator : widgetAggregatorList) {
+                // 3. 指标和聚合函数
+                widgetColumn.add(aggregator.getColumn());
+                widgetFunc.add(aggregator.getFunc());
+            }
+            JSONArray filters1 = queryJsonObject1.getJSONArray("filters");
+            String jsonStringFilters1 = JSONArray.toJSONString(filters1);
+            widgetUpdateFiltersList = JSONArray.parseArray(jsonStringFilters1, WidgetUpdateFilters.class);
+        }
+        if (groupsList.equals(widgetGroupsList) && column.equals(widgetColumn) && func.equals(widgetFunc) && widgetUpdateFilters.equals(widgetUpdateFiltersList)){
             widget.updateByWithoutUpdateTime(user.getId());
         } else {
             widget.updatedBy(user.getId());
         }
+
+        BeanUtils.copyProperties(widgetUpdate, widget);
         int update = widgetMapper.update(widget);
         if (update > 0) {
             optLogger.info("widget ({}) is updated by user(:{}), origin: ({})", widget, user.getId(), originStr);
@@ -311,8 +427,20 @@ public class WidgetServiceImpl implements WidgetService {
             log.warn("widget (:{}) is not found", id);
             return true;
         } else {
-            ProjectDetail projectDetail = projectService.getProjectDetail(widget.getProjectId(), user, false);
-            ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
+            ProjectDetail projectDetail = null;
+            try {
+                projectDetail = projectService.getProjectDetail(widget.getProjectId(), user, false);
+            } catch (Exception e) {
+                log.error("get project detail fail, because: ", e);
+                throw new RuntimeException("get project detail fail");
+            }
+            ProjectPermission projectPermission = null;
+            try {
+                projectPermission = projectService.getProjectPermission(projectDetail, user);
+            } catch (Exception e) {
+                log.error("get project permission fail, because: ", e);
+                throw new RuntimeException("get project permission fail");
+            }
 
             //校验权限
             if (projectPermission.getWidgetPermission() < UserPermissionEnum.DELETE.getPermission()) {
@@ -326,12 +454,27 @@ public class WidgetServiceImpl implements WidgetService {
         }
 
         //删除引用widget的dashboard
-        memDashboardWidgetMapper.deleteByWidget(id);
+        try {
+            memDashboardWidgetMapper.deleteByWidget(id);
+        } catch (Exception e) {
+            log.error("delete dashboard by widget fail, because: ", e);
+            throw new RuntimeException("delete dashboard by widget fail");
+        }
 
         //删除引用widget的displayslide
-        memDisplaySlideWidgetMapper.deleteByWidget(id);
+        try {
+            memDisplaySlideWidgetMapper.deleteByWidget(id);
+        } catch (Exception e) {
+            log.error("delete display by widget fail, because: ", e);
+            throw new RuntimeException("delete display by widget fail");
+        }
 
-        widgetMapper.deleteById(id);
+        try {
+            widgetMapper.deleteById(id);
+        } catch (Exception e) {
+            log.error("delete widget fail, because: ", e);
+            throw new RuntimeException("delete widget fail");
+        }
         optLogger.info("widget ( {} ) delete by user( :{} )", widget.toString(), user.getId());
 
         return true;
@@ -355,15 +498,27 @@ public class WidgetServiceImpl implements WidgetService {
             throw new NotFoundException("widget is not found");
         }
 
-        ProjectPermission projectPermission = projectService.getProjectPermission(projectService.getProjectDetail(widget.getProjectId(), user, false), user);
+        ProjectPermission projectPermission = null;
+        try {
+            projectPermission = projectService.getProjectPermission(projectService.getProjectDetail(widget.getProjectId(), user, false), user);
+        } catch (Exception e) {
+            log.error("get project permission fail, because: ", e);
+            throw new RuntimeException("get project permission fail");
+        }
 
         //校验权限
         if (!projectPermission.getSharePermission()) {
             log.info("user {} have not permisson to share the widget {}", user.getUsername(), id);
             throw new UnAuthorizedExecption("you have not permission to share the widget");
         }
-
-        return shareService.generateShareToken(id, username, user.getId());
+        String token = null;
+        try {
+            token = shareService.generateShareToken(id, username, user.getId());
+        } catch (Exception e) {
+            log.error("generate share token fail, because: ", e);
+            throw new RuntimeException("generate share token fail");
+        }
+        return token;
     }
 
 
@@ -377,8 +532,20 @@ public class WidgetServiceImpl implements WidgetService {
             throw new NotFoundException("widget is not found");
         }
 
-        ProjectDetail projectDetail = projectService.getProjectDetail(widget.getProjectId(), user, false);
-        ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
+        ProjectDetail projectDetail = null;
+        try {
+            projectDetail = projectService.getProjectDetail(widget.getProjectId(), user, false);
+        } catch (Exception e) {
+            log.error("get project detail fail, because: ", e);
+            throw new RuntimeException("get project detail fail");
+        }
+        ProjectPermission projectPermission = null;
+        try {
+            projectPermission = projectService.getProjectPermission(projectDetail, user);
+        } catch (Exception e) {
+            log.error("get project permission fail, because: ", e);
+            throw new RuntimeException("get project permission fail");
+        }
         //校验权限
         if (!projectPermission.getDownloadPermission()) {
             log.info("user {} have not permisson to download the widget {}", user.getUsername(), id);
@@ -502,8 +669,10 @@ public class WidgetServiceImpl implements WidgetService {
                     ExcelUtils.writeSheet(sheet, paginate.getColumns(), paginate.getResultList(), wb, containType, widget.getConfig(), executeParam.getParams());
                 } catch (ServerException e) {
                     log.error("Error writing widget data to excel: ", e);
+                    throw new ServerException("Error writing widget data to excel");
                 } catch (SQLException e) {
                     log.error("Error writing widget data to excel: ", e);
+                    throw new RuntimeException("Error writing widget data to excel");
                 } finally {
                     sheet = null;
                     countDownLatch.countDown();

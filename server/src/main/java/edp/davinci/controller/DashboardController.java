@@ -23,6 +23,9 @@ package edp.davinci.controller;
 import com.webank.wedatasphere.dss.visualis.auth.ProjectAuth;
 import edp.core.annotation.CurrentUser;
 import edp.core.annotation.MethodLog;
+import edp.core.exception.NotFoundException;
+import edp.core.exception.ServerException;
+import edp.core.exception.UnAuthorizedExecption;
 import edp.davinci.common.controller.BaseController;
 import edp.davinci.core.common.Constants;
 import edp.davinci.core.common.ResultMap;
@@ -76,7 +79,13 @@ public class DashboardController extends BaseController {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid project id");
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
-        List<DashboardPortal> dashboardPortals = dashboardPortalService.getDashboardPortals(projectId, user);
+        List<DashboardPortal> dashboardPortals = null;
+        try {
+            dashboardPortals = dashboardPortalService.getDashboardPortals(projectId, user);
+        } catch (Exception e) {
+            log.error("get dashboard portals fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(dashboardPortals));
     }
 
@@ -99,7 +108,13 @@ public class DashboardController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        List<Dashboard> dashboards = dashboardService.getDashboards(id, user);
+        List<Dashboard> dashboards = null;
+        try {
+            dashboards = dashboardService.getDashboards(id, user);
+        } catch (Exception e) {
+            log.error("get dashboards fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(dashboards));
     }
 
@@ -119,8 +134,14 @@ public class DashboardController extends BaseController {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid id");
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
-
-        return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(dashboardService.getExcludeRoles(id)));
+        List<Long> excludeRoles = null;
+        try {
+            excludeRoles = dashboardService.getExcludeRoles(id);
+        } catch (Exception e) {
+            log.error("get dashboard exclude roles fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
+        return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(excludeRoles));
     }
 
 
@@ -135,13 +156,21 @@ public class DashboardController extends BaseController {
     @MethodLog
     @GetMapping("/{id}/exclude/roles")
     public ResponseEntity getPortalExcludeRoles(@PathVariable Long id,
+                                                @CurrentUser User user,
                                                 HttpServletRequest request) {
         if (invalidId(id)) {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid id");
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(dashboardPortalService.getExcludeRoles(id)));
+        List<Long> excludeRoles = null;
+        try {
+            excludeRoles = dashboardPortalService.getExcludeRoles(id);
+        } catch (Exception e) {
+            log.error("get portal exclude roles fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
+        return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(excludeRoles));
     }
 
 
@@ -170,7 +199,13 @@ public class DashboardController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        DashboardWithMem dashboardMemWidgets = dashboardService.getDashboardMemWidgets(portalId, dashboardId, user);
+        DashboardWithMem dashboardMemWidgets = null;
+        try {
+            dashboardMemWidgets = dashboardService.getDashboardMemWidgets(portalId, dashboardId, user);
+        } catch (Exception e) {
+            log.error("get dashboard mem widget fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
 
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(dashboardMemWidgets));
     }
@@ -200,7 +235,13 @@ public class DashboardController extends BaseController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        DashboardPortal portal = dashboardPortalService.createDashboardPortal(dashboardPortal, user);
+        DashboardPortal portal = null;
+        try {
+            portal = dashboardPortalService.createDashboardPortal(dashboardPortal, user);
+        } catch (Exception e) {
+            log.error("create dashboard portal fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(portal));
     }
 
@@ -233,7 +274,13 @@ public class DashboardController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        DashboardPortal dashboardPortal = dashboardPortalService.updateDashboardPortal(dashboardPortalUpdate, user);
+        DashboardPortal dashboardPortal = null;
+        try {
+            dashboardPortal = dashboardPortalService.updateDashboardPortal(dashboardPortalUpdate, user);
+        } catch (Exception e) {
+            log.error("update dashboard portal fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(dashboardPortal));
     }
 
@@ -257,7 +304,12 @@ public class DashboardController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        dashboardPortalService.deleteDashboardPortal(id, user);
+        try {
+            dashboardPortalService.deleteDashboardPortal(id, user);
+        } catch (NotFoundException e) {
+            log.error("delete dashboard portal fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
     }
 
@@ -290,7 +342,13 @@ public class DashboardController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        Dashboard dashboard = dashboardService.createDashboard(dashboardCreate, user);
+        Dashboard dashboard = null;
+        try {
+            dashboard = dashboardService.createDashboard(dashboardCreate, user);
+        } catch (NotFoundException e) {
+            log.error("create dashboard fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(dashboard));
     }
 
@@ -324,7 +382,12 @@ public class DashboardController extends BaseController {
             }
         }
 
-        dashboardService.updateDashboards(portalId, dashboards, user);
+        try {
+            dashboardService.updateDashboards(portalId, dashboards, user);
+        } catch (NotFoundException e) {
+            log.error("update dashboard fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
     }
 
@@ -348,7 +411,12 @@ public class DashboardController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        dashboardService.deleteDashboard(dashboardId, user);
+        try {
+            dashboardService.deleteDashboard(dashboardId, user);
+        } catch (NotFoundException e) {
+            log.error("delete dashboard fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
     }
 
