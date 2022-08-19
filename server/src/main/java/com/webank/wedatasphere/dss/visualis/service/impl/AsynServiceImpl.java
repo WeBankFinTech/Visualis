@@ -1,6 +1,7 @@
 package com.webank.wedatasphere.dss.visualis.service.impl;
 
 
+import com.webank.wedatasphere.dss.visualis.configuration.CommonConfig;
 import com.webank.wedatasphere.dss.visualis.content.DashboardContant;
 import com.webank.wedatasphere.dss.visualis.content.DisplayContant;
 import com.webank.wedatasphere.dss.visualis.enums.VisualisStateEnum;
@@ -45,14 +46,18 @@ public class AsynServiceImpl implements AsynService {
 
     @Override
     public String sumbmitPreviewTask(User user, String component, Long id) throws Exception {
+
         PreviewResult previewResult = generatePreviewResult(component, id, user);
 
-        threadPool.execute(() -> {
+
+        // 1. 当任务开始时，插入一个init的记录
+        previewResultMapper.insert(previewResult);
+
+        // 获取到线程Future存储到，
+        threadPool.submit(() -> {
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-            // 1. 当任务开始时，插入一个init的记录
-            previewResultMapper.insert(previewResult);
 
             if (component.equals(DisplayContant.DISPLAY)) {
                 try {
@@ -61,12 +66,14 @@ public class AsynServiceImpl implements AsynService {
                     if (displayPreviewFile == null) {
                         log.error("submit display execute error.  because image is null.");
                         previewResultMapper.updateResultStatusById(previewResult.getId(), VisualisStateEnum.FAILED.getValue());
+                        return;
                     }
-                    // 2. 文件转换为ByteArrayOutputStream outputStream
-                    InputStream is = new FileInputStream(displayPreviewFile);
+                    InputStream is = null;
                     byte[] bytes = new byte[1024];
                     int temp;
                     try {
+                        // 2. 文件转换为ByteArrayOutputStream outputStream
+                        is = new FileInputStream(displayPreviewFile);
                         while ((temp = is.read(bytes)) != -1) {
                             outputStream.write(bytes, 0, temp);
                         }
@@ -75,6 +82,10 @@ public class AsynServiceImpl implements AsynService {
                         // 状态置失败
                         previewResultMapper.updateResultStatusById(previewResult.getId(), VisualisStateEnum.FAILED.getValue());
                         return;
+                    } finally {
+                        if(is != null) {
+                            is.close();
+                        }
                     }
                 } catch (Exception e) {
                     log.error("submit display execute error. ", e);
@@ -129,10 +140,21 @@ public class AsynServiceImpl implements AsynService {
     @Override
     public PreviewResult getResult(String executeId, String component) throws Exception {
         // 查询结果集
-        PreviewResult previewResult = previewResultMapper.selectByIdAndKeyWord(getIdByExecuteId(executeId), executeId);
-        // 删除查询到的结果集
-        previewResultMapper.deleteResult(getIdByExecuteId(executeId), executeId);
+        PreviewResult previewResult = previewResultMapper.selectByExecId(executeId);
+
+        // 设置结果集记录为归档
+        previewResultMapper.setResultArchived(executeId);
+
+        if (CommonConfig.PREVIEW_RESULT_CLEAN_STRATEGY().getValue().equals("once")) {
+            // 删除查询到的结果集
+            previewResultMapper.deleteResult(previewResult.getId(), executeId);
+        }
         return previewResult;
+    }
+
+    @Override
+    public void setPreviewResultArchived(String execId) {
+        previewResultMapper.setResultArchived(execId);
     }
 
     private PreviewResult generatePreviewResult(String component, Long componentId, User user) {
@@ -147,9 +169,5 @@ public class AsynServiceImpl implements AsynService {
         // 2. 插入一条执行空记录
         PreviewResult previewResult = new PreviewResult(execId, name, status, description, createBy, createTime, isArchive);
         return previewResult;
-    }
-
-    private Long getIdByExecuteId(String executeId) {
-        return Long.parseLong(executeId.split("_")[2]);
     }
 }
