@@ -1,7 +1,6 @@
 package edp.davinci.controller;
 
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.webank.wedatasphere.dss.visualis.service.impl.ImageFileGenerater;
 import edp.core.annotation.CurrentUser;
 import edp.core.annotation.MethodLog;
@@ -9,7 +8,6 @@ import edp.core.common.job.ScheduleService;
 import edp.davinci.core.common.Constants;
 import edp.davinci.dao.DashboardMapper;
 import edp.davinci.dto.dashboardDto.DashboardWithPortal;
-import edp.davinci.model.Dashboard;
 import edp.davinci.model.User;
 import edp.davinci.service.screenshot.ImageContent;
 import lombok.extern.slf4j.Slf4j;

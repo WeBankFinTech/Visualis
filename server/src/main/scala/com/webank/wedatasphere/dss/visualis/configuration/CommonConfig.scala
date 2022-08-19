@@ -61,6 +61,12 @@ object CommonConfig {
 
   val JDBC_ENCRYPT_PARAMETER = CommonVars("wds.dss.visualis.jdbc.encrypt.parameter", "encrypt=true")
 
-  // 异步配置参数
-  val display_dashboard_syn_exec_thread_num = CommonVars("wds.dss.visualis.display.dashboard.syn.exec.thread.num", 200);
+  /**
+   * 因为Display支持异步执行，其执行的结果集保存在数据库表：visualis_preview_result中
+   * 异步执行的记录长时间存在数据库会导致数据库资源浪费，这里增加参数配置清理策略
+   * 参数值：
+   *  once: 表示每次执行完后，请求结果集时，并会进行记录清理。
+   *  scheduled: 调度清理，由配置的PreviewResutlCleaner定时调度清理数据。
+   * */
+  val PREVIEW_RESULT_CLEAN_STRATEGY = CommonVars("wds.dss.visualis.preview.clean.strategy", "once")
 }

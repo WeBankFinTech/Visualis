@@ -7,7 +7,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.webank.wedatasphere.dss.visualis.query.service.VirtualViewQueryService;
 import com.webank.wedatasphere.dss.visualis.service.DssWidgetService;
-import edp.core.annotation.CurrentPlatform;
 import edp.core.annotation.CurrentUser;
 import edp.core.annotation.MethodLog;
 import edp.core.utils.CollectionUtils;

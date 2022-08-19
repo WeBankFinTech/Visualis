@@ -395,12 +395,15 @@ public class WidgetServiceImpl implements WidgetService {
             String jsonStringFilters1 = JSONArray.toJSONString(filters1);
             widgetUpdateFiltersList = JSONArray.parseArray(jsonStringFilters1, WidgetUpdateFilters.class);
         }
+        // 这个地方调整下，list不需要比对顺序
+        // JSONArray
         if (groupsList.equals(widgetGroupsList) && column.equals(widgetColumn) && func.equals(widgetFunc) && widgetUpdateFilters.equals(widgetUpdateFiltersList)){
             widget.updateByWithoutUpdateTime(user.getId());
         } else {
             widget.updatedBy(user.getId());
         }
 
+        // 备注下，这里不能浅拷贝
         BeanUtils.copyProperties(widgetUpdate, widget);
         int update = widgetMapper.update(widget);
         if (update > 0) {

@@ -23,6 +23,10 @@ public class MethodLogAspect {
 
     }
 
+    // 日志打成一行，方便排错
+    // list方法不需要加，只加增删改
+    // 导入导出单独打日志
+    // 操作日志单独写一个log，打到一个单独的日志文件中，回滚+清理（超过1年的清理）
     @Before(value = "pointCut()")
     public void doBefore(JoinPoint joinPoint) {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();

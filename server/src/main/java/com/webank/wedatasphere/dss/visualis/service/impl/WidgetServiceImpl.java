@@ -386,6 +386,7 @@ public class WidgetServiceImpl implements DssWidgetService {
                     }
 
 //                    if (configMap.get(StringConstant.VIEW) != null && !(configMap.get(StringConstant.VIEW) instanceof VirtualView)) {
+                    // 这个地方用工具apachecommons判断是否是数字
                     if (configMap.get(StringConstant.VIEW) != null && configMap.get(StringConstant.VIEW).toString().matches("^([-+])?\\d+(\\.\\d+)?$")) {
                         Object viewVal = configMap.get(StringConstant.VIEW);
                         // 判断拿到的结构是否是map结构，可能存在不是map的情况
@@ -402,7 +403,7 @@ public class WidgetServiceImpl implements DssWidgetService {
                         viewMap.put(StringConstant.SOURCE, sourceMap);
                         configMap.put(StringConstant.VIEW, viewMap);
                     }
-                    configMap.put(StringConstant.CONTEXT_ID, QueryUtils.encodeContextId(contextIdStr));
+//                    configMap.put(StringConstant.CONTEXT_ID, QueryUtils.encodeContextId(contextIdStr));
                     newWidget.setConfig(LinkisUtils.gson().toJson(configMap));
                     widgetLists.add(newWidget);
                 }
