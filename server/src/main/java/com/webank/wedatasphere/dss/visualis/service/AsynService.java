@@ -15,4 +15,7 @@ public interface AsynService {
 
     // 3. getResult获取执行结果
     PreviewResult getResult(String executeId, String component) throws Exception;
+
+    // 4. 设置结果集为归档状态
+    void setPreviewResultArchived(String execId);
 }

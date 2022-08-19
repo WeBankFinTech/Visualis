@@ -68,6 +68,8 @@ public class CurrentUserMethodArgumentResolver implements CurrentUserMethodArgum
             String accessUsername = SecurityFilter.getLoginUsername(webRequest.getNativeRequest(HttpServletRequest.class));
             log.info("Get request access user name: {}", accessUsername);
             User visualisUser = null;
+            // 这个地方把用户写到http session中进行判断，可以少插一次数据库
+            // 或一个全局的map进行优化，缓存用户
             visualisUser = (User) userMapper.selectByUsername(accessUsername);
             if(null == visualisUser) {
                 synchronized (this) {

@@ -24,8 +24,6 @@ import com.webank.wedatasphere.dss.visualis.auth.ProjectAuth;
 import edp.core.annotation.CurrentUser;
 import edp.core.annotation.MethodLog;
 import edp.core.exception.NotFoundException;
-import edp.core.exception.ServerException;
-import edp.core.exception.UnAuthorizedExecption;
 import edp.davinci.common.controller.BaseController;
 import edp.davinci.core.common.Constants;
 import edp.davinci.core.common.ResultMap;

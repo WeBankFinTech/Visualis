@@ -13,12 +13,15 @@ public interface PreviewResultMapper {
 
     void insert(PreviewResult previewResult);
 
-    PreviewResult selectByIdAndKeyWord(@Param("id") Long id, @Param("execId") String execId);
+    PreviewResult selectByExecId(@Param("execId") String execId);
 
     String checkStatus(@Param("execId") String execId);
 
     @Update("update visualis_preview_result set `status` = #{status} where id = #{id}")
     void updateResultStatusById(@Param("id") Long id, @Param("status") String status);
+
+    @Update("update visualis_preview_result set `isArchive` = 1 where `execId` = #{execId}")
+    void setResultArchived(@Param("execId") String execId);
 
     @Update("update visualis_preview_result set `result` = #{result} where id = #{id} and `execId` = #{execId}")
     void setResult(@Param("id") Long id, @Param("execId") String execId, @Param("result") byte[] result);
@@ -26,6 +29,6 @@ public interface PreviewResultMapper {
     @Delete("delete from visualis_preview_result where id = #{id} and `execId` = #{execId}")
     void deleteResult(@Param("id") Long id, @Param("execId") String execId);
 
-    @Delete("delete from visualis_preview_result where create_time < #{cleanTime}")
-    void deleteResult(@Param("cleanTime") Date cleanTime);
+    @Delete("delete from visualis_preview_result where `isArchive` = 1")
+    void deleteArchivedResult();
 }

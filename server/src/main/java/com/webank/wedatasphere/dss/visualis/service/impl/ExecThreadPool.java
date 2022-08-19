@@ -13,15 +13,16 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class ExecThreadPool {
 
-    @Value("${thread-pool.corePoolSize:50}")
+    @Value("${thread-pool.corePoolSize:100}")
     private Integer corePoolSize;
 
     @Value("${thread-pool.maxPoolSize:200}")
     private Integer maximumPoolSize;
 
-    @Value("${thread-pool.queueSize:10}")
+    @Value("${thread-pool.queueSize:100}")
     private Integer queueSize;
 
+    // 120s
     @Value("${thread-pool.keepAliveTime:600}")
     private Long keepAliveTime;
 
