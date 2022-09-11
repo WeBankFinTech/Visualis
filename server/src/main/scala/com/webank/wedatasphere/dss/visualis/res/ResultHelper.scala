@@ -6,11 +6,13 @@ import org.apache.linkis.storage.domain._
 import org.apache.linkis.storage.resultset.table.TableMetaData
 import org.apache.linkis.storage.resultset.{ResultSetFactory, ResultSetReader}
 import com.webank.wedatasphere.dss.visualis.exception.VGErrorException
+import com.webank.wedatasphere.dss.visualis.utils.VisualisUtils
 import org.apache.linkis.adapt.LinkisUtils
 import org.apache.linkis.common.io.FsPath
 import org.apache.linkis.common.utils.Utils
 import org.apache.linkis.server.BDPJettyServerHelper
 import org.apache.linkis.storage.FSFactory
+import org.apache.linkis.ujes.client.response.JobInfoResult
 import org.json4s.DefaultFormats
 
 /**
@@ -35,6 +37,27 @@ object ResultHelper {
     }
   }
 
+  @scala.throws[VGErrorException]
+  def getResultType(jobInfo: JobInfoResult): Array[Column] = {
+    getResultType(VisualisUtils.getResultSetPath(jobInfo),jobInfo.getRequestPersistTask.getUmUser)
+  }
+
+  @scala.throws[VGErrorException]
+  def getResultType(path: String,user:String): Array[Column] = {
+    val resPath = new FsPath(path)
+    val rsFactory = ResultSetFactory.getInstance
+    val resultSet = rsFactory.getResultSetByPath(resPath,user)
+    if (ResultSetFactory.TABLE_TYPE != resultSet.resultSetType()) {
+      throw new VGErrorException(70001, "不支持不是表格的结果集")
+    }
+    val fs = FSFactory.getFs(resPath.getFsType,user)
+    fs.init(null)
+    val reader = ResultSetReader.getResultSetReader(resultSet, fs.read(resPath))
+    val metaData = reader.getMetaData.asInstanceOf[TableMetaData]
+    Utils.tryQuietly(reader.close())
+    Utils.tryQuietly(fs.close())
+    metaData.columns
+  }
 
   @scala.throws[VGErrorException]
   def getResultType(path:String):Array[Column]={

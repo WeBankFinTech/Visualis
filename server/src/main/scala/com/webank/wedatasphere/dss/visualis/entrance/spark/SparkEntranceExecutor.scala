@@ -344,7 +344,7 @@ class SparkEntranceExecutor extends SqlUtils with Logging{
             val resultList = getResultSet(resultSets(resultSets.length - 1))
             paginateWithQueryColumns.setResultList(resultList)
             paginateWithQueryColumns.setTotalCount(resultList.size())
-            val columns = ResultHelper.getResultType(resultSets(resultSets.length - 1))
+            val columns = ResultHelper.getResultType(resultSets(resultSets.length - 1),user)
             paginateWithQueryColumns.setColumns(columns.map(col => new QueryColumn(col.columnName,col.dataType.typeName)).toList)
           }
           return paginateWithQueryColumns;
@@ -361,7 +361,7 @@ class SparkEntranceExecutor extends SqlUtils with Logging{
       val resultList = getResultSet(task.getResultLocation + VisualisUtils.RESULT_FILE_NAME.getValue)
       paginateWithQueryColumns.setResultList(resultList)
       paginateWithQueryColumns.setTotalCount(resultList.size())
-      val columns = ResultHelper.getResultType(task.getResultLocation + VisualisUtils.RESULT_FILE_NAME.getValue)
+      val columns = ResultHelper.getResultType(task.getResultLocation + VisualisUtils.RESULT_FILE_NAME.getValue,user)
       paginateWithQueryColumns.setColumns(columns.map(col => new QueryColumn(col.columnName,col.dataType.typeName)).toList)
       return paginateWithQueryColumns
     }
