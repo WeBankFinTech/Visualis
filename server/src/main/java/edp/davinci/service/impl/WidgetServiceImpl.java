@@ -337,74 +337,7 @@ public class WidgetServiceImpl implements WidgetService {
 //        } else {
 //            widget.updatedBy(user.getId());
 //        }
-        JSONObject jsonObject = JSONObject.parseObject(widgetUpdate.getConfig());
-        JSONObject queryJsonObject = jsonObject.getJSONObject("query");
-        List<String> groupsList = new ArrayList<>();
-        List<String> column = new ArrayList<>();
-        List<String> func = new ArrayList<>();
-        List<WidgetUpdateFilters> widgetUpdateFilters = new ArrayList<>();
-        if (queryJsonObject == null){
-            widget.updateByWithoutUpdateTime(user.getId());
-        }else {
-            // 1. 指标
-            JSONArray groups = queryJsonObject.getJSONArray("groups");
-            String jsonString = JSONArray.toJSONString(groups);
-            //groupsList中存储分类型
-            // 2. 维度
-            groupsList = JSONArray.parseArray(jsonString, String.class);
-            JSONArray aggregators = queryJsonObject.getJSONArray("aggregators");
-            String jsonString1 = JSONArray.toJSONString(aggregators);
-            //aggregatorList中存储数值型
-            List<Aggregator> aggregatorsList = JSONArray.parseArray(jsonString1, Aggregator.class);
-            for (Aggregator aggregator : aggregatorsList) {
-                // 3. 指标和聚合函数
-                column.add(aggregator.getColumn());
-                func.add(aggregator.getFunc());
-            }
-            JSONArray filters = queryJsonObject.getJSONArray("filters");
-            String jsonStringFilters = JSONArray.toJSONString(filters);
-            widgetUpdateFilters = JSONArray.parseArray(jsonStringFilters, WidgetUpdateFilters.class);
-        }
-
-        //widget中config
-        JSONObject jsonObject1 = JSONObject.parseObject(widget.getConfig());
-        JSONObject queryJsonObject1 = jsonObject1.getJSONObject("query");
-        List<String> widgetGroupsList = new ArrayList<>();
-        List<String> widgetColumn = new ArrayList<>();
-        List<String> widgetFunc = new ArrayList<>();
-        List<WidgetUpdateFilters> widgetUpdateFiltersList = new ArrayList<>();
-        if (queryJsonObject1 == null){
-            widget.updatedBy(user.getId());
-        } else {
-            // 1. 维度
-            JSONArray widgetGroups = queryJsonObject1.getJSONArray("groups");
-            String widgetJsonString = JSONArray.toJSONString(widgetGroups);
-            //widgetGroupsList中存储数据库中widget表中config中分类型
-            widgetGroupsList = JSONArray.parseArray(widgetJsonString, String.class);
-            // 2. 指标
-            JSONArray widgetAggregators = queryJsonObject1.getJSONArray("aggregators");
-            String widgetJsonString1 = JSONArray.toJSONString(widgetAggregators);
-            //widgetAggregatorList中存储数据库中widget表中config中分类型
-            List<Aggregator> widgetAggregatorList = JSONArray.parseArray(widgetJsonString1, Aggregator.class);
-            for (Aggregator aggregator : widgetAggregatorList) {
-                // 3. 指标和聚合函数
-                widgetColumn.add(aggregator.getColumn());
-                widgetFunc.add(aggregator.getFunc());
-            }
-            JSONArray filters1 = queryJsonObject1.getJSONArray("filters");
-            String jsonStringFilters1 = JSONArray.toJSONString(filters1);
-            widgetUpdateFiltersList = JSONArray.parseArray(jsonStringFilters1, WidgetUpdateFilters.class);
-        }
-        // 这个地方调整下，list不需要比对顺序
-        // JSONArray
-        if (groupsList.equals(widgetGroupsList) && column.equals(widgetColumn) && func.equals(widgetFunc) && widgetUpdateFilters.equals(widgetUpdateFiltersList)){
-            widget.updateByWithoutUpdateTime(user.getId());
-        } else {
-            widget.updatedBy(user.getId());
-        }
-
-        // 备注下，这里不能浅拷贝
-        BeanUtils.copyProperties(widgetUpdate, widget);
+        widget = checkWidgetMetaDataUpdate(widgetUpdate, widget, user);
         int update = widgetMapper.update(widget);
         if (update > 0) {
             optLogger.info("widget ({}) is updated by user(:{}), origin: ({})", widget, user.getId(), originStr);
@@ -699,5 +632,77 @@ public class WidgetServiceImpl implements WidgetService {
         out.flush();
         out.close();
         return file;
+    }
+
+    private Widget checkWidgetMetaDataUpdate(WidgetUpdate widgetUpdate, Widget widget, User user) {
+        JSONObject jsonObject = JSONObject.parseObject(widgetUpdate.getConfig());
+        JSONObject queryJsonObject = jsonObject.getJSONObject("query");
+        List<String> groupsList = new ArrayList<>();
+        List<String> column = new ArrayList<>();
+        List<String> func = new ArrayList<>();
+        List<WidgetUpdateFilters> widgetUpdateFilters = new ArrayList<>();
+        if (queryJsonObject == null){
+            widget.updateByWithoutUpdateTime(user.getId());
+        }else {
+            // 1. 指标
+            JSONArray groups = queryJsonObject.getJSONArray("groups");
+            String jsonString = JSONArray.toJSONString(groups);
+            //groupsList中存储分类型
+            // 2. 维度
+            groupsList = JSONArray.parseArray(jsonString, String.class);
+            JSONArray aggregators = queryJsonObject.getJSONArray("aggregators");
+            String jsonString1 = JSONArray.toJSONString(aggregators);
+            //aggregatorList中存储数值型
+            List<Aggregator> aggregatorsList = JSONArray.parseArray(jsonString1, Aggregator.class);
+            for (Aggregator aggregator : aggregatorsList) {
+                // 3. 指标和聚合函数
+                column.add(aggregator.getColumn());
+                func.add(aggregator.getFunc());
+            }
+            JSONArray filters = queryJsonObject.getJSONArray("filters");
+            String jsonStringFilters = JSONArray.toJSONString(filters);
+            widgetUpdateFilters = JSONArray.parseArray(jsonStringFilters, WidgetUpdateFilters.class);
+        }
+
+        //widget中config
+        JSONObject jsonObject1 = JSONObject.parseObject(widget.getConfig());
+        JSONObject queryJsonObject1 = jsonObject1.getJSONObject("query");
+        List<String> widgetGroupsList = new ArrayList<>();
+        List<String> widgetColumn = new ArrayList<>();
+        List<String> widgetFunc = new ArrayList<>();
+        List<WidgetUpdateFilters> widgetUpdateFiltersList = new ArrayList<>();
+        if (queryJsonObject1 == null){
+            widget.updatedBy(user.getId());
+        } else {
+            // 1. 维度
+            JSONArray widgetGroups = queryJsonObject1.getJSONArray("groups");
+            String widgetJsonString = JSONArray.toJSONString(widgetGroups);
+            //widgetGroupsList中存储数据库中widget表中config中分类型
+            widgetGroupsList = JSONArray.parseArray(widgetJsonString, String.class);
+            // 2. 指标
+            JSONArray widgetAggregators = queryJsonObject1.getJSONArray("aggregators");
+            String widgetJsonString1 = JSONArray.toJSONString(widgetAggregators);
+            //widgetAggregatorList中存储数据库中widget表中config中分类型
+            List<Aggregator> widgetAggregatorList = JSONArray.parseArray(widgetJsonString1, Aggregator.class);
+            for (Aggregator aggregator : widgetAggregatorList) {
+                // 3. 指标和聚合函数
+                widgetColumn.add(aggregator.getColumn());
+                widgetFunc.add(aggregator.getFunc());
+            }
+            JSONArray filters1 = queryJsonObject1.getJSONArray("filters");
+            String jsonStringFilters1 = JSONArray.toJSONString(filters1);
+            widgetUpdateFiltersList = JSONArray.parseArray(jsonStringFilters1, WidgetUpdateFilters.class);
+        }
+        // 这个地方调整下，list不需要比对顺序
+        // JSONArray
+        if (groupsList.equals(widgetGroupsList) && column.equals(widgetColumn) && func.equals(widgetFunc) && widgetUpdateFilters.equals(widgetUpdateFiltersList)){
+            widget.updateByWithoutUpdateTime(user.getId());
+        } else {
+            widget.updatedBy(user.getId());
+        }
+
+        // 备注下，这里不能浅拷贝
+        BeanUtils.copyProperties(widgetUpdate, widget);
+        return widget;
     }
 }
