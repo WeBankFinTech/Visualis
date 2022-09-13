@@ -59,9 +59,6 @@ public class WidgetRestful extends BaseController {
     DssWidgetService dssWidgetService;
 
     @Autowired
-    private ViewMapper viewMapper;
-
-    @Autowired
     private WidgetMapper widgetMapper;
 
     @Autowired
@@ -70,15 +67,6 @@ public class WidgetRestful extends BaseController {
     @Autowired
     private DashboardMapper dashboardMapper;
 
-    @Autowired
-    private ViewService viewService;
-
-    @Autowired
-    private VirtualViewQueryService virtualViewQueryService;
-
-
-    @Autowired
-    private WidgetService widgetService;
 
     @Autowired
     private UserMapper userMapper;
