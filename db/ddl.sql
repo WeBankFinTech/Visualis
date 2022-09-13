@@ -64,3 +64,25 @@ CREATE TABLE `visualis_preview_result` (
   `isArchive` bit(1) DEFAULT b'0' COMMENT 'If it is archived',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPACT;
+
+
+CREATE TABLE `metabase_datasource` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `datasource_dev_id`  bigint(20) NOT NULL,
+  `datasource_prod_id` bigint(20) NOT NULL,
+  `create_by` varchar(32) COLLATE utf8_bin DEFAULT NULL,
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPACT;
+
+
+CREATE TABLE `metabase_import_record` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `component_type`  varchar(32) COLLATE utf8_bin DEFAULT NULL,
+  `name`  varchar(32) COLLATE utf8_bin DEFAULT NULL,
+  `matabase_dev_id` bigint(20) NOT NULL,
+  `matabase_prod_id` bigint(20) NOT NULL,
+  `import_by` varchar(32) COLLATE utf8_bin DEFAULT NULL,
+  `import_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin ROW_FORMAT=COMPACT;
