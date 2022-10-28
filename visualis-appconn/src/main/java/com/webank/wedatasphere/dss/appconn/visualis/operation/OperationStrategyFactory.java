@@ -8,25 +8,31 @@ import com.webank.wedatasphere.dss.standard.common.desc.AppInstance;
 import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationFailedException;
 import com.webank.wedatasphere.dss.standard.common.exception.operation.ExternalOperationWarnException;
 import com.webank.wedatasphere.dss.standard.common.utils.AppStandardClassUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Supplier;
 
 public class OperationStrategyFactory {
 
+    private static final Logger LOG = LoggerFactory.getLogger(OperationStrategyFactory.class);
+
     private static OperationStrategyFactory factory;
+    private static AppStandardClassUtils appStandardClassUtils;
     private static SSORequestOperation ssoRequestOperation;
-    private static final Map<AppInstance, List<OperationStrategy>> operationStrategies = new HashMap<>();
-    private static final Map<String, Class<? extends OperationStrategy>> operationStrategyClasses = new HashMap<>();
+    private final Map<AppInstance, List<OperationStrategy>> operationStrategies = new HashMap<>();
+    private final Map<String, Class<? extends OperationStrategy>> operationStrategyClasses = new HashMap<>();
 
     private OperationStrategyFactory() {
-        AppStandardClassUtils.getInstance(VisualisAppConn.VISUALIS_APPCONN_NAME).getClasses(OperationStrategy.class).forEach(clazz -> {
+        appStandardClassUtils.getClasses(OperationStrategy.class).forEach(clazz -> {
             try {
                 operationStrategyClasses.put(clazz.newInstance().getStrategyName(), clazz);
             } catch (InstantiationException | IllegalAccessException e) {
                 throw new ExternalOperationWarnException(50700, "Instance " + clazz + " of visualis OperationStrategy failed.", e);
             }
         });
+        LOG.info("Loaded all OperationStrategy classes: {}.", operationStrategyClasses);
     }
 
 
@@ -63,9 +69,14 @@ public class OperationStrategyFactory {
 
 
      public static OperationStrategyFactory getInstance() {
-        if (factory == null) {
+        // 当 VisualisAppConn 被 DSS 实时刷新时，所有的 OperationStrategy 也需要重刷一遍
+        if (factory == null || AppStandardClassUtils.getInstance(VisualisAppConn.VISUALIS_APPCONN_NAME) != appStandardClassUtils) {
             synchronized (OperationStrategyFactory.class) {
-                if (factory == null) {
+                if (factory == null || AppStandardClassUtils.getInstance(VisualisAppConn.VISUALIS_APPCONN_NAME) != appStandardClassUtils) {
+                    if(factory != null) {
+                        LOG.warn("VisualisAppConn has been reloaded by DSS, I will try to reload all of OperationStrategy classes by myself.");
+                    }
+                    appStandardClassUtils = AppStandardClassUtils.getInstance(VisualisAppConn.VISUALIS_APPCONN_NAME);
                     factory = new OperationStrategyFactory();
                 }
             }
