@@ -120,12 +120,7 @@ public class VisualisRefExecutionOperation
 
     private boolean isSupportAsyncExecution(RefExecutionRequestRef.RefExecutionProjectWithContextRequestRef ref,
                                      OperationStrategy strategy) throws ExternalOperationFailedException {
-
-        // 如果是display或者是dashboard的执行请求，就选择异步执行
-        if(strategy instanceof DisplayOptStrategy || strategy instanceof DashboardOptStrategy) {
-            return true;
-        }
-
+        // 如果需要打开display和dashboard节点异步执行功能，在这里需针对display和dashboard节点返回ture
         if(!(strategy instanceof ViewOptStrategy)) {
             return false;
         }
