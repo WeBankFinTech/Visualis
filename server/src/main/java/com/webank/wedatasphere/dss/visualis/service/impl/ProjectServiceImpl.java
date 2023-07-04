@@ -195,7 +195,16 @@ public class ProjectServiceImpl implements DssProjectService {
             throw new ErrorException(20012, "contextId is null, visualis can not do copy");
         }
 
+        String projectIdStr = params.get("projectId");
+        Long refProjectId = null;
+        if (projectIdStr != null) {
+            refProjectId = Long.valueOf(projectIdStr);
+        }
         Long projectId = getProjectId(moduleIdsMap);
+
+        if (refProjectId != null && !projectId.equals(refProjectId)) {
+            projectId = refProjectId;
+        }
 
         ExportedProject exportedProject = doExport(projectId, moduleIdsMap, true);
 
