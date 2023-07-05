@@ -19,7 +19,6 @@
 
 package edp.core.config;
 
-import bsp.encrypt.EncryptUtil;
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.support.http.StatViewServlet;
 import com.alibaba.druid.support.http.WebStatFilter;
@@ -139,7 +138,7 @@ public class DruidConfig {
             String pubKey = CommonConfig.LINKIS_MYSQL_PUB_KEY().getValue();
             String priKey = CommonConfig.LINKIS_MYSQL_PRIV_KEY().getValue();
             try {
-                password = EncryptUtil.decrypt(priKey, password);
+//                password = EncryptUtil.decrypt(priKey, password);
             } catch (Exception e) {
                 log.error("failed to decrypt password for {}", password, e);
                 System.exit(-2);
