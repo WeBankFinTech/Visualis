@@ -114,10 +114,12 @@ export default function (chartProps: IChartProps, drillOptions?: any) {
                   // 必须要创建一个新的对象，不然直接更改labelOption会污染到其他线的labelOption
                   tempLabelOption = JSON.parse(JSON.stringify(labelOption))
                   tempLabelOption.label.normal.distance += similarCount * DEFAULT_DISTANCE
+                  tempLabelOption.label.normal.formatter = labelOption.label.normal.formatter
                 }
                 if (labelOption.label && labelOption.label.emphasis) {
                   tempLabelOption = JSON.parse(JSON.stringify(labelOption))
                   tempLabelOption.label.emphasis.distance += similarCount * DEFAULT_DISTANCE
+                  tempLabelOption.label.normal.formatter = labelOption.label.normal.formatter
                 }
                 dataArr[index].push(g[`${m.agg}(${decodedMetricName})`])
               }
