@@ -337,6 +337,7 @@ public class WidgetServiceImpl implements WidgetService {
         } else {
             widget.updatedBy(user.getId());
         }
+        BeanUtils.copyProperties(widgetUpdate, widget);
         int update = widgetMapper.update(widget);
         if (update > 0) {
             optLogger.info("widget ({}) is updated by user(:{}), origin: ({})", widget, user.getId(), originStr);
