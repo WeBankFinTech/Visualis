@@ -228,7 +228,7 @@ public class SqlParseUtils {
         jobRequest.setParams(configMap);
 
         jobRequest.setLabels(Arrays.asList(codeLabel));
-        return CustomVariableUtils.replaceCustomVar(jobRequest, "sql")._2;
+        return CustomVariableUtils.replaceCustomVar(jobRequest, "sql");
     }
 
 
