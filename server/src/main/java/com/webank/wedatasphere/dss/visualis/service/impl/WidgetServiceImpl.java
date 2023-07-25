@@ -39,10 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static edp.davinci.common.utils.ScriptUtils.getExecuptParamScriptEngine;
@@ -246,7 +243,7 @@ public class WidgetServiceImpl implements DssWidgetService {
             }
             paginate = (PaginateWithQueryColumns) virtualViewQueryService.getData(viewExecuteParam, user, false);
         }
-        resultDataMap.put("columns", paginate.getColumns());
+        resultDataMap.put("columns", paginate.getColumns()==null?new ArrayList<>():paginate.getColumns());
         resultDataMap.put("resultList", paginate.getResultList());
         return resultMap.success().payload(resultDataMap);
     }
