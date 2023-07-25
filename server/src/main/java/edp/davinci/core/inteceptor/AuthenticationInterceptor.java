@@ -50,7 +50,7 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-
+        log.info("AuthenticationInterceptor --> prehandle");
         HandlerMethod handlerMethod = null;
         try {
             handlerMethod = (HandlerMethod) handler;
