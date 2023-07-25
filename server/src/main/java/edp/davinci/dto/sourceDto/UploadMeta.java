@@ -34,7 +34,7 @@ public class UploadMeta {
     @NotBlank(message = "table name cannot be EMPTY")
     private String tableName;
 
-    @Min(value = (short) 0, message = "Invalid mode")
-    @Max(value = (short) 2, message = "Invalid mode")
+    @Min(value =  0, message = "Invalid mode")
+    @Max(value =  2, message = "Invalid mode")
     private short mode = UploadModeEnum.NEW.getMode();
 }

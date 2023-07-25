@@ -102,9 +102,9 @@ class LinkisClientExecutor extends SqlUtils with Logging{
     val input = read[UJESJob](sql)
     var code = input.code
     val jobType = input.jobType
-    val source = JavaConversions.mapAsJavaMap(input.source.asInstanceOf[Map[String, Any]])
+    val source = JavaConversions.mapAsJavaMap(input.source.asInstanceOf[Map[String, AnyRef]])
     umUser = input.user
-    val params = new util.HashMap[String, Any]()
+    val params = new util.HashMap[String, AnyRef]()
     val configuration = new util.HashMap[String, Any]()
     val runtime = new util.HashMap[String, Any]()
     // updated cache related params
