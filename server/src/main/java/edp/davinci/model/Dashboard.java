@@ -41,8 +41,8 @@ public class Dashboard extends RecordInfo<Dashboard> {
     @Min(value = 1L, message = "Invalid dashboard portal id")
     private Long dashboardPortalId;
 
-    @Min(value = (short) 0, message = "Invalid dashboard type")
-    @Max(value = (short) 2, message = "Invalid dashboard type")
+    @Min(value =  0, message = "Invalid dashboard type")
+    @Max(value =  2, message = "Invalid dashboard type")
     private Short type;
 
     private Integer index = 0;

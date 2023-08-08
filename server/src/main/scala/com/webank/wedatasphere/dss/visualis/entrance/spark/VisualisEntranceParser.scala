@@ -16,7 +16,7 @@ class VisualisEntranceParser(persistenceManager : VisualisPersistenceManager) ex
             job.setJobRequest(task)
             job.setUser(requestPersistTask.getUmUser)
             job.setCreator(requestPersistTask.getRequestApplicationName)
-            job.setParams(task.asInstanceOf[RequestPersistTask].getParams.asInstanceOf[java.util.Map[String, Any]])
+            job.setParams(task.asInstanceOf[RequestPersistTask].getParams.asInstanceOf[java.util.Map[String, AnyRef]])
             job.setEntranceListenerBus(getEntranceContext.getOrCreateEventListenerBus)
             job.setProgress(0.0f)
             job

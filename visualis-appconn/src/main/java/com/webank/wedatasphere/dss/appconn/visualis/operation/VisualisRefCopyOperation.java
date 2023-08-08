@@ -24,6 +24,7 @@ public class VisualisRefCopyOperation
         visualisPostAction.addRequestPayload("projectVersion", "v1");
         visualisPostAction.addRequestPayload("flowVersion", requestRef.getNewVersion());
         visualisPostAction.addRequestPayload("contextID", requestRef.getContextId());
+        visualisPostAction.addRequestPayload("projectId", String.valueOf(requestRef.getRefProjectId()));
         LabelRouteVO routeVO = new LabelRouteVO();
         routeVO.setRoute(requestRef.getDSSLabels().get(0).getValue().get("DSSEnv"));
         visualisPostAction.addRequestPayload("labels", routeVO);

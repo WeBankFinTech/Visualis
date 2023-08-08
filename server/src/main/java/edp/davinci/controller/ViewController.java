@@ -28,6 +28,10 @@ import com.webank.wedatasphere.dss.visualis.utils.HiveDBHelper;
 import com.webank.wedatasphere.dss.visualis.utils.HttpUtils;
 import edp.core.annotation.CurrentUser;
 import edp.core.annotation.MethodLog;
+import edp.core.enums.HttpCodeEnum;
+import edp.core.exception.NotFoundException;
+import edp.core.exception.ServerException;
+import edp.core.exception.UnAuthorizedExecption;
 import edp.core.model.Paginate;
 import edp.core.model.PaginateWithQueryColumns;
 import edp.davinci.common.controller.BaseController;
@@ -50,6 +54,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -74,6 +79,7 @@ public class ViewController extends BaseController {
     private ProjectAuth projectAuth;
 
     // 工作流创建widget时调用Step 3
+
     /**
      * 获取view
      *
@@ -95,7 +101,13 @@ public class ViewController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        List<ViewBaseInfo> views = viewService.getViews(projectId, user);
+        List<ViewBaseInfo> views = null;
+        try {
+            views = viewService.getViews(projectId, user);
+        } catch (Exception e) {
+            log.error("get views fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         if (StringUtils.isNotBlank(contextId) && StringUtils.isNotBlank(nodeName)) {
             List<Object> virtualviews = Lists.newArrayList();
             virtualviews.addAll(QueryUtils.getFromContext(contextId, nodeName));
@@ -125,7 +137,13 @@ public class ViewController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        ViewWithSourceBaseInfo view = viewService.getView(id, user);
+        ViewWithSourceBaseInfo view = null;
+        try {
+            view = viewService.getView(id, user);
+        } catch (Exception e) {
+            log.error("get view fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(view));
     }
 
@@ -156,11 +174,17 @@ public class ViewController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        if(!projectAuth.isPorjectOwner(view.getProjectId(), user.getId())) {
+        if (!projectAuth.isPorjectOwner(view.getProjectId(), user.getId())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        ViewWithSourceBaseInfo viewWithSourceBaseInfo = viewService.createView(view, user, HttpUtils.getUserTicketId(request));
+        ViewWithSourceBaseInfo viewWithSourceBaseInfo = null;
+        try {
+            viewWithSourceBaseInfo = viewService.createView(view, user, HttpUtils.getUserTicketId(request));
+        } catch (Exception e) {
+            log.error("create view fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
 
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(viewWithSourceBaseInfo));
     }
@@ -200,7 +224,12 @@ public class ViewController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        viewService.updateView(viewUpdate, user);
+        try {
+            viewService.updateView(viewUpdate, user);
+        } catch (Exception e) {
+            log.error("update view fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
     }
 
@@ -218,9 +247,9 @@ public class ViewController extends BaseController {
     public ResponseEntity deleteView(@PathVariable Long id,
                                      @CurrentUser User user,
                                      HttpServletRequest request) {
-        if (invalidId(id)) {
-            ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid view id");
-            return ResponseEntity.status(resultMap.getCode()).body(resultMap);
+        if (invalidId(id, "view")) {
+            log.warn("delete view error, because view id:{} is not found in visualis!", id);
+            return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
         }
 
         if (EnvLimitUtils.notPermitted()) {
@@ -228,8 +257,11 @@ public class ViewController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        viewService.deleteView(id, user);
-
+        try {
+            viewService.deleteView(id, user);
+        } catch (Exception e) {
+            log.error("delete view fail, because: ", e);
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
     }
 
