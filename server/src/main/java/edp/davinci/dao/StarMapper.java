@@ -55,7 +55,7 @@ public interface StarMapper {
 
 
     @Select({
-            "select p.*, u.id as 'createBy.id', IF(u.`name` is NULL,u.username,u.`name`) as 'createBy.username' from visualis_project p left join dss_user u on u.id = p.user_id ",
+            "select p.*, u.id as 'createBy.id', IF(u.`name` is NULL,u.username,u.`name`) as 'createBy.username', u.avatar as 'createBy.avatar'  from visualis_project p left join visualis_user u on u.id = p.user_id ",
             "where p.id in (select target_id from star where target = #{target} and user_id = #{userId})"
     })
     List<ProjectWithCreateBy> getStarProjectListByUser(@Param("userId") Long userId, @Param("target") String target);

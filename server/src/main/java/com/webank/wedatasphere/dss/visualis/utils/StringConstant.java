@@ -26,7 +26,7 @@ public class StringConstant {
 
     public final static String WORKFLOW_VERSION_DEFAULT_VALUE = "v00001";
 
-    public final static String CONTEXT_ID = "contextID";
+    public final static String CONTEXT_ID = "contextId";
 
     public final static String WIDGET = "widget";
 

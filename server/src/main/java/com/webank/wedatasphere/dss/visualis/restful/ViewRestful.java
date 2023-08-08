@@ -2,11 +2,14 @@ package com.webank.wedatasphere.dss.visualis.restful;
 
 import com.webank.wedatasphere.dss.visualis.service.DssViewService;
 import com.webank.wedatasphere.dss.visualis.model.DWCResultInfo;
+import edp.core.annotation.CurrentUser;
 import edp.core.annotation.MethodLog;
 import edp.davinci.common.controller.BaseController;
 import edp.davinci.core.common.Constants;
 import edp.davinci.core.common.ResultMap;
+import edp.davinci.model.User;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.linkis.server.Message;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,20 +34,22 @@ public class ViewRestful extends BaseController {
 
     @MethodLog
     @RequestMapping(path = "enginetypes", method = RequestMethod.GET)
-    public ResponseEntity getAvailableEngineTypes(HttpServletRequest req, Long id) {
-        List<String> engineTypes;
+    public Message getAvailableEngineTypes(HttpServletRequest req, Long id) {
+        List<String> engineTypes = null;
         try {
             engineTypes = dssViewService.getAvailableEngineTypes(req, id);
         } catch (Exception e) {
             log.error("read project error, because: " , e);
-            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+//            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
         }
-        return ResponseEntity.ok(new ResultMap().success().payload(engineTypes));
+//        return ResponseEntity.ok(new ResultMap().success().payload(engineTypes));
+        Message message = Message.ok().data("engineTypes", engineTypes);
+        return message;
     }
 
     @MethodLog
     @RequestMapping(method = RequestMethod.POST)
-    public ResponseEntity createView(HttpServletRequest req, DWCResultInfo dwcResultInfo) {
+    public ResponseEntity createView(HttpServletRequest req, @CurrentUser User user, DWCResultInfo dwcResultInfo) {
         ResultMap resultMap = null;
         try {
             resultMap = dssViewService.createView(req, dwcResultInfo);

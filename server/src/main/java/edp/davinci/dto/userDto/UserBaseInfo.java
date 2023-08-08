@@ -27,8 +27,7 @@ public class UserBaseInfo {
 
     String username;
 
-    // 用户头像路径
-    String avatar = null;
+    String avatar;
 
     String email;
 }

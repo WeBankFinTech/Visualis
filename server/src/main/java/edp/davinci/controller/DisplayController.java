@@ -21,8 +21,8 @@ package edp.davinci.controller;
 
 import com.alibaba.druid.util.StringUtils;
 import com.alibaba.fastjson.JSONArray;
-import com.google.common.collect.Iterables;
 import com.webank.wedatasphere.dss.visualis.auth.ProjectAuth;
+import com.webank.wedatasphere.dss.visualis.service.impl.ImageFileGenerater;
 import edp.core.annotation.CurrentUser;
 import edp.core.annotation.MethodLog;
 import edp.core.common.job.ScheduleService;
@@ -34,7 +34,6 @@ import edp.davinci.dao.ProjectMapper;
 import edp.davinci.dto.displayDto.*;
 import edp.davinci.model.*;
 import edp.davinci.service.DisplayService;
-import edp.davinci.service.screenshot.ImageContent;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,6 +78,9 @@ public class DisplayController extends BaseController {
     @Autowired
     private ProjectAuth projectAuth;
 
+    @Autowired
+    ImageFileGenerater imageFileGenerater;
+
     /**
      * 新建display
      *
@@ -106,9 +108,19 @@ public class DisplayController extends BaseController {
 
         Display display;
         if(displayInfo.getIsCopy()){
-            display = displayService.copyDisplay(displayInfo, user);
+            try {
+                display = displayService.copyDisplay(displayInfo, user);
+            } catch (Exception e) {
+                log.error("copy display fail, because: ", e);
+                return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+            }
         } else {
-            display = displayService.createDisplay(displayInfo, user);
+            try {
+                display = displayService.createDisplay(displayInfo, user);
+            } catch (Exception e) {
+                log.error("create display fail, because: ", e);
+                return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+            }
         }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(display));
     }
@@ -140,7 +152,12 @@ public class DisplayController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        displayService.updateDisplay(display, user);
+        try {
+            displayService.updateDisplay(display, user);
+        } catch (Exception e) {
+            log.error("update display fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
     }
 
@@ -163,7 +180,12 @@ public class DisplayController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        displayService.deleteDisplay(id, user);
+        try {
+            displayService.deleteDisplay(id, user);
+        } catch (Exception e) {
+            log.error("delete display fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
 
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
     }
@@ -447,7 +469,13 @@ public class DisplayController extends BaseController {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid project id");
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
-        List<Display> displayList = displayService.getDisplayListByProject(projectId, user);
+        List<Display> displayList = null;
+        try {
+            displayList = displayService.getDisplayListByProject(projectId, user);
+        } catch (Exception e) {
+            log.error("get displays fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(displayList));
     }
 
@@ -707,8 +735,9 @@ public class DisplayController extends BaseController {
 
         FileInputStream inputStream = null;
         try {
-            List<ImageContent> imageFiles = scheduleService.getPreviewImage(user.getId(), "display", id);
-            File imageFile = Iterables.getFirst(imageFiles, null).getImageFile();
+
+            File imageFile = imageFileGenerater.getDisplayPreviewFile(user.getId(), display.getId());
+
             if(null != imageFile) {
                 inputStream = new FileInputStream(imageFile);
                 response.setContentType(MediaType.IMAGE_PNG_VALUE);

@@ -65,7 +65,7 @@ public class PlatformAuthInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
 
-
+        log.info("PlatformAuthInterceptor handle");
         HandlerMethod handlerMethod = null;
         try {
             handlerMethod = (HandlerMethod) handler;
