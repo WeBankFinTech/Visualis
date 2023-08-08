@@ -23,13 +23,16 @@ public class MethodLogAspect {
 
     }
 
+    // 日志打成一行，方便排错
+    // list方法不需要加，只加增删改
+    // 导入导出单独打日志
+    // 操作日志单独写一个log，打到一个单独的日志文件中，回滚+清理（超过1年的清理）
     @Before(value = "pointCut()")
     public void doBefore(JoinPoint joinPoint) {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        log.info("============================= start ================================");
+        HttpServletRequest request = null;
         if (attributes != null) {
-            HttpServletRequest request = attributes.getRequest();
-            log.info("URL      :{}", request.getRequestURL().toString());
+            request = attributes.getRequest();
         }
 
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
@@ -39,7 +42,8 @@ public class MethodLogAspect {
             return;
         }
         String methodName = method.getDeclaringClass().getSimpleName() + "." + method.getName();
-        log.info("Method  :{}", methodName);
+        log.info("============================= start ================================");
+        log.info("URL: {}, Method  :{}", request.getRequestURL().toString(), methodName);
         String[] paramNames = ((MethodSignature) joinPoint.getSignature()).getParameterNames();
         Object[] paramValues = joinPoint.getArgs();
         if (paramNames != null) {

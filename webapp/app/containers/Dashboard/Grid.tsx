@@ -663,7 +663,7 @@ export class Grid extends React.Component<IGridProps, IGridStates> {
       requestParams.orders = requestParams.orders.concat(tempOrders)
     }
     this.setState({executeQueryFailed: false})
-
+    requestParams.groups = [... new Set(requestParams.groups)]
     onViewExecuteQuery(renderType, itemId, widget.viewId, requestParams, {...requestParams, widget}, (result) => {
       const { execId } = result
       this.execIds.push(execId)

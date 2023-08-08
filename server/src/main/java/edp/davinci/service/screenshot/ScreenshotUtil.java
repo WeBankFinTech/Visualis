@@ -74,7 +74,7 @@ public class ScreenshotUtil {
     private static final int DEFAULT_SCREENSHOT_WIDTH = 1920;
     private static final int DEFAULT_SCREENSHOT_HEIGHT = 1080;
 
-    private static final ExecutorService executorService = Executors.newFixedThreadPool(8);
+    private static final ExecutorService executorService = Executors.newFixedThreadPool(200);
 
 
     public void screenshot(long userId, long jobId, List<ImageContent> imageContents) {
@@ -108,6 +108,7 @@ public class ScreenshotUtil {
                 }
                 countDownLatch.await();
             } catch (ExecutionException e) {
+                log.error("screenshot error: ", e);
             }
 
             imageContents.sort(Comparator.comparing(ImageContent::getOrder));
@@ -177,6 +178,7 @@ public class ScreenshotUtil {
                 }
                 driver.manage().window().setSize(new Dimension(width, height));
                 Thread.sleep(2000);
+                // 是否能通过driver去获取这个share html页面 url
                 return ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
             } else {
                 log.error("When the screenshot is taken, the widget execution fails and the widget WidgetExecuteFailedTag tag is captured!");
@@ -235,10 +237,6 @@ public class ScreenshotUtil {
 
         options.addArguments("disable-dev-shm-usage");
         options.addArguments("remote-debugging-port=9012");
-
-//        options.addArguments("--no-sandbox");
-//        options.addArguments("--disable-dev-shm-usage");
-//        options.addArguments("--headless");
 
         return new ChromeDriver(options);
     }

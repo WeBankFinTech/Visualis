@@ -53,12 +53,10 @@ public class CurrentUserMethodArgumentResolver implements CurrentUserMethodArgum
     /**
      * 动机:
      * 由于之前Visualis依赖于linkis_user表，存在极大的耦合，
-     *
+     * <p>
      * 解决方式:
      * 新建一张visualis_user表，复用原来的权限逻辑，
      * 如果访问Visualis时，使用该注解，没有该用户，即插入用户，录入用户信息。
-     *
-     * 多个请求同时访问时，需要两步，查数据库和插数据库，这里需要性能优化。
      */
     @Override
     public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer, NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {
@@ -70,7 +68,8 @@ public class CurrentUserMethodArgumentResolver implements CurrentUserMethodArgum
             String accessUsername = SecurityFilter.getLoginUsername(webRequest.getNativeRequest(HttpServletRequest.class));
             log.info("Get request access user name: {}", accessUsername);
             User visualisUser = null;
-            //to do!
+            // 这个地方把用户写到http session中进行判断，可以少插一次数据库
+            // 或一个全局的map进行优化，缓存用户
             visualisUser = (User) userMapper.selectByUsername(accessUsername);
             if(null == visualisUser) {
                 synchronized (this) {

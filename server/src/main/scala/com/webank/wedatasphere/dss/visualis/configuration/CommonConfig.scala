@@ -2,7 +2,9 @@ package com.webank.wedatasphere.dss.visualis.configuration
 
 import org.apache.linkis.common.conf.CommonVars
 
-
+/**
+ * Created by allenlliu on 2019/1/26.
+ */
 object CommonConfig {
   /**
    * 接口越权检测
@@ -10,6 +12,14 @@ object CommonConfig {
   val CHECK_PROJECT_USER = CommonVars("wds.dss.visualis.check.project.user", false)
 
   val ENGINE_DEFAULT_LIMIT = CommonVars("wds.dss.engine.default.limit", 5000)
+  /**
+   * this is the configuration to get the hive database source
+   */
+  val GATEWAY_IP = CommonVars("wds.dss.visualis.gateway.ip", "")
+
+  val GATEWAY_PORT = CommonVars("wds.dss.visualis.gateway.port", "")
+
+  val GATEWAY_PROTOCOL = CommonVars("wds.dss.visualis.gateway.protocol", "http://")
 
   val DB_URL_SUFFIX = CommonVars("wds.dss.visualis.database.url", "/api/rest_j/v1/datasource/dbs")
 
@@ -50,4 +60,13 @@ object CommonConfig {
   val JDBC_WHITELIST = CommonVars("wds.dss.visualis.jdbc.whitelist", "")
 
   val JDBC_ENCRYPT_PARAMETER = CommonVars("wds.dss.visualis.jdbc.encrypt.parameter", "encrypt=true")
+
+  /**
+   * 因为Display支持异步执行，其执行的结果集保存在数据库表：visualis_preview_result中
+   * 异步执行的记录长时间存在数据库会导致数据库资源浪费，这里增加参数配置清理策略
+   * 参数值：
+   *  once: 表示每次执行完后，请求结果集时，并会进行记录清理。
+   *  scheduled: 调度清理，由配置的PreviewResutlCleaner定时调度清理数据。
+   * */
+  val PREVIEW_RESULT_CLEAN_STRATEGY = CommonVars("wds.dss.visualis.preview.clean.strategy", "once")
 }

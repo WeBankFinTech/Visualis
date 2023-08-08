@@ -190,12 +190,21 @@ public class ProjectServiceImpl implements DssProjectService {
             log.error("flowVersion is null, can not copy flow to a newest version");
             flowVersion = StringConstant.WORKFLOW_VERSION_DEFAULT_VALUE;
         }
-        String contextIdStr = params.get(StringConstant.CONTEXT_ID);
+        String contextIdStr = params.get("contextID");
         if (StringUtils.isEmpty(contextIdStr)) {
             throw new ErrorException(20012, "contextId is null, visualis can not do copy");
         }
 
+        String projectIdStr = params.get("projectId");
+        Long refProjectId = null;
+        if (projectIdStr != null) {
+            refProjectId = Long.valueOf(projectIdStr);
+        }
         Long projectId = getProjectId(moduleIdsMap);
+
+        if (refProjectId != null && !projectId.equals(refProjectId)) {
+            projectId = refProjectId;
+        }
 
         ExportedProject exportedProject = doExport(projectId, moduleIdsMap, true);
 
