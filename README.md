@@ -89,10 +89,6 @@ For more details: [Visualis User Manul Doc](./visualis_docs/en_US/Visualis_user_
 ## Upgrade documentation
 [Upgrade Documentation](visualis_docs/en_US/visualis_update_en.md)
 
-## Communication
-
-![communication](images/communication.png)
-
 ## License
 
 DSS is under the Apache 2.0 license. See the [License](LICENSE) file for details.
