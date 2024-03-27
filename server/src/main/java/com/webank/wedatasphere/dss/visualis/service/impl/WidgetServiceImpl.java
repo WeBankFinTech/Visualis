@@ -39,10 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static edp.davinci.common.utils.ScriptUtils.getExecuptParamScriptEngine;
@@ -246,7 +243,7 @@ public class WidgetServiceImpl implements DssWidgetService {
             }
             paginate = (PaginateWithQueryColumns) virtualViewQueryService.getData(viewExecuteParam, user, false);
         }
-        resultDataMap.put("columns", paginate.getColumns());
+        resultDataMap.put("columns", paginate.getColumns()==null?new ArrayList<>():paginate.getColumns());
         resultDataMap.put("resultList", paginate.getResultList());
         return resultMap.success().payload(resultDataMap);
     }
@@ -385,7 +382,9 @@ public class WidgetServiceImpl implements DssWidgetService {
                         }
                     }
 
-                    if (configMap.get(StringConstant.VIEW) != null && !(configMap.get(StringConstant.VIEW) instanceof VirtualView)) {
+//                    if (configMap.get(StringConstant.VIEW) != null && !(configMap.get(StringConstant.VIEW) instanceof VirtualView)) {
+                    // 这个地方用工具apachecommons判断是否是数字
+                    if (configMap.get(StringConstant.VIEW) != null && configMap.get(StringConstant.VIEW).toString().matches("^([-+])?\\d+(\\.\\d+)?$")) {
                         Object viewVal = configMap.get(StringConstant.VIEW);
                         // 判断拿到的结构是否是map结构，可能存在不是map的情况
                         if (viewVal != null && viewVal.toString().matches("^([-+])?\\d+(\\.\\d+)?$")) {
@@ -401,7 +400,7 @@ public class WidgetServiceImpl implements DssWidgetService {
                         viewMap.put(StringConstant.SOURCE, sourceMap);
                         configMap.put(StringConstant.VIEW, viewMap);
                     }
-                    configMap.put(StringConstant.CONTEXT_ID, QueryUtils.encodeContextId(contextIdStr));
+//                    configMap.put(StringConstant.CONTEXT_ID, QueryUtils.encodeContextId(contextIdStr));
                     newWidget.setConfig(LinkisUtils.gson().toJson(configMap));
                     widgetLists.add(newWidget);
                 }

@@ -35,6 +35,7 @@ import edp.davinci.model.User;
 import edp.davinci.service.DownloadService;
 import edp.davinci.service.ShareDownloadService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.ListUtils;
 import org.elasticsearch.common.io.Streams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -48,6 +49,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -132,25 +134,18 @@ public class DownloadController extends BaseController {
     }
 
 
-    @MethodLog
     @GetMapping(value = "/share/page/{uuid}/{token:.*}", produces = MediaType.APPLICATION_JSON_VALUE)
     @AuthIgnore
     public ResponseEntity getShareDownloadRecordPage(@PathVariable(name = "uuid") String uuid,
                                                      @PathVariable(name = "token") String token,
-                                                     @CurrentUser User user,
                                                      HttpServletRequest request) {
         if (StringUtils.isEmpty(token)) {
             ResultMap resultMap = new ResultMap().fail().message("Invalid share token");
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        List<ShareDownloadRecord> records = shareDownloadService.queryDownloadRecordPage(uuid, token, user);
-
-        if (null == user) {
+        List<ShareDownloadRecord> records = new ArrayList<>();
             return ResponseEntity.ok(new ResultMap(tokenUtils).payloads(records));
-        } else {
-            return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(records));
-        }
     }
 
 

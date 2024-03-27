@@ -53,6 +53,8 @@ public class RecordInfo<T> {
 
     public void updateByWithoutUpdateTime(Long userId) {
         this.updateBy = userId;
+        // 1. updatetime在创建是更新为createTime
+        // 2.
     }
 
     public Date getUpdateTime() {

@@ -104,7 +104,12 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
     @Transactional
     public Display createDisplay(DisplayInfo displayInfo, User user) throws NotFoundException, UnAuthorizedExecption, ServerException {
 
-        ProjectDetail projectDetail = projectService.getProjectDetail(displayInfo.getProjectId(), user, false);
+        ProjectDetail projectDetail = null;
+        try {
+            projectDetail = projectService.getProjectDetail(displayInfo.getProjectId(), user, false);
+        } catch (Exception e) {
+            throw e;
+        }
         ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
 
         //校验权限
@@ -155,13 +160,23 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
             throw new ServerException("the display name " + displayInfo.getName() + " is already taken");
         }
 
-        Display display = displayMapper.getById(displayInfo.getTargetId());
+        Display display = null;
+        try {
+            display = displayMapper.getById(displayInfo.getTargetId());
+        } catch (Exception e) {
+            throw e;
+        }
         if(display == null){
             log.info("target display doesn't exist", displayInfo.getName());
             throw new NotFoundException("target display doesn't exist");
         }
 
-        ProjectDetail projectDetail = projectService.getProjectDetail(displayInfo.getProjectId(), user, false);
+        ProjectDetail projectDetail = null;
+        try {
+            projectDetail = projectService.getProjectDetail(displayInfo.getProjectId(), user, false);
+        } catch (Exception e) {
+            throw e;
+        }
         ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
 
         //校验权限
@@ -207,7 +222,12 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
     @Override
     @Transactional
     public boolean deleteDisplay(Long id, User user) throws NotFoundException, UnAuthorizedExecption, ServerException {
-        DisplayWithProject displayWithProject = displayMapper.getDisplayWithProjectById(id);
+        DisplayWithProject displayWithProject = null;
+        try {
+            displayWithProject = displayMapper.getDisplayWithProjectById(id);
+        } catch (Exception e) {
+            throw e;
+        }
 
         if (null == displayWithProject) {
             log.info("display (:{}) is not found", id);
@@ -218,7 +238,12 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
             throw new UnAuthorizedExecption("current user has no permission.");
         }
 
-        ProjectDetail projectDetail = projectService.getProjectDetail(displayWithProject.getProjectId(), user, false);
+        ProjectDetail projectDetail = null;
+        try {
+            projectDetail = projectService.getProjectDetail(displayWithProject.getProjectId(), user, false);
+        } catch (Exception e) {
+            throw e;
+        }
         ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
 
         List<Long> disableDisplays = getDisableVizs(user.getId(), projectDetail.getId(), null, VizEnum.DISPLAY);
@@ -231,22 +256,46 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
         }
 
         //删除 rel_role_display_slide_widget
-        relRoleDisplaySlideWidgetMapper.deleteByDisplayId(id);
+        try {
+            relRoleDisplaySlideWidgetMapper.deleteByDisplayId(id);
+        } catch (Exception e) {
+            throw e;
+        }
 
         //删除 mem_display_slide_widget
-        memDisplaySlideWidgetMapper.deleteByDisplayId(id);
+        try {
+            memDisplaySlideWidgetMapper.deleteByDisplayId(id);
+        } catch (Exception e) {
+            throw e;
+        }
 
         //删除 rel_role_slide
-        relRoleSlideMapper.deleteByDisplayId(id);
+        try {
+            relRoleSlideMapper.deleteByDisplayId(id);
+        } catch (Exception e) {
+            throw e;
+        }
 
         //删除 display_slide
-        displaySlideMapper.deleteByDisplayId(id);
+        try {
+            displaySlideMapper.deleteByDisplayId(id);
+        } catch (Exception e) {
+            throw e;
+        }
 
         //删除 rel_role_display
-        relRoleDisplayMapper.deleteByDisplayId(id);
+        try {
+            relRoleDisplayMapper.deleteByDisplayId(id);
+        } catch (Exception e) {
+            throw e;
+        }
 
         //删除 display
-        displayMapper.deleteById(id);
+        try {
+            displayMapper.deleteById(id);
+        } catch (Exception e) {
+            throw e;
+        }
 
         return true;
     }
@@ -321,7 +370,12 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
     @Transactional
     public boolean updateDisplay(DisplayUpdate displayUpdate, User user) throws NotFoundException, UnAuthorizedExecption, ServerException {
 
-        Display display = displayMapper.getById(displayUpdate.getId());
+        Display display = null;
+        try {
+            display = displayMapper.getById(displayUpdate.getId());
+        } catch (Exception e) {
+            throw e;
+        }
         if (null == display) {
             throw new NotFoundException("display is not found");
         }
@@ -330,7 +384,12 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
             throw new UnAuthorizedExecption("current user has no permission.");
         }
 
-        ProjectDetail projectDetail = projectService.getProjectDetail(display.getProjectId(), user, false);
+        ProjectDetail projectDetail = null;
+        try {
+            projectDetail = projectService.getProjectDetail(display.getProjectId(), user, false);
+        } catch (Exception e) {
+            throw e;
+        }
         ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
 
         List<Long> disableDisplays = getDisableVizs(user.getId(), projectDetail.getId(), null, VizEnum.DISPLAY);
@@ -368,8 +427,9 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
             if (!CollectionUtils.isEmpty(displayUpdate.getRoleIds())) {
                 List<Role> roles = roleMapper.getRolesByIds(displayUpdate.getRoleIds());
 
+                Display finalDisplay = display;
                 List<RelRoleDisplay> list = roles.stream()
-                        .map(r -> new RelRoleDisplay(display.getId(), r.getId()).createdBy(user.getId()))
+                        .map(r -> new RelRoleDisplay(finalDisplay.getId(), r.getId()).createdBy(user.getId()))
                         .collect(Collectors.toList());
                 if (!CollectionUtils.isEmpty(list)) {
                     relRoleDisplayMapper.insertBatch(list);
@@ -798,7 +858,12 @@ public class DisplayServiceImpl extends VizCommonService implements DisplayServi
             return null;
         }
 
-        List<Display> displays = displayMapper.getByProject(projectId);
+        List<Display> displays = null;
+        try {
+            displays = displayMapper.getByProject(projectId);
+        } catch (Exception e) {
+            throw e;
+        }
         if (CollectionUtils.isEmpty(displays)) {
             return null;
         }

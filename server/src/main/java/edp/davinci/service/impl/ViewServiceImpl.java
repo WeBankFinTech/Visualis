@@ -155,16 +155,27 @@ public class ViewServiceImpl implements ViewService {
         ProjectDetail projectDetail = null;
         try {
             projectDetail = projectService.getProjectDetail(projectId, user, false);
-        } catch (NotFoundException e) {
-            throw e;
-        } catch (UnAuthorizedExecption e) {
-            return null;
+        } catch (Exception e) {
+            log.error("get project detail fail, because: ", e);
+            throw new RuntimeException("get project detail fail");
         }
 
-        List<ViewBaseInfo> views = viewMapper.getViewBaseInfoByProject(projectId);
+        List<ViewBaseInfo> views = null;
+        try {
+            views = viewMapper.getViewBaseInfoByProject(projectId);
+        } catch (Exception e) {
+            log.error("get views fail, because: ", e);
+            throw new RuntimeException("get views fail");
+        }
 
         if (null != views) {
-            ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
+            ProjectPermission projectPermission = null;
+            try {
+                projectPermission = projectService.getProjectPermission(projectDetail, user);
+            } catch (Exception e) {
+                log.error("get project permission fail, because: ", e);
+                throw new RuntimeException("get project permission fail");
+            }
             if (projectPermission.getVizPermission() == UserPermissionEnum.HIDDEN.getPermission() &&
                     projectPermission.getWidgetPermission() == UserPermissionEnum.HIDDEN.getPermission() &&
                     projectPermission.getViewPermission() == UserPermissionEnum.HIDDEN.getPermission()) {
@@ -180,13 +191,31 @@ public class ViewServiceImpl implements ViewService {
 
     @Override
     public ViewWithSourceBaseInfo getView(Long id, User user) throws NotFoundException, UnAuthorizedExecption, ServerException {
-        ViewWithSourceBaseInfo view = viewMapper.getViewWithSourceBaseInfo(id);
+        ViewWithSourceBaseInfo view = null;
+        try {
+            view = viewMapper.getViewWithSourceBaseInfo(id);
+        } catch (Exception e) {
+            log.error("get view fail, because: ", e);
+            throw new RuntimeException("get view fail");
+        }
         if (null == view) {
             throw new NotFoundException("view is not found");
         }
 
-        ProjectDetail projectDetail = projectService.getProjectDetail(view.getProjectId(), user, false);
-        ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
+        ProjectDetail projectDetail = null;
+        try {
+            projectDetail = projectService.getProjectDetail(view.getProjectId(), user, false);
+        } catch (Exception e) {
+            log.error("get project detail fail, because: ", e);
+            throw new RuntimeException("get project detail fail");
+        }
+        ProjectPermission projectPermission = null;
+        try {
+            projectPermission = projectService.getProjectPermission(projectDetail, user);
+        } catch (Exception e) {
+            log.error("get project permission fail, because: ", e);
+            throw new RuntimeException("get project permission fail");
+        }
         if (projectPermission.getVizPermission() == UserPermissionEnum.HIDDEN.getPermission() &&
                 projectPermission.getWidgetPermission() == UserPermissionEnum.HIDDEN.getPermission() &&
                 projectPermission.getViewPermission() == UserPermissionEnum.HIDDEN.getPermission()) {
@@ -249,8 +278,20 @@ public class ViewServiceImpl implements ViewService {
     @Override
     @Transactional
     public ViewWithSourceBaseInfo createView(ViewCreate viewCreate, User user, String ticketId) throws NotFoundException, UnAuthorizedExecption, ServerException {
-        ProjectDetail projectDetail = projectService.getProjectDetail(viewCreate.getProjectId(), user, false);
-        ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
+        ProjectDetail projectDetail = null;
+        try {
+            projectDetail = projectService.getProjectDetail(viewCreate.getProjectId(), user, false);
+        } catch (Exception e) {
+            log.error("get project detail fail, because: ", e);
+            throw new RuntimeException("get project detail fail");
+        }
+        ProjectPermission projectPermission = null;
+        try {
+            projectPermission = projectService.getProjectPermission(projectDetail, user);
+        } catch (Exception e) {
+            log.error("get project permission fail, because: ", e);
+            throw new RuntimeException("get project permission fail");
+        }
 
         if (projectPermission.getViewPermission() < UserPermissionEnum.WRITE.getPermission()) {
             throw new UnAuthorizedExecption("you have not permission to create view");
@@ -264,9 +305,19 @@ public class ViewServiceImpl implements ViewService {
         Source source;
 
         if (sourceId == 0) {
-            source = createViewByDss(viewCreate, user, ticketId);
+            try {
+                source = createViewByDss(viewCreate, user, ticketId);
+            } catch (Exception e) {
+                log.error("get source fail, because: ", e);
+                throw new RuntimeException("get source fail");
+            }
         } else {
-            source = sourceMapper.getById(sourceId);
+            try {
+                source = sourceMapper.getById(sourceId);
+            } catch (Exception e) {
+                log.error("get source fail, because: ", e);
+                throw new RuntimeException("get source fail");
+            }
             if (null == source) {
                 log.info("source (:{}) not found", sourceId);
                 throw new NotFoundException("source is not found");
@@ -383,9 +434,20 @@ public class ViewServiceImpl implements ViewService {
             throw new UnAuthorizedExecption("current user has no permission.");
         }
 
-        ProjectDetail projectDetail = projectService.getProjectDetail(viewWithSource.getProjectId(), user, false);
-
-        ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
+        ProjectDetail projectDetail = null;
+        try {
+            projectDetail = projectService.getProjectDetail(viewWithSource.getProjectId(), user, false);
+        } catch (Exception e) {
+            log.error("get project detail fail, because: ", e);
+            throw new RuntimeException("get project detail fail");
+        }
+        ProjectPermission projectPermission = null;
+        try {
+            projectPermission = projectService.getProjectPermission(projectDetail, user);
+        } catch (Exception e) {
+            log.error("get project permission fail, because: ", e);
+            throw new RuntimeException("get project permission fail");
+        }
         if (projectPermission.getViewPermission() < UserPermissionEnum.WRITE.getPermission()) {
             throw new UnAuthorizedExecption("you have not permission to update this view");
         }
@@ -411,7 +473,12 @@ public class ViewServiceImpl implements ViewService {
             View view = new View();
             BeanUtils.copyProperties(viewUpdate, view);
             view.setProjectId(projectDetail.getId());
-            viewMapper.update(view);
+            try {
+                viewMapper.update(view);
+            } catch (Exception e) {
+                log.error("update view fail, because: ", e);
+                throw new RuntimeException("update view fail");
+            }
             return true;
         }
         //测试连接
@@ -456,7 +523,7 @@ public class ViewServiceImpl implements ViewService {
         View view = viewMapper.getById(id);
 
         if (null == view) {
-            log.info("view (:{}) not found", id);
+            log.warn("view (:{}) not found", id);
             throw new NotFoundException("view is not found");
         }
 
@@ -473,12 +540,24 @@ public class ViewServiceImpl implements ViewService {
             throw new UnAuthorizedExecption("you have not permission to delete this view");
         }
 
-        ProjectPermission projectPermission = projectService.getProjectPermission(projectDetail, user);
+        ProjectPermission projectPermission = null;
+        try {
+            projectPermission = projectService.getProjectPermission(projectDetail, user);
+        } catch (Exception e) {
+            log.error("get project permission fail, because: ", e);
+            throw new RuntimeException("get project permission fail");
+        }
         if (projectPermission.getViewPermission() < UserPermissionEnum.DELETE.getPermission()) {
             throw new UnAuthorizedExecption("you have not permission to delete this view");
         }
 
-        List<Widget> widgets = widgetMapper.getWidgetsByWiew(id);
+        List<Widget> widgets = null;
+        try {
+            widgets = widgetMapper.getWidgetsByWiew(id);
+        } catch (Exception e) {
+            log.error("get widgets fail, because: ", e);
+            throw new RuntimeException("get widgets fail");
+        }
         if (!CollectionUtils.isEmpty(widgets)) {
             throw new ServerException("The current view has been referenced, please delete the reference and then operate");
         }
@@ -487,6 +566,9 @@ public class ViewServiceImpl implements ViewService {
         if (i > 0) {
             optLogger.info("view ( {} ) delete by user( :{} )", view.toString(), user.getId());
             relRoleViewMapper.deleteByViewId(id);
+        } else {
+            log.error("delete view fail");
+            throw new RuntimeException("delete view fail");
         }
 
         return true;

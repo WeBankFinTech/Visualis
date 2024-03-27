@@ -79,7 +79,7 @@ class SparkEntranceExecutor extends SqlUtils with Logging{
 
   private def executeUntil[T](sql: String, op: VisualisJob => T): T = {
     info(s"$umUser began to executeRealJob script:$sql")
-    val execId: String = submitQuery(sql)
+    val execId: String = submitQuery(sql).toString()
     //SparkEntranceExecutor.putJobCache(umUser,execId)//缓存相应的执行ID
     entranceServer.getJob(execId) foreach {
       case job: VisualisJob =>
@@ -117,7 +117,7 @@ class SparkEntranceExecutor extends SqlUtils with Logging{
 //      code = SqlUtils.filterAnnotate(code)
 //      SqlUtils.checkSensitiveSql(code)
 //    }
-    val requestMap = new JMap[String, Any]
+    val requestMap = new JMap[String, AnyRef]
     requestMap.put(TaskConstant.UMUSER, umUser)
     requestMap.put(TaskConstant.REQUESTAPPLICATIONNAME, VisualisUtils.VG_CREATOR.getValue)// input.creator)
     requestMap.put(TaskConstant.EXECUTEAPPLICATIONNAME, input.engine)
@@ -255,7 +255,7 @@ class SparkEntranceExecutor extends SqlUtils with Logging{
 
   override def submit4Exec(sql: String, pageNo: Int, pageSize: Int, totalCount: Int, limit: Int, excludeColumns: util.Set[String]): PaginateWithExecStatus = {
     val paginateWithQueryColumns = new PaginateWithExecStatus
-    val execId = submitQuery(sql)
+    val execId = submitQuery(sql).toString()
     paginateWithQueryColumns.setExecId(VisualisUtils.getHAExecId(execId))
     paginateWithQueryColumns.setProgress(0.0f)
     return  paginateWithQueryColumns;

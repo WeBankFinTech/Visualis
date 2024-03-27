@@ -28,11 +28,11 @@ import java.util.Date;
 public class User extends TokenDetail {
     private Long id;
 
-    private String email;
+    private String email = null;
 
     private Boolean admin = true;
 
-    private Boolean active = false;
+    private Boolean active = true;
 
     private String name;
 

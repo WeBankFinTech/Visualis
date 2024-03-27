@@ -157,6 +157,9 @@ public class ViewOptStrategy extends AbstractOperationStrategy implements AsyncE
     @Override
     public ResponseRef executeRef(RefExecutionRequestRef.RefExecutionProjectWithContextRequestRef ref) throws ExternalOperationFailedException {
         String url = URLUtils.getUrl(baseUrl, URLUtils.VIEW_DATA_URL_FORMAT, getId(ref.getRefJobContent()));
+        logger.info("User {} try to execute Visualis view with refJobContent: {} in url {}.", ref.getExecutionRequestRefContext().getSubmitUser(),
+                ref.getRefJobContent(), url);
+        ref.getExecutionRequestRefContext().appendLog("dss execute view node, ready to execute to " + url);
         ResponseRef responseRef = executeRef(ref, url);
         try {
             cleanCSTabel(ref);

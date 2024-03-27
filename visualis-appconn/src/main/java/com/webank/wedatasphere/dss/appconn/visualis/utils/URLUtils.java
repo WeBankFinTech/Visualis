@@ -51,6 +51,14 @@ public class URLUtils {
     // 工程删除和更新URL
     public final static String PROJECT_DELETE_UPDATE_URL = "/api/rest_s/" + ServerConfiguration.BDP_SERVER_VERSION() + "/visualis/projects/%s";
 
+    // display和dashboard异步执行
+    public final static String DISPLAY_SUBMIT_PREVIEW_URL_FORMAT = "/api/rest_j/" + ServerConfiguration.BDP_SERVER_VERSION() + "/visualis/displays/%s/submitPreview";
+    public final static String DISPLAY_SUBMIT_STATE_URL_FORMAT = "/api/rest_j/" + ServerConfiguration.BDP_SERVER_VERSION() + "/visualis/displays/%s/state";
+    public final static String DISPLAY_SUBMIT_RESULT_URL_FORMAT = "/api/rest_j/" + ServerConfiguration.BDP_SERVER_VERSION() + "/visualis/displays/%s/getResult";
+
+    public final static String DASHBOARD_SUBMIT_PREVIEW_URL_FORMAT = "/api/rest_j/" + ServerConfiguration.BDP_SERVER_VERSION() + "/visualis/dashboard/portal/%s/submitPreview";
+    public final static String DASHBOARD_SUBMIT_STATE_URL_FORMAT = "/api/rest_j/" + ServerConfiguration.BDP_SERVER_VERSION() + "/visualis/dashboard/portal/%s/state";
+    public final static String DASHBOARD_SUBMIT_RESULT_URL_FORMAT = "/api/rest_j/" + ServerConfiguration.BDP_SERVER_VERSION() + "/visualis/dashboard/portal/%s/getResult";
 
     public static String getUrl(String baseUrl, String format, String entityId) {
         return baseUrl + String.format(format, entityId);

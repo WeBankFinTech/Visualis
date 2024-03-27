@@ -23,13 +23,13 @@ import org.springframework.context.annotation.{Bean, Configuration, Primary}
 class VisualisSpringConfiguration {
 
   @Primary
-  @EntranceInterceptorBeanAnnotation
+  @Bean
   def generateEntranceInterceptors: Array[EntranceInterceptor] = Array[EntranceInterceptor](new VisualisCSEntranceInterceptor, new ShellDangerousGrammerInterceptor, new PythonCodeCheckInterceptor, new DBInfoCompleteInterceptor, new SparkCodeCheckInterceptor, new SQLCodeCheckInterceptor, new VarSubstitutionInterceptor, new LogPathCreateInterceptor, new StorePathEntranceInterceptor, new ScalaCodeInterceptor, new SQLLimitEntranceInterceptor, new CommentInterceptor, new PythonCodeCheckInterceptor)
 
   @Primary
-  @ConsumerManagerBeanAnnotation
-  def generateConsumerManager(@PersistenceManagerBeanAnnotation.PersistenceManagerAutowiredAnnotation persistenceManager: PersistenceManager) = new ReadCacheConsumerManager(ENTRANCE_SCHEDULER_MAX_PARALLELISM_USERS.getValue, persistenceManager)
+  @Bean
+  def generateConsumerManager(@Bean persistenceManager: PersistenceManager) = new ReadCacheConsumerManager(ENTRANCE_SCHEDULER_MAX_PARALLELISM_USERS.getValue, persistenceManager)
 
-  @SchedulerContextBeanAnnotation
-  def generateSchedulerContext(@GroupFactoryBeanAnnotation.GroupFactoryAutowiredAnnotation groupFactory: GroupFactory, @EntranceExecutorManagerBeanAnnotation.EntranceExecutorManagerAutowiredAnnotation executorManager: ExecutorManager, @ConsumerManagerBeanAnnotation.ConsumerManagerAutowiredAnnotation consumerManager: ConsumerManager) = new EntranceSchedulerContext(groupFactory, consumerManager, executorManager)
+  @Bean
+  def generateSchedulerContext(@Bean groupFactory: GroupFactory, @EntranceExecutorManagerBeanAnnotation.EntranceExecutorManagerAutowiredAnnotation executorManager: ExecutorManager, @Bean consumerManager: ConsumerManager) = new EntranceSchedulerContext(groupFactory, consumerManager, executorManager)
 }

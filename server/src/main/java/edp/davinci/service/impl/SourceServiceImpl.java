@@ -144,14 +144,14 @@ public class SourceServiceImpl implements SourceService {
                 sources = null;
             }
         }
-        if(sources.stream().noneMatch(s -> VisualisUtils.isLinkisDataSource(s))){
+        if (sources.stream().noneMatch(s -> VisualisUtils.isLinkisDataSource(s))) {
             Source hiveSource = sourceMapper.getById(VisualisUtils.getHiveDataSourceId());
             hiveSource.setId(null);
             hiveSource.setProjectId(projectId);
             sourceMapper.insert(hiveSource);
             totalSources.add(hiveDBHelper.sourceToHiveSource(hiveSource));
         }
-        if(getAvailableEngineTypes(user.username).contains(VisualisUtils.PRESTO().getValue()) && sources.stream().noneMatch(s -> VisualisUtils.isPrestoDataSource(s))){
+        if (getAvailableEngineTypes(user.username).contains(VisualisUtils.PRESTO().getValue()) && sources.stream().noneMatch(s -> VisualisUtils.isPrestoDataSource(s))) {
             Source prestoSource = sourceMapper.getById(VisualisUtils.getPrestoDataSourceId());
             prestoSource.setId(null);
             prestoSource.setProjectId(projectId);
@@ -218,7 +218,7 @@ public class SourceServiceImpl implements SourceService {
         checkWhitelist(config);
 
         boolean testConnection;
-        try{
+        try {
             testConnection = sqlUtils
                     .init(
                             config.getUrl(),
@@ -227,7 +227,7 @@ public class SourceServiceImpl implements SourceService {
                             config.getVersion(),
                             config.isExt()
                     ).testConnection();
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new ServerException("failed to connect to database: " + e.getMessage(), e);
         }
 
@@ -249,9 +249,9 @@ public class SourceServiceImpl implements SourceService {
     }
 
     private void checkWhitelist(SourceConfig config) {
-        if((Boolean) CommonConfig.ENABLE_JDBC_WHITELIST().getValue()){
+        if ((Boolean) CommonConfig.ENABLE_JDBC_WHITELIST().getValue()) {
             String ipPort = org.apache.commons.lang.StringUtils.substringBetween(config.getUrl(), "//", "?");
-            if(!CommonConfig.JDBC_WHITELIST().getValue().contains(ipPort)){
+            if (!CommonConfig.JDBC_WHITELIST().getValue().contains(ipPort)) {
                 throw new ServerException("JDBC URL not in whitelist");
             }
         }
@@ -273,7 +273,7 @@ public class SourceServiceImpl implements SourceService {
             throw new NotFoundException("this source is not found");
         }
 
-        if(!projectAuth.isPorjectOwner(source.getProjectId(), user.getId())) {
+        if (!projectAuth.isPorjectOwner(source.getProjectId(), user.getId())) {
             throw new UnAuthorizedExecption("current user has no permission.");
         }
 
@@ -294,7 +294,7 @@ public class SourceServiceImpl implements SourceService {
         checkWhitelist(sourceConfig);
         //测试连接
         boolean testConnection;
-        try{
+        try {
             testConnection = sqlUtils
                     .init(
                             sourceConfig.getUrl(),
@@ -303,7 +303,7 @@ public class SourceServiceImpl implements SourceService {
                             sourceConfig.getVersion(),
                             sourceConfig.isExt()
                     ).testConnection();
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new ServerException("failed to connect to database: " + e.getMessage(), e);
         }
 
@@ -346,7 +346,7 @@ public class SourceServiceImpl implements SourceService {
         }
 
 
-        if(!projectAuth.isPorjectOwner(source.getProjectId(), user.getId())) {
+        if (!projectAuth.isPorjectOwner(source.getProjectId(), user.getId())) {
             throw new UnAuthorizedExecption("current user has no permission.");
         }
 
@@ -381,6 +381,9 @@ public class SourceServiceImpl implements SourceService {
      */
     @Override
     public boolean testSource(SourceTest sourceTest) throws ServerException {
+        if (sourceTest.getUsername().equals(VisualisUtils.HIVE_DATA_SOURCE_TOKEN().getValue())) {
+            return true;
+        }
         boolean testConnection = false;
         try {
             if (!sourceTest.isExt()) {
@@ -390,9 +393,9 @@ public class SourceServiceImpl implements SourceService {
                 sourceTest.setVersion(null);
                 sourceTest.setExt(false);
             }
-            if((Boolean) CommonConfig.ENABLE_JDBC_WHITELIST().getValue()){
+            if ((Boolean) CommonConfig.ENABLE_JDBC_WHITELIST().getValue()) {
                 String ipPort = org.apache.commons.lang.StringUtils.substringBetween(sourceTest.getUrl(), "//", "?");
-                if(!CommonConfig.JDBC_WHITELIST().getValue().contains(ipPort)){
+                if (!CommonConfig.JDBC_WHITELIST().getValue().contains(ipPort)) {
                     throw new ServerException("JDBC URL not in whitelist");
                 }
             }
@@ -553,7 +556,7 @@ public class SourceServiceImpl implements SourceService {
 
         List<String> dbList = null;
 
-        if(VisualisUtils.isLinkisDataSource(source)){
+        if (VisualisUtils.isLinkisDataSource(source)) {
             dbList = hiveDBHelper.getHiveDBNames(ticketId);
         } else {
             try {
@@ -598,7 +601,7 @@ public class SourceServiceImpl implements SourceService {
 
 
         List<QueryColumn> tableList = null;
-        if(VisualisUtils.isLinkisDataSource(source)){
+        if (VisualisUtils.isLinkisDataSource(source)) {
             tableList = hiveDBHelper.getHiveTables(dbName, ticketId);
         } else {
             try {
@@ -642,7 +645,7 @@ public class SourceServiceImpl implements SourceService {
         ProjectDetail projectDetail = projectService.getProjectDetail(source.getProjectId(), user, false);
 
         TableInfo tableInfo = null;
-        if(VisualisUtils.isLinkisDataSource(source)){
+        if (VisualisUtils.isLinkisDataSource(source)) {
             tableInfo = hiveDBHelper.getHiveTableInfo(dbName, tableName, ticketId);
         } else {
             try {
@@ -692,7 +695,7 @@ public class SourceServiceImpl implements SourceService {
     @Override
     public List<String> getAvailableEngineTypes(String username) {
         Config config = configMapper.getConfig("presto.enabled", "USER", username);
-        if(config == null || !Boolean.parseBoolean(config.getValue())){
+        if (config == null || !Boolean.parseBoolean(config.getValue())) {
             return Lists.newArrayList(VisualisUtils.SPARK().getValue());
         }
         return Lists.newArrayList(VisualisUtils.AVAILABLE_ENGINE_TYPES().getValue().split(";"));

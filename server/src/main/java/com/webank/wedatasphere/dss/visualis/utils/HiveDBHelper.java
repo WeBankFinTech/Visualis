@@ -21,6 +21,11 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * created by cooperyang on 2019/1/23
+ * Description:
+ */
+
 @Component
 public class HiveDBHelper {
 

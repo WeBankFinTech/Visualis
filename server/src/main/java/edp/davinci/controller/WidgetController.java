@@ -23,6 +23,9 @@ package edp.davinci.controller;
 import com.webank.wedatasphere.dss.visualis.auth.ProjectAuth;
 import edp.core.annotation.CurrentUser;
 import edp.core.annotation.MethodLog;
+import edp.core.exception.NotFoundException;
+import edp.core.exception.ServerException;
+import edp.core.exception.UnAuthorizedExecption;
 import edp.davinci.common.controller.BaseController;
 import edp.davinci.core.common.Constants;
 import edp.davinci.core.common.ResultMap;
@@ -55,6 +58,14 @@ public class WidgetController extends BaseController {
     @Autowired
     private ProjectAuth projectAuth;
 
+    /**
+     * 获取widget列表
+     *
+     * @param projectId
+     * @param user
+     * @param request
+     * @return
+     */
     @MethodLog
     @GetMapping
     public ResponseEntity getWidgets(@RequestParam Long projectId,
@@ -65,11 +76,25 @@ public class WidgetController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        List<Widget> widgets = widgetService.getWidgets(projectId, user);
+        List<Widget> widgets = null;
+        try {
+            widgets = widgetService.getWidgets(projectId, user);
+        } catch (Exception e) {
+            log.error("get widgets fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payloads(widgets));
     }
 
 
+    /**
+     * 获取widget列表
+     *
+     * @param id
+     * @param user
+     * @param request
+     * @return
+     */
     @MethodLog
     @GetMapping("/{id}")
     public ResponseEntity getWidgetInfo(@PathVariable Long id,
@@ -79,10 +104,26 @@ public class WidgetController extends BaseController {
             ResultMap resultMap = new ResultMap(tokenUtils).failAndRefreshToken(request).message("Invalid id");
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
-        Widget widget = widgetService.getWidget(id, user);
+        Widget widget = null;
+        try {
+            widget = widgetService.getWidget(id, user);
+        } catch (Exception e) {
+            log.error("get widgetInfo fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(widget));
     }
 
+
+    /**
+     * 新建widget
+     *
+     * @param widget
+     * @param bindingResult
+     * @param user
+     * @param request
+     * @return
+     */
     @MethodLog
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity createWidgets(@Valid @RequestBody WidgetCreate widget,
@@ -99,10 +140,27 @@ public class WidgetController extends BaseController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        Widget newWidget = widgetService.createWidget(widget, user);
+        Widget newWidget = null;
+        try {
+            newWidget = widgetService.createWidget(widget, user);
+        } catch (Exception e) {
+            log.error("create widget fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(newWidget));
     }
 
+
+    /**
+     * 修改widget
+     *
+     * @param id
+     * @param widget
+     * @param bindingResult
+     * @param user
+     * @param request
+     * @return
+     */
     @MethodLog
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity updateWidget(@PathVariable Long id,
@@ -121,11 +179,24 @@ public class WidgetController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        widgetService.updateWidget(widget, user);
+        try {
+            widgetService.updateWidget(widget, user);
+        } catch (NotFoundException e) {
+            log.error("update widget fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
     }
 
 
+    /**
+     * 删除widget
+     *
+     * @param id
+     * @param user
+     * @param request
+     * @return
+     */
     @MethodLog
     @PostMapping("/{id}")
     public ResponseEntity deleteWidget(@PathVariable Long id,
@@ -137,11 +208,24 @@ public class WidgetController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        widgetService.deleteWidget(id, user);
+        try {
+            widgetService.deleteWidget(id, user);
+        } catch (Exception e) {
+            log.error("delete widget fail, because:", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request));
     }
 
 
+    /**
+     * 下载widget
+     *
+     * @param id
+     * @param user
+     * @param request
+     * @return
+     */
     @MethodLog
     @PostMapping("/{id}/{type}")
     public ResponseEntity downloadWidget(@PathVariable("id") Long id,
@@ -160,11 +244,26 @@ public class WidgetController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        String filePath = widgetService.generationFile(id, executeParam, user, type);
+        String filePath = null;
+        try {
+            filePath = widgetService.generationFile(id, executeParam, user, type);
+        } catch (Exception e) {
+            log.error("download widget fail, because:", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(filePath));
     }
 
 
+    /**
+     * 分享widget
+     *
+     * @param id
+     * @param username
+     * @param user
+     * @param request
+     * @return
+     */
     @MethodLog
     @GetMapping("/{id}/share")
     public ResponseEntity shareWidget(@PathVariable Long id,
@@ -176,7 +275,13 @@ public class WidgetController extends BaseController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         }
 
-        String shareToken = widgetService.shareWidget(id, user, username);
+        String shareToken = null;
+        try {
+            shareToken = widgetService.shareWidget(id, user, username);
+        } catch (Exception e) {
+            log.error("share widget fail, because: ", e);
+            return ResponseEntity.ok(new ResultMap().fail().message(e.getMessage()));
+        }
         return ResponseEntity.ok(new ResultMap(tokenUtils).successAndRefreshToken(request).payload(shareToken));
     }
 

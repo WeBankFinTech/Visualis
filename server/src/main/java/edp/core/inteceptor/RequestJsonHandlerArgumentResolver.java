@@ -31,7 +31,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 
 /**
- * 注解解析器
+ * @JsonParam 注解 解析器
  */
 public class RequestJsonHandlerArgumentResolver implements HandlerMethodArgumentResolver {
     @Override

@@ -4,32 +4,32 @@ Visualis编译部署文档
 # 1. 环境准备及编译
 
 ## 1.1. 依赖环境准备
-| 依赖的组件 | 是否必装 | 安装直通车 |
-| -------------- | ------ | --------------- |
-| MySQL (5.5+) | 必装  | [如何安装mysql](https://www.runoob.com/mysql/mysql-install.html) |
-| JDK (1.8.0_141) | 必装 | [如何安装JDK](https://www.runoob.com/java/java-environment-setup.html) |
+| 依赖的组件                                 | 是否必装 | 安装直通车 |
+|---------------------------------------| ------ | --------------- |
+| MySQL (5.5+)                          | 必装  | [如何安装mysql](https://www.runoob.com/mysql/mysql-install.html) |
+| JDK (1.8.0_141)                       | 必装 | [如何安装JDK](https://www.runoob.com/java/java-environment-setup.html) |
 | Hadoop(2.7.2，Hadoop 其他版本需自行编译 Linkis) | 必装 | [Hadoop单机部署](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) ；[Hadoop分布式部署](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
-| Spark(2.4.3，Spark 其他版本需自行编译 Linkis) | 必装 | [Spark快速安装](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
-| DSS1.1.0 | 必装 | [如何安装DSS](https://github.com/WeBankFinTech/DataSphereStudio-Doc/blob/1.1.0/zh_CN/%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/DSS%26Linkis%E4%B8%80%E9%94%AE%E9%83%A8%E7%BD%B2%E6%96%87%E6%A1%A3%E5%8D%95%E6%9C%BA%E7%89%88.md) |
-| Linkis1.1.1（大于等于该版本） | 必装 | [如何安装Linkis](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
-| Nginx | 必装 | [如何安装 Nginx](http://nginx.org/en/linux_packages.html) |
+| Spark(2.4.3，Spark 其他版本需自行编译 Linkis)   | 必装 | [Spark快速安装](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
+| DSS1.1.1                              | 必装 | [如何安装DSS](https://github.com/WeBankFinTech/DataSphereStudio-Doc/blob/1.1.0/zh_CN/%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/DSS%26Linkis%E4%B8%80%E9%94%AE%E9%83%A8%E7%BD%B2%E6%96%87%E6%A1%A3%E5%8D%95%E6%9C%BA%E7%89%88.md) |
+| Linkis1.3.2（大于等于该版本）                  | 必装 | [如何安装Linkis](https://linkis.apache.org/zh-CN/docs/latest/deployment/quick_deploy) |
+| Nginx                                 | 必装 | [如何安装 Nginx](http://nginx.org/en/linux_packages.html) |
 
 ## 1.2. 创建 Linux 用户
 
 &nbsp;&nbsp;&nbsp;&nbsp;请保持Visualis的部署用户与Linkis的部署用户一致，采用hadoop用户部署。
 
 ## 1.3. 底层依赖组件检查
-&nbsp;&nbsp;&nbsp;&nbsp;**在安装linkis后，请确保DSS1.1.0与Linkis1.1.1 基本可用，可在 DSS 前端界面执行 SparkQL 脚本，可正常创建并执行 DSS 工作流。**
+&nbsp;&nbsp;&nbsp;&nbsp;**在安装linkis后，请确保DSS1.1.1与Linkis1.3.2 基本可用，可在 DSS 前端界面执行 SparkQL 脚本，可正常创建并执行 DSS 工作流。**
 
 ## 1.4. 下载源码包及编译后端
-&nbsp;&nbsp;&nbsp;&nbsp;Visualis源码安装时，需要下载对应的源码包进行编译，目前Visualis在依赖的Linkis1.1.1版本已经上传到Maven中央仓库，只需Maven配置正常即可拉取相关依赖，**DSS 1.1.0版本正在发布版本，并未上传至Maven中央仓库，需要拉取DSS仓库的1.1.0进行编译，并把依赖安装到本地。**
+&nbsp;&nbsp;&nbsp;&nbsp;Visualis源码安装时，需要下载对应的源码包进行编译，目前Visualis在依赖的Linkis1.3.2、DSS1.1.1版本已经上传到Maven中央仓库，只需Maven配置正常即可拉取相关依赖.
 
 ```shell
 # 1. 下载源码
 git clone https://github.com/WeBankFinTech/Visualis.git
 
-# 2. 切换到1.0.0分支
-git checkout 1.0.0
+# 2. 切换到1.0.1分支
+git checkout 1.0.1
 
 # 3. 执行编译打包
 cd Visualis
@@ -213,6 +213,7 @@ spring:
 ```
 
 ### 2.5.2. 修改linkis.properties
+&nbsp;&nbsp;&nbsp;&nbsp;**注意事项：该配置需与linkis gateway的ip与端口号配置保持一致**
 ```properties
 # ##################################
 # 1. need configuration
@@ -230,13 +231,13 @@ wds.linkis.keytab.enable=true
 
 ## 3. 启动应用
 
-&nbsp;&nbsp;&nbsp;&nbsp;在配置和前端包编译完成后，可以尝试启动服务。Visualis目前和DSS集成，使用了DSS的登录及权限体系，使用前需部署完成DSS1.1.0版本，可以参考DSS1.1.0一键安装部署。
+&nbsp;&nbsp;&nbsp;&nbsp;在配置和前端包编译完成后，可以尝试启动服务。Visualis目前和DSS集成，使用了DSS的登录及权限体系，使用前需部署完成DSS1.1.1版本，可以参考DSS1.1.1一键安装部署。
 
 ### 3.1. 执行启动脚本
 
 &nbsp;&nbsp;&nbsp;&nbsp;进入Visualis的安装目录，找到bin文件夹，在此文件夹下执行一下命令。
 ```
-sh ./start-server.sh
+sh ./start-visualis-server.sh
 ```
 备注：**如果启动服务时，报启动脚本的换行符无法识别，需要在服务器上对脚本进行编码转换使用：dos2unix xxx.sh 命令进行转换**
 

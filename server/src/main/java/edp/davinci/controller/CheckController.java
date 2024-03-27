@@ -120,7 +120,8 @@ public class CheckController {
             return ResponseEntity.status(resultMap.getCode()).body(resultMap);
         } catch (Exception e) {
             log.error("check project error: " + e);
-            return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode()).body(HttpCodeEnum.SERVER_ERROR.getMessage());
+            return ResponseEntity.status(HttpCodeEnum.SERVER_ERROR.getCode())
+                    .body("[check project error, maybe user does not exist!] 检查工程失败，请查看Visualis是否存在该用户！");
         }
     }
 
