@@ -142,7 +142,8 @@ class LinkisClientExecutor extends SqlUtils with Logging{
     * @param resultSet 结果集文件或结果集
     * @return
     */
-  private def getResultSet(resultSet: String): util.List[util.Map[String, AnyRef]] = {
+  private def getResultSet(jobInfo: JobInfoResult): util.List[util.Map[String, AnyRef]] = {
+    val resultSet = VisualisUtils.getResultSetPath(jobInfo)
     info(s"$umUser began to get the result of execution :$resultSet")
     val rsFactory= ResultSetFactory.getInstance
     val res = new util.ArrayList[util.Map[String, AnyRef]]()
@@ -170,11 +171,12 @@ class LinkisClientExecutor extends SqlUtils with Logging{
       res
     }else if(rsFactory.isResultSetPath(resultSet)){
       val resPath = new FsPath(ResultHelper.getSchemaPath(resultSet))
-      val resultSetContent =  rsFactory.getResultSetByPath(resPath)
+      val umUser = jobInfo.getRequestPersistTask.getUmUser
+      val resultSetContent =  rsFactory.getResultSetByPath(resPath,umUser)
       if(ResultSetFactory.TABLE_TYPE != resultSetContent.resultSetType()){
         throw new VGErrorException(60014,"不支持不是表格的结果集")
       }
-      val fs = FSFactory.getFs(resPath)
+      val fs = FSFactory.getFs(resPath.getFsType,umUser)
       fs.init(null)
       val reader =ResultSetReader.getResultSetReader(resultSetContent,fs.read(resPath))
       val metaData = reader.getMetaData.asInstanceOf[TableMetaData]
@@ -220,7 +222,7 @@ class LinkisClientExecutor extends SqlUtils with Logging{
   override def query4List(sql: String, limit: Int): util.List[util.Map[String, AnyRef]] = {
     val jobExecuteResult = querySQLWithJobExecuteResult(sql, limit)
     val jobInfo = linkisClient.getJobInfo(jobExecuteResult)
-    getResultSet(VisualisUtils.getResultSetPath(jobInfo))
+    getResultSet(jobInfo)
   }
 
   override def submit4Exec(sql: String, pageNo: Int, pageSize: Int, totalCount: Int, limit: Int, excludeColumns: util.Set[String]): PaginateWithExecStatus = {
@@ -278,10 +280,10 @@ class LinkisClientExecutor extends SqlUtils with Logging{
     paginateWithQueryColumns.setStatus(jobInfoResult.getRequestPersistTask.getStatus)
 
     val jobInfo = linkisClient.getJobInfo(jobExecuteResult)
-    val resultList = getResultSet(VisualisUtils.getResultSetPath(jobInfo))
+    val resultList = getResultSet(jobInfo)
     paginateWithQueryColumns.setResultList(resultList)
     paginateWithQueryColumns.setTotalCount(resultList.size())
-    val columns = ResultHelper.getResultType(VisualisUtils.getResultSetPath(jobInfo))
+    val columns = ResultHelper.getResultType(jobInfo)
     paginateWithQueryColumns.setColumns(columns.map(col => new QueryColumn(col.columnName,col.dataType.typeName)).toList)
     return paginateWithQueryColumns
   }
@@ -290,11 +292,11 @@ class LinkisClientExecutor extends SqlUtils with Logging{
     val paginateWithQueryColumns = new PaginateWithQueryColumns
     val jobExecuteResult = querySQLWithJobExecuteResult(sql, limit)
     val jobInfo = linkisClient.getJobInfo(jobExecuteResult)
-    val resultList = getResultSet(VisualisUtils.getResultSetPath(jobInfo))
+    val resultList = getResultSet(jobInfo)
     paginateWithQueryColumns.setResultList(resultList)
     paginateWithQueryColumns.setTotalCount(resultList.size())
 
-    val columns = ResultHelper.getResultType(VisualisUtils.getResultSetPath(jobInfo))
+    val columns = ResultHelper.getResultType(jobInfo)
     paginateWithQueryColumns.setColumns(columns.map(col => new QueryColumn(col.columnName,col.dataType.typeName)).toList)
     return paginateWithQueryColumns
   }
@@ -318,7 +320,7 @@ class LinkisClientExecutor extends SqlUtils with Logging{
   override def getColumns(sql: String): util.List[QueryColumn] = {
     val jobExecuteResult = querySQLWithJobExecuteResult(sql, 2)
     val jobInfo = linkisClient.getJobInfo(jobExecuteResult)
-    val columns = ResultHelper.getResultType(VisualisUtils.getResultSetPath(jobInfo))
+    val columns = ResultHelper.getResultType(jobInfo)
     columns.map(col => new QueryColumn(col.columnName,col.dataType.typeName)).toList
   }
 
