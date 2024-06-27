@@ -1,99 +1,63 @@
-![DSS](images/visualis.png)
-====
+# Metabase
 
-[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
+[Metabase](https://www.metabase.com/) is the easy, open-source way for everyone in your company to ask questions and learn from data.
 
-English | [中文](README-CH.md)
+![Metabase Product Screenshot](docs/metabase-product-screenshot.png)
 
-## Introduction
-
-&nbsp;&nbsp;&nbsp;&nbsp;Visualis is an open source project based on Yixin [davinci](https://github.com/edp963/davinci) Developed data visualization Bi tool. It has been integrated into the data application development portal [datasphere studio](https://github.com/WeBankFinTech/DataSphereStudio) In this release, visualis1.0.0 supports linkis1.1.1 and dss1.1.0.  
-&nbsp;&nbsp;&nbsp;&nbsp;Visualis provides data development/exploration functionalities including drag & drop style report definition, diagram correlation analysis, data drilling, global filtering, multi-dimensional analysis and real-time query, with the enhancement of report watermark and data quality management.
+[![Latest Release](https://img.shields.io/github/release/metabase/metabase.svg?label=latest%20release)](https://github.com/metabase/metabase/releases)
+[![Circle CI](https://circleci.com/gh/metabase/metabase.svg?style=svg&circle-token=3ccf0aa841028af027f2ac9e8df17ce603e90ef9)](https://circleci.com/gh/metabase/metabase)
+[![codecov](https://codecov.io/gh/metabase/metabase/branch/master/graph/badge.svg)](https://codecov.io/gh/metabase/metabase)
+![Docker Pulls](https://img.shields.io/docker/pulls/metabase/metabase)
 
 ## Features
 
-Based on Davinci project, Visualis achieves below features with DataSphere Studio:
-* Add chart mark
-* Data quality inspection
-* Optimize chart display
-* Linkis adaption for big-data queries
-* One-click visualization from Scriptis
-* External application parameters support
-* View/Widget/Dashboard/Display as an appjoint of DataSphere Studio workflow
+- [Set up in five minutes](https://www.metabase.com/docs/latest/setting-up-metabase.html) (we're not kidding).
+- Let anyone on your team [ask questions](https://www.metabase.com/docs/latest/users-guide/04-asking-questions.html) without knowing SQL.
+- Use the [SQL editor](https://www.metabase.com/docs/latest/users-guide/writing-sql.html) for more complex queries. 
+- Build handsome, interactive [dashboards](https://www.metabase.com/docs/latest/users-guide/07-dashboards.html) with filters, auto-refresh, fullscreen, and custom click behavior.
+- Create [models](https://www.metabase.com/learn/getting-started/models) that clean up, annotate, and/or combine raw tables.
+- Define canonical [segments and metrics](https://www.metabase.com/docs/latest/administration-guide/07-segments-and-metrics.html) for your team to use.
+- Send data to Slack or email on a schedule with [dashboard subscriptions](https://www.metabase.com/docs/latest/users-guide/dashboard-subscriptions).
+- Set up [alerts](https://www.metabase.com/docs/latest/users-guide/15-alerts.html) to have Metabase notify you when your data changes.
+- [Embed charts and dashboards](https://www.metabase.com/docs/latest/administration-guide/13-embedding.html) in your app, or even [your entire Metabase](https://www.metabase.com/docs/latest/enterprise-guide/full-app-embedding.html).
 
-Visualis also supports most of the original features of Davinci v0.3.
-* Data Source Support
-  * Files in CSV format
-  * JDBC data source
-* Data View Support
-  * Customized SQL template
-  * SQL highlighting
-  * SQL test
-  * WriteBack mode
-* Visual Components Support
-  * Pre-defined charts
-  * Controller components
-  * Free Styles
-* Interaction Support
-  * Visual components displayed in full screen
-  * Local controller for visual components
-  * Filtering and cooperation among visual components
-  * Group control for visual components
-  * Local advanced filter for visual components
-  * Paging mode and slider for huge volumes of data
-* Integration Support
-  * Download visual components in CSV format
-  * Share visual components in a common/authorized way
-  * Share dashboard in a common/authorized way
+Take a [tour of Metabase](https://www.metabase.com/learn/getting-started/tour-of-metabase).
 
+## Supported databases
 
-## DataSphere Studio Integration
-Visualis seamlessly integrates with the data develoment, workflow scheduling and data quality management modules of DataSphere Studio, achieving a smooth and consistent user experience across the whole data application development lifecycle.
+- [Officially supported databases](https://www.metabase.com/docs/latest/administration-guide/01-managing-databases.html#officially-supported-databases).
+- [Community-supported drivers](https://www.metabase.com/docs/latest/developers-guide-drivers.html#how-to-use-a-community-built-driver).
 
-For more details: [Visualis User Manul Doc](./visualis_docs/en_US/Visualis_user_manul_en.md)
+## Installation
 
-![Visualis](images/visualis_workflow.gif)
+Metabase can be run just about anywhere. Check out our [Installation Guides](https://www.metabase.com/docs/latest/operations-guide/installing-metabase.html).
 
+## Contributing
 
-## Architecture design
+To get started with a development installation of the Metabase, check out our [Developers Guide](https://www.metabase.com/docs/latest/developers-guide/start).
 
-![Viusalis Architecture](images/architecture.png)
+## Internationalization
 
-## Documentation
+We want Metabase to be available in as many languages as possible. See which translations are available and help contribute to internationalization using our project over at [POEditor](https://poeditor.com/join/project/ynjQmwSsGh). You can also check out our [policies on translations](https://www.metabase.com/docs/latest/administration-guide/localization.html).
 
-## Install and deploy documentation
-[Compile and deploy documentation](visualis_docs/en_US/Visualis_deploy_doc_en.md)
+## Extending Metabase
 
-[AppConn Installation Documentation](visualis_docs/en_US/Visualis_appconn_install_en.md)
+Metabase also allows you to hit our Query API directly from Javascript to integrate the simple analytics we provide with your own application or third party services to do things like:
 
-## User manual
-[User documentation](visualis_docs/en_US/Visualis_user_manul_en.md)
+- Build moderation interfaces.
+- Export subsets of your users to third party marketing automation software.
+- Provide a specialized customer lookup application for the people in your company.
 
-[Difference Between Visualis and Davinci](visualis_docs/en_US/Visualis_Davinci_difference_en.md)
+Check out our guide, [Working with the Metabase API](https://www.metabase.com/learn/administration/metabase-api).
 
-## Design documentation
-[Visualis Design Documentation](visualis_docs/en_US/Visualis_design_en.md)
+## Security Disclosure
 
-[Display and DashBoard preview principle](visualis_docs/en_US/Visualis_display_dashboard_privew_en.md)
-
-[Visualis access to DSS/Linkis attention points](visualis_docs/en_US/Visualis_dss_integration_en.md)
-
-[Integrate LinkisDatasource](visualis_docs/en_US/Visualis_linkisdatasource_en.md)
-
-[How to send emails](visualis_docs/en_US/Visualis_sendemail_en.md)
-
-[Principle of binding sql node](visualis_docs/en_US/Visualis_sql_databind_en.md)
-
-[Virtual View Design Documentation](visualis_docs/en_US/Visualis_visual_doc_en.md)
-
-## Upgrade documentation
-[Upgrade Documentation](visualis_docs/en_US/visualis_update_en.md)
-
-## Communication
-
-![communication](images/communication.png)
+See [SECURITY.md](./SECURITY.md) for details.
 
 ## License
 
-DSS is under the Apache 2.0 license. See the [License](LICENSE) file for details.
+This repository contains the source code for both the Open Source edition of Metabase, released under the AGPL, as well as the [commercial editions of Metabase](https://www.metabase.com/pricing/), which are released under the Metabase Commercial Software License. 
 
+See [LICENSE.txt](./LICENSE.txt) for details.
+
+Unless otherwise noted, all files © 2022 Metabase, Inc.
