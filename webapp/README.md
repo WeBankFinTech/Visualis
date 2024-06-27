@@ -1,1 +1,0 @@
-Visualis Web Application
