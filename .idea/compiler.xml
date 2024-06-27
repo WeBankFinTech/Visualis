@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="dss-visualis-appconn" target="1.8" />
+      <module name="visualis-assembly" target="1.8" />
+      <module name="visualis-server" target="1.8" />
+    </bytecodeTargetLevel>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="dss-visualis-appconn" options="-bootclasspath &quot;C:/Program Files/Java/jdk-17/lib/rt.jar;C:/Program Files/Java/jdk-17/lib/jce.jar;C:/Program Files/Java/jdk-17/../lib/tools.jar&quot; -Xlint:all,-serial,-path -XDignore.symbol.file" />
+      <module name="visualis" options="-bootclasspath &quot;C:/Program Files/Java/jdk-17/lib/rt.jar;C:/Program Files/Java/jdk-17/lib/jce.jar;C:/Program Files/Java/jdk-17/../lib/tools.jar&quot; -Xlint:all,-serial,-path -XDignore.symbol.file" />
+      <module name="visualis-assembly" options="-bootclasspath &quot;C:/Program Files/Java/jdk-17/lib/rt.jar;C:/Program Files/Java/jdk-17/lib/jce.jar;C:/Program Files/Java/jdk-17/../lib/tools.jar&quot; -Xlint:all,-serial,-path -XDignore.symbol.file" />
+      <module name="visualis-server" options="-bootclasspath &quot;C:/Program Files/Java/jdk-17/lib/rt.jar;C:/Program Files/Java/jdk-17/lib/jce.jar;C:/Program Files/Java/jdk-17/../lib/tools.jar&quot; -Xlint:all,-serial,-path -XDignore.symbol.file" />
+    </option>
+  </component>
+</project>
