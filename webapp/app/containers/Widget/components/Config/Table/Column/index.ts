@@ -1,1 +1,0 @@
-export { TableConditionStyleTypes } from './constants'
