@@ -264,7 +264,7 @@ export class Widget extends React.Component<
     return (
       <div className={styles.wrapper + ' widget-class'} ref={this.container} id="widget" style={{overflowX: 'auto', overflowY: 'hidden'}}>
         {/* <WaterMask {...waterMaskProps} /> */}
-        { selectedChart === 19 && mode === 'chart' ? 
+        { selectedChart === 19 && mode === 'chart' ?
           <iframe src={dataWranglerUrl} width="100%" height="100%" frameBorder="0" id="dataWrangler"></iframe>
           :
           widgetContent
@@ -273,7 +273,7 @@ export class Widget extends React.Component<
         {/* 表格暂无数据时的提示，有了进度条就不需要了 */}
         {/* {empty} */}
         {
-          getProgressPercent * 100 > -1 && getProgressPercent * 100 < 100 ? 
+          getProgressPercent * 100 > -1 && getProgressPercent * 100 < 100 ?
           <div className={widgetStyles.mask}>
             <Progress type='circle' percent={getProgressPercent * 100}></Progress>
           </div> : null
@@ -281,7 +281,7 @@ export class Widget extends React.Component<
         {
           // -2表示是查询失败后设置的getProgressPercent
           // executeQueryFailed是查询失败的另一个明显标时 dashboard和display的编辑、分享页里如果查询失败会传进来
-          getProgressPercent === -2 || executeQueryFailed ? 
+          getProgressPercent === -2 || executeQueryFailed ?
           <div className={widgetStyles.mask} style={{fontSize: '28px', fontWeight: 'bold'}}>
             查询失败
           </div> : null
