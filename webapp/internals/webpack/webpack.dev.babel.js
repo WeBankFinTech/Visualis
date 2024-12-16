@@ -75,7 +75,7 @@ module.exports = require('./webpack.base.babel')({
         'style-src': ["'self'","'unsafe-inline'"],
         'connect-src': [
           "'self'",
-          'http://10.107.116.246:8088'
+          'http://127.0.0.1:8088'
         ],
         // 不加的话iframe要报错
         'frame-src': '*',

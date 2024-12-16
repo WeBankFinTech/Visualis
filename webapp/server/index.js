@@ -20,7 +20,7 @@ const prettyHost = customHost || 'localhost'
 
 // proxy 中间件的选择项
 var options = {
-  target: 'http://10.107.116.246:8088', // 目标服务器 host
+  target: 'http://127.0.0.1:8088', // 目标服务器 host
   changeOrigin: true,               // 默认false，是否需要改变原始主机头为目标URL
   pathRewrite: {
       '^/api' : '/api/rest_s/v1/visualis',     // 重写请求，比如我们源访问的是api/old-path，那么请求会被解析为/api/new-path
